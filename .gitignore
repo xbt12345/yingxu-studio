@@ -1,0 +1,13 @@
+private/
+verification/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+*.log
+.playwright-mcp/
+界面优化-*.md
+部署方案.md
+配置私有访问.ps1
+

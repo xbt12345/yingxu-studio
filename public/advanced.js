@@ -1,0 +1,23 @@
+import {esc} from './data.js';
+
+// Local interaction schemas. Real Pod node/input bindings must replace these
+// examples after a specific workflow is connected; never forward these keys blindly.
+const range=(key,label,value,help,ends=['少','多'])=>({key,label,value,type:'range',min:0,max:100,step:5,help,ends});
+const choice=(key,label,value,items)=>({key,label,value,type:'choice',items});
+export const workflowControls={
+ 'multi-video':{group:'参考与运动',fields:[range('reference','参考贴合度',75,'越高，越贴近参考素材的外观。',['自由发挥','贴近参考']),range('motion','动作幅度',45,'轻微动作适合氛围镜头，大幅动作适合动态场景。',['轻微','强烈']),choice('camera','镜头运动','自动',['自动','固定','推进','环绕'])]},
+ 'image-video':{group:'让画面动起来',fields:[range('motion','动作幅度',40,'从细微的风与呼吸，到明显的主体运动。',['轻微','强烈']),choice('camera','镜头运动','自动',['自动','固定','推进','拉远']),range('structure','构图保留',80,'提高后尽量保留原图中的主体位置。',['可变化','尽量保留'])]},
+ 'first-last':{group:'两帧如何衔接',fields:[choice('transition','过渡方式','自然衔接',['自然衔接','形态变化','运镜衔接']),range('smoothness','过渡平滑度',70,'越高，首尾之间的变化越平缓。',['利落','柔和']),range('endHold','尾帧停留占比',10,'为最后一个画面留出观看时间。',['0%','100%'])]},
+ 'video-edit':{group:'修改与保留',fields:[range('edit','修改强度',45,'局部微调可调低，大幅替换可调高。',['微调','重构']),range('background','背景保留',85,'减少描述范围之外的背景变化。',['自由变化','保持原样']),choice('consistency','帧间一致性','高',['标准','高'])]},
+ 'video-restyle':{group:'风格与稳定',fields:[range('style','风格强度',65,'越高，描述中的风格表现越明显。',['轻度','鲜明']),range('structure','原片结构保留',80,'保留主体轮廓与原片的运动关系。',['可变化','尽量保留']),choice('consistency','帧间一致性','高',['标准','高'])]},
+ 'video-upscale':{group:'画面修复',fields:[choice('scale','放大倍率','2×',['2×','4×']),range('denoise','降噪程度',30,'噪点较多时提高；过高可能损失纹理。',['保留纹理','减少噪点']),range('detail','细节恢复',55,'在自然质感与清晰边缘之间调整。',['自然','锐利'])]},
+ 'product':{group:'产品与场景',fields:[range('identity','产品保真',85,'尽量保留产品外形、配色与细节。',['可变化','尽量保留']),choice('light','场景光线','遵循描述',['遵循描述','自然柔光','影棚布光','戏剧光影']),range('scene','场景变化',55,'调低适合换背景微调，调高适合重新布景。',['轻微','丰富'])]},
+ 'character':{group:'角色与变化',fields:[range('identity','角色一致性',80,'越高，越贴近参考人物的外观特征。',['多样探索','贴近参考']),range('pose','姿态变化',45,'控制新姿势与参考姿势的差异。',['保留姿态','自由变化']),choice('framing','取景范围','遵循描述',['遵循描述','面部特写','半身','全身'])]},
+ 'image-edit':{group:'修改与保留',fields:[range('edit','重绘强度',50,'轻微修饰调低，替换内容调高。',['微调','重构']),range('structure','原图结构保留',75,'保留原图构图和主体轮廓。',['可变化','尽量保留']),choice('blend','融合方式','自然融合',['自然融合','保留边缘'])]},
+ 'image-upscale':{group:'画面修复',fields:[choice('scale','放大倍率','2×',['2×','4×']),range('denoise','降噪程度',25,'适量减少噪点，同时保留自然纹理。',['保留纹理','减少噪点']),range('detail','细节恢复',50,'避免过度锐化造成不自然的边缘。',['自然','锐利'])]}
+};
+export function advancedValues(d,w){const spec=workflowControls[w?.id||w];return Object.fromEntries((spec?.fields||[]).map(f=>{let v=d.advanced?.[f.key]??f.value;if(f.type==='range'){v=Number(v);v=Number.isFinite(v)?Math.max(f.min,Math.min(f.max,Math.round(v/f.step)*f.step)):f.value;}else if(!f.items.includes(v))v=f.value;return[f.key,v];}));}
+export function advancedCount(d,w){const spec=workflowControls[w?.id],values=advancedValues(d,w);return (d.negative?.trim()?1:0)+(spec?.fields||[]).filter(f=>values[f.key]!==f.value).length;}
+export function cloneDraft(d){return {...d,refs:d.refs.map(r=>({...r})),liveSettings:{...(d.liveSettings||{})},advanced:{...(d.advanced||{})}};}
+export function advancedFields(d,w){const spec=workflowControls[w?.id],values=advancedValues(d,w);if(!spec)return '';return `<section class="advanced-group"><div class="advanced-group-title"><span>${spec.group}</span><small>${esc(w.name)}</small></div>${spec.fields.map(f=>f.type==='range'?`<div class="advanced-field"><label for="advanced-${f.key}">${f.label}<output id="value-${f.key}">${values[f.key]}<small>%</small></output></label><input id="advanced-${f.key}" data-advanced="${f.key}" type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${values[f.key]}" aria-valuetext="${values[f.key]}%" aria-describedby="hint-${f.key}" style="--range-progress:${values[f.key]}%"><div class="range-ends"><span>${f.ends[0]}</span><span>${f.ends[1]}</span></div><p id="hint-${f.key}" class="field-hint">${f.help}</p></div>`:`<fieldset class="advanced-field"><legend>${f.label}</legend><div class="advanced-choices">${f.items.map(v=>`<button data-advanced-choice="${f.key}" data-value="${v}" aria-pressed="${values[f.key]===v}" class="${values[f.key]===v?'chosen':''}">${v}</button>`).join('')}</div></fieldset>`).join('')}</section>`;}
+export function parameterRows(d,w){const values=advancedValues(d,w);return (workflowControls[w?.id||w]?.fields||[]).map(f=>`<div><dt>${f.label}</dt><dd>${esc(values[f.key])}${f.type==='range'?'%':''}</dd></div>`).join('');}
