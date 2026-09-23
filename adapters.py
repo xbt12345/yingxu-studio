@@ -27,7 +27,7 @@ WORKFLOWS = [
          desc='上传 1 段视频，描述要修改的内容；可加入最多 8 张参考图。保留原片声音，使用原工作流的标准采样分支。',
          cover='assets/portal-ocean.png', negative=True, minImages=0, maxImages=8, minVideos=1, maxVideos=1,
          placeholder='描述要改什么、保留什么；例如：将天空改为日落暖色，保留海浪运动与原有镜头。',
-         fields=[field('duration','处理前几秒',13,1,15),field('long_side','清晰度',1024,options=[384,512,768,1024]),
+         fields=[field('duration','片段时长',13,1,15),field('trim_start','片段起点（秒）',0,0,3600,1),field('long_side','清晰度',1024,options=[384,512,768,1024]),
                  field('steps','生成精度',40,12,60,2),field('cfg','描述遵循程度',5,1,10,0.5),
                  field('fps','输出帧率',16,options=[8,16,24],hidden=True),
                  field('seed','随机种子',-1,-1,9007199254740991)],
@@ -94,7 +94,7 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
     put('378',text=negative)
     prefix='You are a helpful assistant specialized in video editing'+(' with reference.' if images else '.')
     put('388',text=prefix+'\n'+prompt)
-    put('425',video=videos[0]['remote'],force_rate=s['fps'],frame_load_cap=int(s['duration']*s['fps'])+1,format='Wan')
+    put('425',video=videos[0]['remote'],force_rate=s['fps'],skip_first_frames=round(s['trim_start']*s['fps']),frame_load_cap=int(s['duration']*s['fps'])+1,format='Wan')
     put('434',scale_to_length=s['long_side'])
     g['387']['inputs']={k:v for k,v in g['387']['inputs'].items() if not k.startswith('reference_images.')}
     put('387',ref_max_size=s['long_side'])

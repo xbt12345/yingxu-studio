@@ -44,6 +44,32 @@ class MVPContracts(unittest.TestCase):
         self.assertEqual(g['379']['inputs']['step'],10)
         self.assertEqual(g['384']['inputs']['cfg'],4.5)
         self.assertEqual(g['378']['inputs']['text'],'NEGATIVE')
+    def test_video_trim_handles_bind_to_source_frames(self):
+        s=settings_for(manifest('bernini-edit'),{'trim_start':2,'duration':5,'fps':16,'seed':42})
+        g=build_graph('bernini-edit','EDIT','',s,[{'kind':'video','remote':'ours.mp4'}],'trim')
+        self.assertEqual(g['425']['inputs']['skip_first_frames'],32)
+        self.assertEqual(g['425']['inputs']['frame_load_cap'],81)
+        with self.assertRaises(ValueError):
+            settings_for(manifest('bernini-edit'),{'trim_start':2.5})
+    def test_video_trim_rejects_span_past_source_before_remote_submit(self):
+        identity='a'*64
+        folder=server.PRIVATE/'uploads';folder.mkdir()
+        path=folder/(identity+'.mp4')
+        with av.open(str(path),'w') as container:
+            stream=container.add_stream('libx264',rate=16);stream.width=64;stream.height=64;stream.pix_fmt='yuv420p'
+            for _ in range(32):
+                frame=av.VideoFrame.from_image(Image.new('RGB',(64,64),'blue'))
+                for packet in stream.encode(frame):container.mux(packet)
+            for packet in stream.encode():container.mux(packet)
+        record=dict(id=identity,kind='video',name='short.mp4',remote='short.mp4')
+        with server.database() as db:
+            db.execute('INSERT INTO assets VALUES (?,?)',(identity,json.dumps(record)))
+        body=dict(workflow_id='bernini-edit',prompt='EDIT',token='trim-out-of-range',settings={'trim_start':1,'duration':2},asset_ids=[identity])
+        with patch.object(server.requests,'post') as post:
+            response=self.client.post('/api/jobs',json=body)
+        self.assertEqual(response.status_code,400)
+        self.assertIn('超出原视频时长',response.json()['detail'])
+        post.assert_not_called()
     def test_invalid_settings_and_missing_video_do_not_submit(self):
         with patch.object(server.requests,'post') as post:
             for changes in [{'settings':{'seed':1.2}},{'settings':{'duration':90}},{'settings':{'unknown':5}},{'negative':'unsupported'},{'workflow_id':'bernini-edit'}]:

@@ -20,6 +20,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/'private/runtime'))
 
 import requests
 import websocket
+import av
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -73,6 +74,16 @@ def asset_file(a):
     path=next((p for p in (PRIVATE/'uploads').glob(a['id']+'.*') if p.is_file()),None)
     if not path:raise HTTPException(409, '原素材文件已被移除，请重新导入同一份素材后重试。')
     return path
+
+def video_length(a):
+    try:
+        with av.open(str(asset_file(a))) as container:
+            if container.duration is not None:return container.duration/av.time_base
+            stream=next((s for s in container.streams if s.type=='video'),None)
+            if stream and stream.duration is not None:return float(stream.duration*stream.time_base)
+    except (av.error.FFmpegError, OSError, ValueError):
+        pass
+    raise HTTPException(400,'无法读取原视频时长，请重新导出 MP4 后再试。')
 
 def public_asset(a):
     try:asset_file(a);available=True
@@ -324,6 +335,10 @@ def submit(body:Submission):
         for kind,lo,hi in [('image','minImages','maxImages'),('video','minVideos','maxVideos')]:
             n=sum(a['kind']==kind for a in aa)
             if not w[lo]<=n<=w[hi]:raise HTTPException(400,f'{w["name"]}需要 {w[lo]}–{w[hi]} 份'+('图片' if kind=='image' else '视频')+'素材。')
+        if w['id']=='bernini-edit':
+            source=next(a for a in aa if a['kind']=='video')
+            if s['trim_start']+s['duration']>video_length(source)+0.05:
+                raise HTTPException(400,'选择的片段超出原视频时长，请缩短片段或调整起点。')
         aa=[ensure_remote(a) for a in aa]
         id=uuid.uuid4().hex
         graph=build_graph(w['id'],body.prompt,body.negative,s,aa,id)
