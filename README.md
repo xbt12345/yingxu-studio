@@ -39,7 +39,7 @@ cp .env.example .env
 安装 Docker 和 Compose，克隆仓库后：
 
 ```bash
-docker compose up --build -d
+docker compose up --build --wait
 ```
 
 访问同一个本地地址。停止用 `docker compose down`；数据保存在 `yingxu-data` 数据卷。加 `-v` 会删除数据卷。

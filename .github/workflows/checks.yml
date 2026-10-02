@@ -28,11 +28,28 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose up --build -d
+      - run: docker compose up --build --wait --wait-timeout 90
       - name: Check demo backend and shipped interface
         run: |
           curl --retry 20 --retry-connrefused --retry-delay 2 --fail http://127.0.0.1:8770/api/health
           curl --fail http://127.0.0.1:8770/studio.html > /dev/null
           curl --fail http://127.0.0.1:8770/workflow-control-library.html > /dev/null
+      - name: Exercise local cutout inside the container
+        run: |
+          docker compose exec -T yingxu python - <<'PY'
+          import io
+          import requests
+          from PIL import Image, ImageDraw
+          image = Image.new('RGB', (128, 128), 'white')
+          ImageDraw.Draw(image).ellipse((28, 20, 100, 110), fill=(230, 70, 40))
+          data = io.BytesIO()
+          image.save(data, 'PNG')
+          result = requests.post('http://127.0.0.1:8770/api/image/cutout', files={'file': ('sample.png', data.getvalue(), 'image/png')}, timeout=20)
+          result.raise_for_status()
+          output = Image.open(io.BytesIO(result.content))
+          assert output.mode == 'RGBA'
+          assert output.getchannel('A').getextrema() == (0, 255)
+          print('Container cutout returned a transparent PNG.')
+          PY
       - if: always()
         run: docker compose logs
