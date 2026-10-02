@@ -1,10 +1,19 @@
 $ErrorActionPreference = 'Stop'
 $projectPath = $PSScriptRoot
-$pythonPath = 'C:\anaconda\python.exe'
+$pythonPath = Join-Path $projectPath '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath)) { $pythonPath = (Get-Command python).Source }
+$dataPath = Join-Path $projectPath 'private'
+New-Item -ItemType Directory -Path $dataPath -Force | Out-Null
 try {
-    $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/api/workflows' -TimeoutSec 3
-    if ($status[0].id -eq 'h3-reference') { Write-Host '映序已经运行：http://127.0.0.1:8770/studio.html#workflows'; exit 0 }
+    $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/api/health' -TimeoutSec 3
+    if ($null -ne $status.online) { Write-Host '映序已经运行：http://127.0.0.1:8770/studio.html'; exit 0 }
 } catch {}
-Start-Process -FilePath $pythonPath -ArgumentList @('-X','utf8','server.py') -WorkingDirectory $projectPath -WindowStyle Hidden -RedirectStandardOutput (Join-Path $projectPath 'private/server.stdout.log') -RedirectStandardError (Join-Path $projectPath 'private/server.stderr.log')
-Write-Host '映序启动中：http://127.0.0.1:8770/studio.html#workflows'
+Start-Process -FilePath $pythonPath -ArgumentList @('-X','utf8','server.py') -WorkingDirectory $projectPath -WindowStyle Hidden -RedirectStandardOutput (Join-Path $dataPath 'server.stdout.log') -RedirectStandardError (Join-Path $dataPath 'server.stderr.log')
+for ($attempt = 0; $attempt -lt 40; $attempt++) {
+    try {
+        $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/api/health' -TimeoutSec 2
+        Write-Host '映序已启动：http://127.0.0.1:8770/studio.html'
+        exit 0
+    } catch { Start-Sleep -Milliseconds 250 }
+}
+throw '服务未启动，请检查 private/server.stderr.log，确认已安装 requirements.txt。'

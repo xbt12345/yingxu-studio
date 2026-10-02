@@ -1,4 +1,13 @@
 const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+// Measure the insertion point with the same wrapping, typography and scroll position as the textarea.
+export function textareaCaretRect(input,position=input.selectionStart){
+  const css=getComputedStyle(input),rect=input.getBoundingClientRect(),mirror=document.createElement('div');
+  for(const key of ['fontFamily','fontSize','fontWeight','fontStyle','lineHeight','letterSpacing','paddingTop','paddingRight','paddingBottom','paddingLeft','borderTopWidth','borderRightWidth','borderBottomWidth','borderLeftWidth','textIndent','tabSize','wordBreak','overflowWrap','boxSizing'])mirror.style[key]=css[key];
+  Object.assign(mirror.style,{position:'fixed',left:rect.left+'px',top:rect.top+'px',width:rect.width+'px',height:'auto',maxHeight:'none',visibility:'hidden',pointerEvents:'none',whiteSpace:'pre-wrap',overflowWrap:'break-word',borderStyle:'solid'});
+  mirror.textContent=input.value.slice(0,position);const marker=document.createElement('span');marker.textContent='\u200b';mirror.append(marker,document.createTextNode(input.value.slice(position)));document.body.append(mirror);
+  const box=marker.getBoundingClientRect(),lineHeight=parseFloat(css.lineHeight)||parseFloat(css.fontSize)*1.5;
+  const result={left:box.left-input.scrollLeft,top:box.top-input.scrollTop,height:lineHeight};mirror.remove();return result;
+}
 let pending=false;
 export function confirmAction({title,message,label='确认删除'}){
   if(pending)return Promise.resolve(false);

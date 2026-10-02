@@ -1,0 +1,69 @@
+/* Task-first layout: one navigation rail, one parameter toolbar, one output surface. */
+:root{--title-gradient:linear-gradient(110deg,#f9f7ff 0%,#dfcef4 52%,#ac91d2 100%)}
+body.production{--side:250px;padding-left:var(--side)}
+.production .sidebar{width:227px;padding:24px 14px 18px;overflow-x:hidden}
+.production .sidebar .new-session{display:flex;align-items:center;justify-content:center;width:100%;min-height:40px;gap:8px;white-space:nowrap}
+.production .sidebar .brand{display:flex;justify-content:flex-start;gap:10px;margin:0 8px 24px}
+.production .sidebar .brand-name{display:block}
+.production .sidebar .session-nav{display:flex;flex-direction:column}
+.production .sidebar .nav-item{display:flex;justify-content:flex-start}
+.production .sidebar .nav-item span{display:inline}
+body.production.workflow-focus{--side:72px;padding-left:72px}
+.production.workflow-focus .sidebar{width:52px;padding:20px 8px 16px;transform:none;opacity:1;pointer-events:auto;z-index:70;transition:width .22s ease,padding .22s ease;box-shadow:none}
+.production.workflow-focus .sidebar .brand{justify-content:center;margin:0 0 24px}
+.production.workflow-focus .sidebar .brand-name,.production.workflow-focus .sidebar .nav-item span,.production.workflow-focus .sidebar .session-nav{display:none}
+.production.workflow-focus .sidebar .nav-item{justify-content:center;padding:10px 8px}
+.production.workflow-focus .sidebar .new-session{font-size:0;padding:0;width:34px;min-height:34px;gap:0;margin-bottom:20px}
+.production.workflow-focus .sidebar .new-session .icon{width:17px;height:17px;flex:none}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)),.production.workflow-focus.wf-nav-expanded .sidebar{width:227px;padding:24px 14px 18px;box-shadow:12px 0 36px #0006;background:#151419f5}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .brand,.production.workflow-focus.wf-nav-expanded .sidebar .brand{justify-content:flex-start;margin:0 8px 24px}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .brand-name,.production.workflow-focus.wf-nav-expanded .sidebar .brand-name{display:block}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-item span,.production.workflow-focus.wf-nav-expanded .sidebar .nav-item span{display:inline}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .session-nav,.production.workflow-focus.wf-nav-expanded .sidebar .session-nav{display:flex}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-item,.production.workflow-focus.wf-nav-expanded .sidebar .nav-item{justify-content:flex-start}
+.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .new-session,.production.workflow-focus.wf-nav-expanded .sidebar .new-session{display:flex;font-size:12px;width:100%;min-height:40px;gap:8px;padding:0 12px}
+.production.workflow-focus .wf-nav-toggle{display:none}
+.production.workflow-focus.wf-nav-expanded .nav-curtain{display:none}
+.session-item{display:flex;align-items:center;min-width:0;border-radius:9px}
+.session-item:hover,.session-item:focus-within{background:#ffffff07}
+.session-item .session-link{flex:1;min-width:0}.session-item .session-link span{min-width:0}
+.session-delete{flex:none;width:28px;height:28px;display:grid;place-items:center;opacity:0;pointer-events:none;border:0;background:none;color:#aca4ba;border-radius:7px}
+.session-delete .icon{width:13px;height:13px}.session-item:hover .session-delete,.session-item:focus-within .session-delete{opacity:1;pointer-events:auto}.session-delete:hover{background:#ffffff12;color:#fff}
+/* Same gradient, sized to text instead of the full row. */
+.production :is(h1,h2,h3),.production .studio-paths strong,.production .section-heading h2,.production .wf-section-title strong,.production .workflow-results>header>strong,.production .inspiration-card strong,.production .featured-caption strong,.production .dialog-head h2{background:var(--title-gradient);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:transparent;width:fit-content}
+.job-description{font-size:13px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;color:#ded9e7;overflow:hidden}
+.job-description-text{white-space:pre-wrap}.prompt-tail{display:inline-flex;align-items:baseline;gap:8px;white-space:nowrap;margin-left:5px}.prompt-tail .text-control{font-size:11px;margin:0;padding:0 5px;color:#c3aedf;vertical-align:baseline}
+.confirm-dialog{width:min(420px,calc(100vw - 32px));padding:23px!important;border-radius:18px!important;background:#202025!important}
+.confirm-dialog .dialog-head{margin-bottom:14px}.confirm-dialog .dialog-head h2{font-size:19px}.confirm-dialog .confirm-description{font-size:13px;line-height:1.9;color:#bdb7c6;white-space:pre-line;margin:0}.confirm-dialog .dialog-actions{margin-top:22px;gap:9px}.confirm-dialog .dialog-actions button{min-height:36px;font-size:12px;padding:8px 17px}
+.workflow-detail{padding:0 22px 22px;max-width:1800px;margin:auto}.workflow-top{height:64px;gap:12px}.workflow-top p,.workflow-top>span{display:none}
+.workflow-layout,.workflow-detail.video-edit .workflow-layout{grid-template-columns:minmax(380px,.95fr) minmax(0,1.05fr);gap:24px}
+.wf-composer-slot{border:1px solid #ffffff15;background:#1b1a20;border-radius:18px;box-shadow:0 12px 36px #0003}
+.workflow-results{border:0;border-radius:0;background:transparent}
+.workflow-results>header{padding:16px 5px;border-bottom:1px solid #ffffff12;margin-bottom:6px;background:none}
+.wf-editor-inner{padding:20px;gap:18px}.wf-section-title{margin-bottom:8px}.wf-editor .wf-section textarea{min-height:124px;background:#141318;border-color:#ffffff12;font-size:14px;line-height:1.8;padding:14px}
+.wf-compact-controls{display:flex;flex-wrap:wrap;gap:8px}.wf-compact-controls .intent-control{min-height:36px;font-size:11px;background:#ffffff04;white-space:nowrap}
+.wf-editor-footer{justify-content:flex-end;padding:15px 20px;gap:16px;background:transparent}.wf-editor-footer .generate{margin:0;min-width:130px}.wf-editor-footer>span{margin-right:auto}
+.wf-results-empty{color:#a79aaf}.wf-results-empty i{background:transparent;border:0;margin-bottom:4px}.wf-results-empty p{font-size:11px}
+.wf-dimension-preview{display:flex;align-items:center;gap:18px;margin:0;padding:12px;border:1px solid #ffffff0d;border-radius:12px;background:#111115}
+.wf-preview-stage{width:148px;height:144px;flex:none;display:grid;place-items:center;background:repeating-linear-gradient(0deg,transparent 0 19px,#ffffff04 19px 20px),repeating-linear-gradient(90deg,transparent 0 19px,#ffffff04 19px 20px)}
+.wf-preview-stage img{display:block;object-fit:cover;border:1px solid #bba0dc77;border-radius:4px;max-width:100%;transition:width .2s,height .2s}
+.wf-dimension-preview figcaption{display:grid;gap:7px;min-width:0;font-size:11px;color:#b9b0c4}.wf-dimension-preview strong{font-size:13px;color:#e4d6f7;font-variant-numeric:tabular-nums}.wf-dimension-preview small{font-size:10px;line-height:1.7;color:#807888}
+.picture-popup .wf-dimension-preview{margin-top:12px;gap:10px;padding:8px}.picture-popup .wf-preview-stage{width:104px;height:106px}.picture-popup .wf-preview-stage img{max-height:100%;max-width:100%}
+.wf-quality-options .segment{flex-direction:column;gap:4px}.segmented-options .segment small{display:block;font-size:10px;line-height:1.6;color:#b3a8bf}
+.parameter-tooltip{position:fixed;z-index:200;max-width:min(285px,calc(100vw - 24px));padding:12px 14px;border-radius:11px;border:1px solid #c0a6df44;background:#28232ff5;box-shadow:0 10px 26px #0007;color:#eee7f6;font-size:12px;line-height:1.75;pointer-events:none}
+.wf-demo-editor .composer{background:none;border:0;padding:0;box-shadow:none}.wf-demo-editor .writing-row{background:#141318;padding:12px;border:1px solid #ffffff12}.wf-demo-editor .writing-area textarea{background:transparent}
+.wf-demo-editor .composer-controls{justify-content:flex-end}.wf-demo-editor .composer-controls .control-cluster{margin-right:auto}.wf-demo-editor .composer-utilities{display:none}
+.wf-demo-editor .advanced-field{background:transparent;border:0;border-bottom:1px solid #ffffff0b;padding:8px 0}
+.wf-demo-editor .advanced-group{gap:14px 20px}.wf-demo-editor .generate{margin-left:auto}
+.wf-adjust-preview{padding:10px 12px;background:#121116;border-radius:12px;margin-top:8px}.wf-adjust-preview>small{display:block;font-size:10px;color:#908499;margin-top:6px}.wf-adjust-preview>div{position:relative;height:100px;overflow:hidden;border-radius:7px}.wf-adjust-preview img{width:100%;height:100%;object-fit:cover}.wf-adjust-preview .effect-layer{position:absolute;inset:0;background:#af85d5;mix-blend-mode:color;opacity:var(--edit-intensity,.45)}.wf-adjust-preview output{position:absolute;bottom:8px;left:9px;font-size:10px;background:#15111cbb;padding:4px 7px;border-radius:5px}
+@media(max-width:1050px){.workflow-layout,.workflow-detail.video-edit .workflow-layout{grid-template-columns:minmax(330px,1fr) minmax(0,1fr);gap:14px}.workflow-detail{padding:0 12px 12px}}
+@media(max-width:720px){body.production,body.production.workflow-focus{--side:0px;padding-left:0}.production .sidebar,.production.workflow-focus .sidebar{width:227px;transform:translateX(-110%);opacity:1;padding:24px 14px;z-index:70}.production.nav-open .sidebar,.production.workflow-focus.nav-open .sidebar{transform:none}.production.workflow-focus .sidebar .brand-name{display:block}.production.workflow-focus .sidebar .nav-item span{display:inline}.production.workflow-focus .sidebar .session-nav{display:flex}.production.workflow-focus .sidebar .nav-item{justify-content:flex-start}.production.workflow-focus .sidebar .brand{justify-content:flex-start;margin:0 8px 24px}.production.workflow-focus .sidebar .new-session{font-size:12px;width:100%;min-height:40px;gap:8px}.session-delete{opacity:1;pointer-events:auto}.workflow-top{padding-left:44px;height:60px}.workflow-top h1{font-size:14px;white-space:normal}.workflow-top>a:first-child{display:none}.workflow-layout,.workflow-detail.video-edit .workflow-layout{display:flex;gap:16px}.wf-editor-inner{padding:16px}.wf-composer-slot{min-height:0}.workflow-results{min-height:300px}.wf-editor-scroll{overflow:visible}.wf-dimension-preview{gap:10px}.wf-preview-stage{width:120px}.wf-compact-controls .intent-control{font-size:10px}.workflow-top>a:last-child{font-size:10px}.wf-editor-footer{padding:12px 16px}}
+@media(prefers-reduced-motion:reduce){.production .sidebar,.wf-preview-stage img{transition:none}}
+
+.workflow-results>header{position:sticky;top:0;z-index:3;background:#101014ed;backdrop-filter:blur(12px)}
+.wf-demo-editor>.wf-editor-footer .generate{margin:0}.wf-demo-editor .control-cluster{max-width:100%}
+@media(max-width:720px){.wf-demo-editor .wf-editor-scroll{flex:none}.wf-editor-footer{flex:none}.wf-section-title{flex-wrap:wrap}}
+
+@media(min-width:721px){.wf-composer-slot{align-self:start;max-height:100%}.wf-editor{height:auto;max-height:calc(100dvh - 86px)}.wf-editor-scroll{flex:1 1 auto}.wf-editor-footer{flex-shrink:0}}
+
+.wf-adjust-preview .effect-layer{clip-path:inset(0 var(--preserve,0%) 0 0);transition:opacity .15s,clip-path .15s}

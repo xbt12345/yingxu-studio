@@ -1,47 +1,110 @@
-# 映序 YINGXU
+# 映序 YINGXU Studio
 
-图像、视频与工作流创作界面。首页、API 生成、工作流与灵感库现在位于同一创作台；API 生成保留原有操作区。
+将复杂工作流转换为素材、描述和参数组成的创作界面。包含当前 Review 68 的完整前端、Python 后端、交互组件库、151 个目录工作流的界面配置，以及 **34 份已接入工作流的 API 模板**。
 
-## 公开预览
+[在线演示](https://xbt12345.github.io/yingxu-studio/) · [组件库](https://xbt12345.github.io/yingxu-studio/workflow-control-library.html) · [真实生成接入说明](workflows/README.md)
 
-GitHub Pages 只部署 `public/`。网页可浏览工作流、导入浏览器本地素材、编辑提示词、查看演示生成、整理作品及批量导出。生成按钮明确标注“演示生成 · 不扣费”；演示结果是内置素材，不是模型实时生成。
+## Python 搭建
 
-公开预览不会请求真实生成 API，不含算力卡地址、个人素材、任务数据库或生成视频。真实生成服务仍保留在所有者的私有环境中，仅向获授权设备开放。灵感库中的示例配方不声称还原原作；从个人作品发布的内容目前只保存在当前浏览器，尚未跨用户同步。
+安装 **Python 3.12** 和 Git。运行网站不需要 Node.js，也不需要前端构建。
 
-## 本地运行
+```bash
+git clone https://github.com/xbt12345/yingxu-studio.git
+cd yingxu-studio
+python -m venv .venv
+```
 
-纯前端：`python -m http.server 8080 --directory public`，访问 `http://localhost:8080/`。
+Windows PowerShell：
 
-所有者的完整 MVP：安装 `requirements.txt` 后运行 `python server.py`，或 Windows 下运行 `启动映序.ps1`，默认监听 `127.0.0.1:8770`。
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
+.\.venv\Scripts\python.exe server.py
+```
 
-真实工作流依赖私有配置及模型，仓库不包含这些数据：
+macOS / Linux：
 
-- `CHENYU_CARD_URL` 环境变量，或 `private/backend.json` 的 `card_url`。
-- `private/h3-reference.api.json`、`private/bernini-edit.api.json`，由所有者从 ComfyUI 导出。
-- 算力卡必须安装对应模型与节点。默认不向公网开放服务。
+```bash
+.venv/bin/python -m pip install -r requirements.txt
+cp .env.example .env
+.venv/bin/python server.py
+```
 
-生成采用“上传 → 提交 → 查询状态 → 保存结果”。再次生成复用输入并更新种子；重新编辑恢复提示词、参数和素材。取消运行任务使用按 ID 的取消接口，不调用全局中断；旧 ComfyUI 不支持时会明确提示。取消不退回已发生费用，也不会关停算力卡。
+打开 **http://127.0.0.1:8770/studio.html**；组件库位于 **http://127.0.0.1:8770/workflow-control-library.html**。`Ctrl+C` 停止服务。Windows 也可在安装后运行 `启动映序.ps1`，它优先使用项目的 `.venv`。
 
-## V0.15
+`.env` 保持默认即可演示，不需要密钥。启用真实生成，在 `.env` 中填写自己的 `CHENYU_CARD_URL`，按 [接入说明](workflows/README.md) 安装模型和节点，再重启服务。
 
-- 根路径直接进入合并后的创作台，首页提供 API 生成和工作流两个入口；工作流详情可收起侧栏，左侧编辑、右侧纵向显示结果。
-- H3 与 Bernini 的高频参数直接显示在编辑区。Bernini 视频编辑可选择首尾时间，双端点分别映射到原工作流的 `skip_first_frames` 和片段帧数；随机种子留在高级设置。
-- 图像局部重绘演示提供可调整粗细的画笔与擦除工具；未接入真实生成的工作流清楚标为交互演示。
-- 灵感库中的个人作品可查看生成参数并带着提示词、素材引用进入相应创作方式；预置示例明确标为非原作生成记录。
+## Docker 搭建
 
-## V0.14
+安装 Docker 和 Compose，克隆仓库后：
 
-- 修复视频时长数字和关闭按钮重叠。
-- 已绑定素材引用显示紫色高亮，未绑定显示暖灰色提示；保留原生输入、中文输入法与撤销。
-- 取消任务增加费用提示与确认；等待远端确认后更新结果。
-- 删除素材、分类及移除参考素材前统一二次确认。
+```bash
+docker compose up --build -d
+```
 
-## 验证
+访问同一个本地地址。停止用 `docker compose down`；数据保存在 `yingxu-data` 数据卷。加 `-v` 会删除数据卷。
 
-`python -m unittest test_mvp`：后端契约测试需要上述私有工作流模板，使用隔离临时数据库与模拟远端，不消费算力。
+需要真实生成时先复制 `.env.example` 为 `.env` 并填写算力地址。本机 ComfyUI 在容器中填写 `http://host.docker.internal:8188`，远程 ComfyUI 填其实际地址。容器不弹出电脑的原生文件夹窗口，可直接填写运行端路径。
 
-桌面/移动端交互单独在真实浏览器验证。GitHub Actions 自动发布静态预览，不发布后端与私有目录。
+## 功能与真实接入范围
 
-## 视觉与素材来源
+| 功能 | 当前能力 | 条件 / 边界 |
+| --- | --- | --- |
+| 自由创作 | 图像/视频演示生成、参考图编辑、结果操作 | 内置模型列表尚未接入真实 API |
+| 创作工具目录 | 151 个工作流的素材、参数、种子、草稿与演示 | 未接入条目仍明确显示演示 |
+| 已接入工具 | 32 个图像工具 + H3 参考图生视频 + Bernini 视频编辑 | 自己的 ComfyUI、模型和自定义节点；部分工具另需 API key |
+| 参考图编辑 | 框选、圈选、画笔、擦除、本地自动抠图、撤销、保存 | 自动抠图需要 Python 后端；参考强度目前只保存偏好，尚未影响生成 |
+| 作品与素材 | 对比、拖入创作、下载、批量导出、移除确认、恢复、引用定位 | 保存在本机浏览器和后端 |
+| 灵感库 | 图片/视频保存到素材、带配方进入创作 | 发布只保存到当前浏览器，尚无跨用户共享 |
+| 本机目录选择 | 原生选择器 + 手填运行端目录 | 桌面 Python 的 Tkinter；不会自动上传文件夹 |
+| 工作流导入 | 尚未实现 | 使用仓库提供的目录和模板 |
 
-设计参考 [Resend](https://resend.com/)、[Krea](https://www.krea.ai/)、[即梦](https://jimeng.jianying.com/)。预置示例素材仅用于界面演示，相关作品及品牌权利归各自作者。发布包不包含研究网页源码或截图。
+演示结果使用内置素材，不消费算力，也不代表模型实时生成。**GitHub Pages 只有静态前端**，不能运行本地自动抠图、文件夹选择或真实生成；体验这些功能请本地搭建。
+
+真实生成采用“上传 → 提交 → 查询 → 保存”，支持重新编辑、更新种子再次生成、按任务取消及连接恢复后的查询。远端不支持按 ID 取消时会提示，不使用全局中断；取消不保证退回外部费用。不同电脑上的模型、节点版本与 API 额度须各自核对，模板齐全不等于所有模型已经在新环境验收。
+
+## 配置和数据
+
+| 配置 | 默认值 / 用途 |
+| --- | --- |
+| `CHENYU_CARD_URL` | 空为演示；填写自己的 ComfyUI HTTP(S) 地址 |
+| `HOST` / `PORT` | `127.0.0.1` / `8770` |
+| `YINGXU_DATA_DIR` | 项目 `private/`；SQLite、上传、作品和回执 |
+| `YINGXU_WORKFLOW_DIR` | 项目 `workflows/api/`；可使用自己的模板目录 |
+| `YINGXU_ALLOWED_ORIGINS` | 可选反向代理的完整 Origin，多个以逗号分隔 |
+
+新克隆直接使用公开模板，不依赖作者电脑的配置。已有所有者环境继续优先使用 `private/*.api.json`、`private/platform-compiled/*.api.json` 和 `private/backend.json`。公开模板已清理密钥、个人输入提示词及素材名，保留模型和节点绑定；详见模板清单。
+
+浏览器素材、草稿、作品列表使用 IndexedDB / 本地状态；真实生成文件及任务另存后端数据目录。备份需要同时保留浏览器数据与后端数据。清除站点数据、换浏览器或删除数据目录会影响对应记录。
+
+当前是个人创作台，没有多人账号与数据隔离，默认只监听本机；共享体验建议每人独立搭建。对外部署先配置反向代理认证，不能直接当成公共多人服务。
+
+## 开发与检查
+
+测试另需 Node.js **22 或更高版本**：
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m unittest discover -v
+python scripts/check_setup.py
+npm test
+```
+
+`check_setup.py` 检查模板哈希、全部界面配置及静态资源；加 `--probe` 可查询自己的 ComfyUI 节点类型，不提交生成任务。模型文件和输出质量仍需实际生成验证。GitHub Actions 在 Windows / Linux 运行契约测试，在 Linux 构建和启动 Docker，并更新 Pages。
+
+目录配置已经预生成，启动不需执行 `scripts/build_*`。目录维护脚本用于原始 ComfyUI 图、目录快照和审查资料；重新构建时需提供相应输入，这些研究资料不是运行依赖。组件规范见 [属性组件库与拼装规范](工作流属性组件库与拼装规范-2026-09-29.md)。
+
+```text
+public/            前端、示例素材、组件库、预生成界面配置
+server.py          FastAPI、素材上传、任务和结果保存
+adapters.py        工作流节点绑定与参数校验
+configuration.py  环境配置与模板回退加载
+local_cutout.py    CPU 本地抠图
+workflows/         公开 API 模板、模型/节点清单、接入说明
+scripts/           测试、配置检查、目录维护工具
+private/           运行时创建，不进入 Git 或 Docker 镜像
+```
+
+## 设计与素材
+
+设计参考 [即梦](https://jimeng.jianying.com/)、[Krea](https://www.krea.ai/)、[Resend](https://resend.com/)。没有包含研究网页源码或截图。预置素材用于界面演示，相关作品、模型与品牌权利归各自权利人；接入外部服务时遵守对应许可和服务条款。

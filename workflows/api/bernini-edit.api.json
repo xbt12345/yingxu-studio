@@ -1,0 +1,882 @@
+{
+  "111": {
+    "inputs": {
+      "image": [
+        "434",
+        0
+      ]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "获取图像尺寸"
+    }
+  },
+  "112": {
+    "inputs": {
+      "source": [
+        "111",
+        2
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text (Frame Count)"
+    }
+  },
+  "376": {
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "377": {
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "378": {
+    "inputs": {
+      "text": "",
+      "clip": [
+        "376",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "379": {
+    "inputs": {
+      "step": [
+        "394",
+        0
+      ],
+      "sigmas": [
+        "385",
+        0
+      ]
+    },
+    "class_type": "SplitSigmas",
+    "_meta": {
+      "title": "分离Sigma"
+    }
+  },
+  "380": {
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "K采样器选择"
+    }
+  },
+  "381": {
+    "inputs": {
+      "unet_name": "2.2bernini/wan2.2_bernini_r_high_noise_fp8_scaled.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "382": {
+    "inputs": {
+      "samples": [
+        "386",
+        0
+      ],
+      "vae": [
+        "377",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE解码"
+    }
+  },
+  "384": {
+    "inputs": {
+      "add_noise": true,
+      "noise_seed": [
+        "446",
+        0
+      ],
+      "cfg": [
+        "395",
+        0
+      ],
+      "model": [
+        "399",
+        0
+      ],
+      "positive": [
+        "387",
+        0
+      ],
+      "negative": [
+        "387",
+        1
+      ],
+      "sampler": [
+        "380",
+        0
+      ],
+      "sigmas": [
+        "379",
+        0
+      ],
+      "latent_image": [
+        "387",
+        2
+      ]
+    },
+    "class_type": "SamplerCustom",
+    "_meta": {
+      "title": "自定义采样器"
+    }
+  },
+  "385": {
+    "inputs": {
+      "scheduler": "simple",
+      "steps": [
+        "392",
+        0
+      ],
+      "denoise": 1,
+      "model": [
+        "440",
+        0
+      ]
+    },
+    "class_type": "BasicScheduler",
+    "_meta": {
+      "title": "基本调度器"
+    }
+  },
+  "386": {
+    "inputs": {
+      "add_noise": false,
+      "noise_seed": [
+        "446",
+        0
+      ],
+      "cfg": [
+        "395",
+        0
+      ],
+      "model": [
+        "389",
+        0
+      ],
+      "positive": [
+        "387",
+        0
+      ],
+      "negative": [
+        "387",
+        1
+      ],
+      "sampler": [
+        "380",
+        0
+      ],
+      "sigmas": [
+        "379",
+        1
+      ],
+      "latent_image": [
+        "384",
+        0
+      ]
+    },
+    "class_type": "SamplerCustom",
+    "_meta": {
+      "title": "自定义采样器"
+    }
+  },
+  "387": {
+    "inputs": {
+      "width": [
+        "111",
+        0
+      ],
+      "height": [
+        "111",
+        1
+      ],
+      "length": [
+        "111",
+        2
+      ],
+      "batch_size": 1,
+      "ref_max_size": 1024,
+      "positive": [
+        "388",
+        0
+      ],
+      "negative": [
+        "378",
+        0
+      ],
+      "vae": [
+        "377",
+        0
+      ],
+      "source_video": [
+        "434",
+        0
+      ],
+      "reference_images.reference_image_0": [
+        "448",
+        0
+      ]
+    },
+    "class_type": "BerniniConditioning",
+    "_meta": {
+      "title": "Bernini Conditioning"
+    }
+  },
+  "388": {
+    "inputs": {
+      "text": [
+        "391",
+        0
+      ],
+      "clip": [
+        "376",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP文本编码"
+    }
+  },
+  "389": {
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "440",
+        0
+      ],
+      "on_true": [
+        "442",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Low Noise)"
+    }
+  },
+  "390": {
+    "inputs": {
+      "choice": "Video Editing with Reference",
+      "index": 8,
+      "option1": "Default",
+      "option2": "Text to Image",
+      "option3": "Text to Video",
+      "option4": "Image Editing",
+      "option5": "Subject to Image",
+      "option6": "Image to Video",
+      "option7": "Video Editing",
+      "option8": "Video Editing (Content Propagation)",
+      "option9": "Video Editing with Reference",
+      "option10": "Ads / Content Insertion",
+      "option11": "Video Editing (Action / Position)",
+      "option12": "Video Editing (Style / Motion)",
+      "option13": ""
+    },
+    "class_type": "CustomCombo",
+    "_meta": {
+      "title": "自定义组合"
+    }
+  },
+  "391": {
+    "inputs": {
+      "string_a": [
+        "401:2",
+        0
+      ],
+      "string_b": [
+        "400",
+        0
+      ],
+      "delimiter": ""
+    },
+    "class_type": "StringConcatenate",
+    "_meta": {
+      "title": "连接"
+    }
+  },
+  "392": {
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "403",
+        0
+      ],
+      "on_true": [
+        "408",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Steps)"
+    }
+  },
+  "393": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (Split Steps)"
+    }
+  },
+  "394": {
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "393",
+        0
+      ],
+      "on_true": [
+        "409",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Low Steps)"
+    }
+  },
+  "395": {
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "397",
+        0
+      ],
+      "on_true": [
+        "396",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (CFG)"
+    }
+  },
+  "396": {
+    "inputs": {
+      "value": 1
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Float (CFG)"
+    }
+  },
+  "397": {
+    "inputs": {
+      "value": 5
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "Float (CFG)"
+    }
+  },
+  "398": {
+    "inputs": {
+      "value": true
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Boolean (Enable Turbo LoRA?)"
+    }
+  },
+  "399": {
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "436",
+        0
+      ],
+      "on_true": [
+        "438",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (High Noise)"
+    }
+  },
+  "400": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "403": {
+    "inputs": {
+      "value": 40
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (Steps)"
+    }
+  },
+  "405": {
+    "inputs": {
+      "unet_name": "2.2bernini/wan2.2_bernini_r_low_noise_fp8_scaled.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "406": {
+    "inputs": {
+      "lora_name": "Bernini/Bernini-R_LightX2V_high_noise.safetensors",
+      "strength_model": 1,
+      "model": [
+        "381",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "407": {
+    "inputs": {
+      "lora_name": "Bernini/Bernini-R_LightX2V_low_noise.safetensors",
+      "strength_model": 1,
+      "model": [
+        "405",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "408": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (Steps)"
+    }
+  },
+  "409": {
+    "inputs": {
+      "value": 2
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (Split Steps)"
+    }
+  },
+  "425": {
+    "inputs": {
+      "video": "reference.mp4",
+      "force_rate": [
+        "428",
+        0
+      ],
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": [
+        "427",
+        0
+      ],
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "class_type": "VHS_LoadVideo",
+    "_meta": {
+      "title": "Load Video (Upload) 🎥🅥🅗🅢"
+    }
+  },
+  "426": {
+    "inputs": {
+      "output_type": "int",
+      "*": [
+        "428",
+        0
+      ]
+    },
+    "class_type": "easy convertAnything",
+    "_meta": {
+      "title": "转换任何"
+    }
+  },
+  "427": {
+    "inputs": {
+      "python_expression": "a*b+1",
+      "print_to_console": "False",
+      "a": [
+        "429",
+        0
+      ],
+      "b": [
+        "426",
+        0
+      ],
+      "c": 0
+    },
+    "class_type": "Evaluate Integers",
+    "_meta": {
+      "title": "整数运算"
+    }
+  },
+  "428": {
+    "inputs": {
+      "value": 16
+    },
+    "class_type": "easy float",
+    "_meta": {
+      "title": "浮点数"
+    }
+  },
+  "429": {
+    "inputs": {
+      "value": 13
+    },
+    "class_type": "easy int",
+    "_meta": {
+      "title": "秒数"
+    }
+  },
+  "430": {
+    "inputs": {
+      "image": [
+        "425",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "433": {
+    "inputs": {
+      "video_info": [
+        "425",
+        3
+      ]
+    },
+    "class_type": "VHS_VideoInfoLoaded",
+    "_meta": {
+      "title": "Video Info (Loaded) 🎥🅥🅗🅢"
+    }
+  },
+  "434": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "crop",
+      "method": "lanczos",
+      "round_to_multiple": "32",
+      "scale_to_side": "longest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "430",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "图层工具：按宽高比缩放 V2"
+    }
+  },
+  "435": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "381",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "436": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "435",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "437": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "406",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "438": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "437",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "439": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "405",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "440": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "439",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "441": {
+    "inputs": {
+      "sage_attention": "auto",
+      "allow_compile": false,
+      "model": [
+        "407",
+        0
+      ]
+    },
+    "class_type": "PathchSageAttentionKJ",
+    "_meta": {
+      "title": "Patch Sage Attention KJ"
+    }
+  },
+  "442": {
+    "inputs": {
+      "enable_fp16_accumulation": true,
+      "model": [
+        "441",
+        0
+      ]
+    },
+    "class_type": "ModelPatchTorchSettings",
+    "_meta": {
+      "title": "Model Patch Torch Settings"
+    }
+  },
+  "443": {
+    "inputs": {
+      "frame_rate": [
+        "433",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "2026-09-21/20260921_231911_Bernini",
+      "format": "video/h264-mp4",
+      "pix_fmt": "yuv420p",
+      "crf": 10,
+      "save_metadata": true,
+      "trim_to_audio": false,
+      "pingpong": false,
+      "save_output": true,
+      "images": [
+        "382",
+        0
+      ],
+      "audio": [
+        "425",
+        2
+      ]
+    },
+    "class_type": "VHS_VideoCombine",
+    "_meta": {
+      "title": "Video Combine 🎥🅥🅗🅢"
+    }
+  },
+  "444": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "right",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_1": [
+        "434",
+        0
+      ],
+      "image_2": [
+        "382",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "Image Concatenate Multi"
+    }
+  },
+  "445": {
+    "inputs": {
+      "inputcount": 2,
+      "direction": "left",
+      "match_image_size": true,
+      "Update inputs": null,
+      "image_2": [
+        "444",
+        0
+      ]
+    },
+    "class_type": "ImageConcatMulti",
+    "_meta": {
+      "title": "Image Concatenate Multi"
+    }
+  },
+  "446": {
+    "inputs": {
+      "seed": 99770050237077
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "随机种子"
+    }
+  },
+  "448": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "401:1": {
+    "inputs": {
+      "source": [
+        "401:56",
+        0
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "预览任意"
+    }
+  },
+  "401:2": {
+    "inputs": {
+      "string": "",
+      "regex_pattern": [
+        "401:8",
+        0
+      ],
+      "mode": "First Group",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "group_index": 1
+    },
+    "class_type": "RegexExtract",
+    "_meta": {
+      "title": "正则表达式提取"
+    }
+  },
+  "401:56": {
+    "inputs": {
+      "value": [
+        "390",
+        1
+      ]
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Int (line index)"
+    }
+  },
+  "401:8": {
+    "inputs": {
+      "string": "^(?:[^\\n]*\\n){index}([^\\n]*)(?:\\n|$)",
+      "find": "index",
+      "replace": [
+        "401:1",
+        0
+      ]
+    },
+    "class_type": "StringReplace",
+    "_meta": {
+      "title": "替换"
+    }
+  }
+}

@@ -11,3 +11,23 @@ __pycache__/
 界面优化-*.md
 部署方案.md
 配置私有访问.ps1
+
+# Local environments, runtime state, research and historical review deliveries.
+.venv*/
+node_modules/
+data/
+*.sqlite3
+*.sqlite3-*
+review-artifacts/
+_update_workflow_*.py
+_verify_ui_*.py
+代表工作流-ComfyUI审查版/
+代表工作流-ComfyUI审查版.zip
+审核交付-*/
+代表工作流功能与核心模块-*.md
+全站设计审查与迭代方案-*.md
+工作流优化方法与第一轮复盘-*.md
+工作流参数逐项审查-*.md
+工作流第二轮-Flux首批进度-*.md
+工作流组件与源参数逐一审查-*.md
+启动工作流审查.ps1

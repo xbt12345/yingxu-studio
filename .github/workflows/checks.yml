@@ -1,0 +1,40 @@
+name: Check runnable project
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  contracts:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      YINGXU_DATA_DIR: ${{ runner.temp }}/yingxu-test-data
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m unittest discover -v
+      - run: python scripts/check_setup.py
+      - run: npm test
+  container:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose up --build -d
+      - name: Check demo backend and shipped interface
+        run: |
+          curl --retry 20 --retry-connrefused --retry-delay 2 --fail http://127.0.0.1:8770/api/health
+          curl --fail http://127.0.0.1:8770/studio.html > /dev/null
+          curl --fail http://127.0.0.1:8770/workflow-control-library.html > /dev/null
+      - if: always()
+        run: docker compose logs

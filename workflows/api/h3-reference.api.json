@@ -1,0 +1,1303 @@
+{
+  "25": {
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "26": {
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "加载VAE"
+    }
+  },
+  "27": {
+    "inputs": {
+      "clip_name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      "type": "minimax",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "加载CLIP"
+    }
+  },
+  "31": {
+    "inputs": {
+      "unet_name": "minimax/minimax_h3_ref2va_XUELUO_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "UNet加载器"
+    }
+  },
+  "40": {
+    "inputs": {
+      "lora_name": "minimax/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "147",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "41": {
+    "inputs": {
+      "lora_name": "minimax/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
+      "strength_model": 1,
+      "model": [
+        "147",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA加载器（仅模型）"
+    }
+  },
+  "42": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "46": {
+    "inputs": {
+      "value": 4
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "47": {
+    "inputs": {
+      "steps": [
+        "59",
+        0
+      ],
+      "shift_video": 12,
+      "shift_audio": 3,
+      "sampler_name": "dual_clock_euler",
+      "scheduler": "native_flow",
+      "model": [
+        "58",
+        0
+      ],
+      "av_latent": [
+        "144",
+        1
+      ]
+    },
+    "class_type": "MiniMaxH3DualClockSamplerT8",
+    "_meta": {
+      "title": "STABLE 4 video / 4 audio"
+    }
+  },
+  "49": {
+    "inputs": {
+      "model": [
+        "47",
+        0
+      ],
+      "conditioning": [
+        "144",
+        0
+      ]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "基本引导器"
+    }
+  },
+  "50": {
+    "inputs": {
+      "noise": [
+        "55",
+        0
+      ],
+      "guider": [
+        "49",
+        0
+      ],
+      "sampler": [
+        "47",
+        1
+      ],
+      "sigmas": [
+        "146",
+        0
+      ],
+      "latent_image": [
+        "144",
+        1
+      ]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "自定义采样器（高级）"
+    }
+  },
+  "51": {
+    "inputs": {
+      "av_latent": [
+        "50",
+        0
+      ],
+      "video_vae": [
+        "25",
+        0
+      ],
+      "audio_vae": [
+        "26",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3AVDecodeT8",
+    "_meta": {
+      "title": "MiniMax H3 AV Decode (T8)"
+    }
+  },
+  "53": {
+    "inputs": {
+      "fps": 24,
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none",
+      "images": [
+        "51",
+        0
+      ],
+      "audio": [
+        "51",
+        1
+      ]
+    },
+    "class_type": "CreateVideo",
+    "_meta": {
+      "title": "创建视频"
+    }
+  },
+  "54": {
+    "inputs": {
+      "filename_prefix": "video/MiniMax_H3",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto",
+      "video": [
+        "53",
+        0
+      ]
+    },
+    "class_type": "SaveVideo",
+    "_meta": {
+      "title": "保存视频"
+    }
+  },
+  "55": {
+    "inputs": {
+      "noise_seed": [
+        "57",
+        0
+      ]
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "随机噪波"
+    }
+  },
+  "57": {
+    "inputs": {
+      "seed": 345429462991206
+    },
+    "class_type": "Seed (rgthree)",
+    "_meta": {
+      "title": "随机种子"
+    }
+  },
+  "58": {
+    "inputs": {
+      "switch": [
+        "60",
+        0
+      ],
+      "on_false": [
+        "40",
+        0
+      ],
+      "on_true": [
+        "41",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "切换"
+    }
+  },
+  "59": {
+    "inputs": {
+      "switch": [
+        "60",
+        0
+      ],
+      "on_false": [
+        "42",
+        0
+      ],
+      "on_true": [
+        "46",
+        0
+      ]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "切换"
+    }
+  },
+  "60": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "easy boolean",
+    "_meta": {
+      "title": "布尔"
+    }
+  },
+  "63": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "65": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "66": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "68": {
+    "inputs": {
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+      "values.a": [
+        "69",
+        0
+      ]
+    },
+    "class_type": "ComfyMathExpression",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "69": {
+    "inputs": {
+      "value": 15
+    },
+    "class_type": "PrimitiveFloat",
+    "_meta": {
+      "title": "秒数/seconds"
+    }
+  },
+  "70": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像"
+    }
+  },
+  "71": {
+    "inputs": {
+      "aspect_ratio": "9:16 (Portrait Widescreen)",
+      "megapixels": 0.5,
+      "multiple": 32
+    },
+    "class_type": "ResolutionSelector",
+    "_meta": {
+      "title": "尺寸，可参考左下像素/size"
+    }
+  },
+  "72": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "提示词/prompt"
+    }
+  },
+  "133": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "134": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "135": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "139": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "144": {
+    "inputs": {
+      "prompt": [
+        "72",
+        0
+      ],
+      "width": [
+        "71",
+        0
+      ],
+      "height": [
+        "71",
+        1
+      ],
+      "length": [
+        "68",
+        1
+      ],
+      "ref_image_size": "max",
+      "clip": [
+        "27",
+        0
+      ],
+      "vae": [
+        "25",
+        0
+      ],
+      "audio_vae": [
+        "26",
+        0
+      ],
+      "ref_images.ref_image_0": [
+        "94_91",
+        0
+      ],
+      "ref_images.ref_image_1": [
+        "87_84",
+        0
+      ],
+      "ref_images.ref_image_2": [
+        "80_74",
+        0
+      ],
+      "ref_audios.ref_audio_0": [
+        "156",
+        0
+      ],
+      "ref_audios.ref_audio_1": [
+        "157",
+        0
+      ],
+      "ref_audios.ref_audio_2": [
+        "158",
+        0
+      ],
+      "ref_images.ref_image_3": [
+        "63",
+        0
+      ],
+      "ref_images.ref_image_4": [
+        "140_130",
+        0
+      ],
+      "ref_images.ref_image_5": [
+        "136_112",
+        0
+      ],
+      "ref_images.ref_image_6": [
+        "137_118",
+        0
+      ],
+      "ref_images.ref_image_7": [
+        "138_124",
+        0
+      ],
+      "ref_images.ref_image_8": [
+        "160_124",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3ReferenceToVideo",
+    "_meta": {
+      "title": "MiniMax H3 Reference to Video"
+    }
+  },
+  "146": {
+    "inputs": {
+      "steps": 2,
+      "start_at_sigma": 0.65,
+      "end_at_sigma": 0,
+      "spacing": "linear",
+      "sigmas": [
+        "47",
+        2
+      ]
+    },
+    "class_type": "ExtendIntermediateSigmas",
+    "_meta": {
+      "title": "插值扩展Sigmas"
+    }
+  },
+  "147": {
+    "inputs": {
+      "attention": "comfy kitchen attention",
+      "model": [
+        "148",
+        0
+      ]
+    },
+    "class_type": "ModelAttentionBackend",
+    "_meta": {
+      "title": "ModelAttentionBackend"
+    }
+  },
+  "148": {
+    "inputs": {
+      "tau": 1.3,
+      "start_percent": 0.2,
+      "end_percent": 0.9,
+      "min_tokens": 12288,
+      "int8_qk": true,
+      "sink_conditioning": "exact_kv_and_rows",
+      "morton": false,
+      "morton_curve": "2d_frame",
+      "int8_pv": true,
+      "verbose": false,
+      "use_tma": false,
+      "dense_blocks": "",
+      "model": [
+        "149",
+        0
+      ]
+    },
+    "class_type": "SolAttnPatch",
+    "_meta": {
+      "title": "Patch Sol-Attn"
+    }
+  },
+  "149": {
+    "inputs": {
+      "shift_video": 12,
+      "shift_audio": 3,
+      "model": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "MiniMaxH3SigmaShift",
+    "_meta": {
+      "title": "ModelSamplingMiniMaxH3"
+    }
+  },
+  "154": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "156": {
+    "inputs": {
+      "audio": "reference.wav"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "加载音频"
+    }
+  },
+  "157": {
+    "inputs": {
+      "audio": "reference.wav"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "加载音频"
+    }
+  },
+  "158": {
+    "inputs": {
+      "audio": "reference.wav"
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "加载音频"
+    }
+  },
+  "80_76": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "87_83": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "94_90": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "136_111": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "137_117": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "138_123": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "140_129": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "160_123": {
+    "inputs": {
+      "value": 1200000
+    },
+    "class_type": "ImpactInt",
+    "_meta": {
+      "title": "整数"
+    }
+  },
+  "80_77": {
+    "inputs": {
+      "image": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "87_86": {
+    "inputs": {
+      "image": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "94_93": {
+    "inputs": {
+      "image": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "138_126": {
+    "inputs": {
+      "image": [
+        "133",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "137_120": {
+    "inputs": {
+      "image": [
+        "134",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "136_114": {
+    "inputs": {
+      "image": [
+        "135",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "140_132": {
+    "inputs": {
+      "image": [
+        "139",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "160_126": {
+    "inputs": {
+      "image": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "GetImageSizeAndCount",
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "80_78": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "80_77",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "80_73": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "80_77",
+        1
+      ],
+      "b": [
+        "80_77",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "87_85": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "87_86",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "87_82": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "87_86",
+        1
+      ],
+      "b": [
+        "87_86",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "94_92": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "94_93",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "缩放图像（像素）"
+    }
+  },
+  "94_89": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "94_93",
+        1
+      ],
+      "b": [
+        "94_93",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "138_125": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "138_126",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "138_122": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "138_126",
+        1
+      ],
+      "b": [
+        "138_126",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "137_119": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "137_120",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "137_116": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "137_120",
+        1
+      ],
+      "b": [
+        "137_120",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "136_113": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "136_114",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "136_110": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "136_114",
+        1
+      ],
+      "b": [
+        "136_114",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "140_131": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "140_132",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "140_128": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "140_132",
+        1
+      ],
+      "b": [
+        "140_132",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "160_125": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1,
+      "image": [
+        "160_126",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "160_122": {
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "160_126",
+        1
+      ],
+      "b": [
+        "160_126",
+        2
+      ]
+    },
+    "class_type": "MathExpression|pysssss",
+    "_meta": {
+      "title": "数学表达式"
+    }
+  },
+  "80_75": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "80_73",
+        0
+      ],
+      "b": [
+        "80_76",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "87_81": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "87_82",
+        0
+      ],
+      "b": [
+        "87_83",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "94_88": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "94_89",
+        0
+      ],
+      "b": [
+        "94_90",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "138_121": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "138_122",
+        0
+      ],
+      "b": [
+        "138_123",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "137_115": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "137_116",
+        0
+      ],
+      "b": [
+        "137_117",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "136_109": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "136_110",
+        0
+      ],
+      "b": [
+        "136_111",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "140_127": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "140_128",
+        0
+      ],
+      "b": [
+        "140_129",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "160_121": {
+    "inputs": {
+      "comparison": "a >= b",
+      "a": [
+        "160_122",
+        0
+      ],
+      "b": [
+        "160_123",
+        0
+      ]
+    },
+    "class_type": "easy compare",
+    "_meta": {
+      "title": "比较"
+    }
+  },
+  "80_74": {
+    "inputs": {
+      "if_condition": [
+        "80_75",
+        0
+      ],
+      "when_TRUE": [
+        "80_78",
+        0
+      ],
+      "when_FALSE": [
+        "65",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "图层工具：条件判断"
+    }
+  },
+  "87_84": {
+    "inputs": {
+      "if_condition": [
+        "87_81",
+        0
+      ],
+      "when_TRUE": [
+        "87_85",
+        0
+      ],
+      "when_FALSE": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "图层工具：条件判断"
+    }
+  },
+  "94_91": {
+    "inputs": {
+      "if_condition": [
+        "94_88",
+        0
+      ],
+      "when_TRUE": [
+        "94_92",
+        0
+      ],
+      "when_FALSE": [
+        "70",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "图层工具：条件判断"
+    }
+  },
+  "138_124": {
+    "inputs": {
+      "if_condition": [
+        "138_121",
+        0
+      ],
+      "when_TRUE": [
+        "138_125",
+        0
+      ],
+      "when_FALSE": [
+        "133",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "LayerUtility: If "
+    }
+  },
+  "137_118": {
+    "inputs": {
+      "if_condition": [
+        "137_115",
+        0
+      ],
+      "when_TRUE": [
+        "137_119",
+        0
+      ],
+      "when_FALSE": [
+        "134",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "LayerUtility: If "
+    }
+  },
+  "136_112": {
+    "inputs": {
+      "if_condition": [
+        "136_109",
+        0
+      ],
+      "when_TRUE": [
+        "136_113",
+        0
+      ],
+      "when_FALSE": [
+        "135",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "LayerUtility: If "
+    }
+  },
+  "140_130": {
+    "inputs": {
+      "if_condition": [
+        "140_127",
+        0
+      ],
+      "when_TRUE": [
+        "140_131",
+        0
+      ],
+      "when_FALSE": [
+        "139",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "LayerUtility: If "
+    }
+  },
+  "160_124": {
+    "inputs": {
+      "if_condition": [
+        "160_121",
+        0
+      ],
+      "when_TRUE": [
+        "160_125",
+        0
+      ],
+      "when_FALSE": [
+        "154",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: If ",
+    "_meta": {
+      "title": "LayerUtility: If "
+    }
+  }
+}

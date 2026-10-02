@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {applyOutpaintValue,outpaintLinked} from '../public/catalog-guides.js';
+import {cameraPosition,cameraDescription} from '../public/camera-orbit.js';
+import {catalogCommonPanel} from '../public/catalog-ui.js';
+import {cloneDraft} from '../public/advanced.js';
+const schema=JSON.parse(readFileSync(new URL('../public/workflow-interfaces.json',import.meta.url)));
+const w={id:'local-card-13',interface:schema.workflows['local-card-13']};
+const id=k=>w.interface.controls.find(f=>f.key===k).id;
+const d={refs:[],catalogValues:{[id('left')]:24,[id('right')]:80}};
+// Initial rendering must not overwrite asymmetric old drafts.
+const before=JSON.stringify(d);const html=catalogCommonPanel(w,d);assert.equal(JSON.stringify(d),before);
+assert.ok(outpaintLinked(d,'horizontal'));assert.ok(outpaintLinked(d,'vertical'));
+applyOutpaintValue(w,d,'left',128);assert.equal(d.catalogValues[id('right')],128);
+applyOutpaintValue(w,d,'bottom',64);assert.equal(d.catalogValues[id('top')],64);
+d.catalogUi={outpaintLinks:{horizontal:false}};applyOutpaintValue(w,d,'right',256);assert.equal(d.catalogValues[id('left')],128);
+const snapshot=cloneDraft(d);snapshot.catalogUi.outpaintLinks.horizontal=true;assert.equal(d.catalogUi.outpaintLinks.horizontal,false);
+const rangeEnd=html.indexOf('</section>');assert.ok(html.indexOf('输出最长边')>rangeEnd);assert.ok(html.indexOf('调色强度')>rangeEnd);
+assert.equal((html.match(/<strong>扩展范围<\/strong>/g)||[]).length,1);
+const front=cameraPosition(0,0,0),right=cameraPosition(90,0,0),back=cameraPosition(180,0,0);
+assert.ok(front.z>0&&Math.abs(front.x)<1e-8);assert.ok(right.x>0&&Math.abs(right.z)<1e-8);assert.ok(back.z<0);
+assert.ok(cameraPosition(0,60,5).y>cameraPosition(0,0,5).y);
+assert.ok(cameraPosition(0,0,10).z<front.z);
+assert.equal(cameraDescription(135,30,5),'右后方 · 俯视 · 中景');
+console.log(JSON.stringify({outpaintLinkedAndIndependent:'passed',oldDraftPreservation:'passed',separateOutputControls:'passed',cameraCoordinatesAndLabels:'passed'}));

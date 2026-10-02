@@ -7,11 +7,13 @@ import hashlib
 import io
 import json
 import os
+import re
 import sqlite3
 import threading
 import time
 import uuid
 import sys
+from urllib.parse import urlsplit
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
@@ -21,20 +23,22 @@ sys.path.insert(0,str(Path(__file__).resolve().parent/'private/runtime'))
 import requests
 import websocket
 import av
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import FileResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
 from pydantic import BaseModel, ConfigDict, Field
-from adapters import ROOT, WORKFLOWS, manifest, settings_for, build_graph
+from adapters import ROOT, WORKFLOWS, CATALOG_WORKFLOWS, manifest, settings_for, build_graph, prune
+from local_directory import choose_directory
 from portable import embed_workflow
+from configuration import DATA_DIR, workflow_path
 
 try:
     local_config=json.loads((ROOT/'private/backend.json').read_text('utf-8'))
 except (OSError,ValueError):local_config={}
 BASE = os.environ.get('CHENYU_CARD_URL',local_config.get('card_url','')).rstrip('/')
 CLIENT = 'yingxu-local-mvp-v07'
-PRIVATE = ROOT/'private'
+PRIVATE = DATA_DIR
 for folder in ['uploads','outputs','receipts']:(PRIVATE/folder).mkdir(parents=True,exist_ok=True)
 DB = PRIVATE/'workspace.sqlite3'
 lock=threading.RLock()
@@ -61,7 +65,9 @@ def save(j):
     with lock,database() as db:db.execute('INSERT INTO jobs VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET token=excluded.token,data=excluded.data',(j['id'],j['token'],json.dumps(j,ensure_ascii=False)))
 def update(id,**values):
     with lock:
-        j=job(id);j.update(values);save(j)
+        j=job(id)
+        if j.get('status')=='abandoned':return j
+        j.update(values);save(j)
     return j
 def asset(id):
     with lock,database() as db:r=db.execute('SELECT data FROM assets WHERE id=?',(id,)).fetchone()
@@ -74,6 +80,16 @@ def asset_file(a):
     path=next((p for p in (PRIVATE/'uploads').glob(a['id']+'.*') if p.is_file()),None)
     if not path:raise HTTPException(409, '原素材文件已被移除，请重新导入同一份素材后重试。')
     return path
+
+def has_edit_mask(a):
+    with Image.open(asset_file(a)) as image:
+        alpha=image.getchannel('A') if 'A' in image.getbands() else None
+        return alpha is not None and alpha.getextrema()[0]<255
+
+def require_edit_mask(a):
+    """Required-mask graphs must reject an empty mask before dispatch."""
+    if not has_edit_mask(a):
+        raise HTTPException(400,'原图还没有编辑区域。请在原图上使用「画笔标注区域」后再生成。')
 
 def video_length(a):
     try:
@@ -97,6 +113,19 @@ def public(j):
         except HTTPException:references.append(dict(id=id,available=False,kind='unknown',name='原素材缺失',src=''))
     return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items']},'request_token':j['token'],'references':references}
 
+def public_graph(graph):
+    """Keep execution credentials out of workflow downloads and video metadata."""
+    def clean(value,key=''):
+        name=key.lower()
+        if any(part in name for part in ('api_key','access_token','authorization','password','secret')):
+            return '[请填写自己的密钥]' if not isinstance(value,list) else value
+        if isinstance(value,str) and re.fullmatch(r'sk-[A-Za-z0-9_-]{16,}',value):
+            return '[请填写自己的密钥]'
+        if isinstance(value,dict):return {k:clean(v,k) for k,v in value.items()}
+        if isinstance(value,list):return [clean(v,key) for v in value]
+        return value
+    return clean(graph)
+
 def ensure_remote(a):
     local=asset_file(a)
     remote=Path(a['remote'])
@@ -118,25 +147,27 @@ def friendly(message):
     if 'connection' in low or 'timeout' in low:return '暂时无法连接算力卡。请确认卡已开机，恢复连接后本页会继续查询。'
     return '工作流执行失败：'+message[:500]+'。提示词和素材已保留，可修改参数后重试。'
 
-def output_items(h):
+def output_items(h,kind='video'):
     found=[]
     for node in h.get('outputs',{}).values():
-        for key in ['images','gifs','videos']:
+        for key in (['images'] if kind=='image' else ['gifs','videos']):
             for v in node.get(key,[]):
-                if isinstance(v,dict) and v.get('filename','').lower().endswith('.mp4') and v.get('type')=='output':
+                suffix=Path(v.get('filename','')).suffix.lower() if isinstance(v,dict) else ''
+                if isinstance(v,dict) and suffix in ({'.png','.jpg','.jpeg','.webp'} if kind=='image' else {'.mp4'}) and v.get('type')=='output':
                     if v not in found:found.append(v)
     return found
 
 def collect(j,h):
-    items=output_items(h)
+    kind=manifest(j['workflow_id']).get('output','video')
+    items=output_items(h,kind)
     if not items:
-        update(j['id'],status='failed',stage='没有视频输出',error='工作流已结束，但没有返回 MP4。请检查输出节点是否连接到保存视频。',ended=time.time()*1000)
+        update(j['id'],status='failed',stage='没有作品输出',error='工作流已结束，但没有返回可保存的'+('图片' if kind=='image' else '视频')+'。请检查输出节点。',ended=time.time()*1000)
         return
-    update(j['id'],status='downloading',stage='正在取回视频',error=None)
+    update(j['id'],status='downloading',stage='正在取回作品',error=None)
     folder=PRIVATE/'outputs'/j['id'];folder.mkdir(exist_ok=True)
     outputs=[]
     for i,item in enumerate(items):
-        dest=folder/f'{i}.mp4';tmp=dest.with_suffix('.part')
+        suffix=Path(item['filename']).suffix.lower();dest=folder/f'{i}{suffix}';tmp=dest.with_suffix('.part')
         if not dest.exists():
             with requests.get(BASE+'/view',params={k:item.get(k,'') for k in ['filename','subfolder','type']},stream=True,timeout=(15,120)) as r:
                 r.raise_for_status()
@@ -144,23 +175,33 @@ def collect(j,h):
                 with tmp.open('wb') as f:
                     for chunk in r.iter_content(1024*1024):
                         size+=len(chunk)
-                        if size>1024*1024*1024:raise ValueError('返回的视频超过 1 GB，请缩短时长后重新生成。')
+                        if size>(100 if kind=='image' else 1024)*1024*1024:raise ValueError('返回的作品超过允许大小。')
                         f.write(chunk)
-                with tmp.open('rb') as f:head=f.read(64)
-                if b'ftyp' not in head:raise ValueError('算力卡返回的文件不是有效 MP4，请检查视频保存节点。')
+                if kind=='image':
+                    with Image.open(tmp) as preview:preview.verify()
+                else:
+                    with tmp.open('rb') as f:head=f.read(64)
+                    if b'ftyp' not in head:raise ValueError('算力卡返回的文件不是有效 MP4，请检查视频保存节点。')
                 tmp.replace(dest)
-        embed_workflow(dest,j['graph'])
-        outputs.append(dict(workflow_embedded=True,id=j['id']+'o'+str(i),type='video',src=f'/api/media/{j["id"]}/{i}.mp4',poster='',duration=j['settings'].get('duration'),bytes=dest.stat().st_size))
+        if kind=='video':embed_workflow(dest,public_graph(j['graph']))
+        branch_labels={'local-card-12':['Anything-to-Real','Turn2Real','anime2real-semi']}
+        label=branch_labels.get(j['workflow_id'],[])
+        branch_name=None
+        if j['workflow_id'] in ('local-card-11','local-card-17','local-card-18'):
+            for name,display in [('Flux-9B','Flux 9B 结果'),('Qwen-AIO','Qwen 结果'),('single','单图结果'),('double','双图结果')]:
+                if name in item.get('subfolder','').split('/') or item.get('filename','').startswith(name+'_'):
+                    branch_name=display;break
+        outputs.append(dict(workflow_embedded=kind=='video',id=j['id']+'o'+str(i),type=kind,src=f'/api/media/{j["id"]}/{i}{suffix}',poster='',duration=j['settings'].get('duration') if kind=='video' else None,bytes=dest.stat().st_size,label=branch_name or (label[i] if i<len(label) else None)))
     receipt={k:h.get(k) for k in ['outputs','status']}
     (PRIVATE/'receipts'/f'{j["id"]}.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),'utf-8')
-    update(j['id'],status='done',stage='已保存视频',outputs=outputs,ended=time.time()*1000,error=None)
+    update(j['id'],status='done',stage='已保存作品',outputs=outputs,ended=time.time()*1000,error=None)
 
 def reconcile_unknown(j,q):
     candidates=[x for values in q.values() for x in values]
     for x in candidates:
         if len(x)>3 and x[3].get('yingxu_job_id')==j['id']:
             return update(j['id'],prompt_id=x[1],status='queued',stage='已找回任务',error=None)
-    h=requests.get(BASE+'/history',params={'max_items':100},timeout=30).json()
+    response=requests.get(BASE+'/history',params={'max_items':100},timeout=30);response.raise_for_status();h=response.json()
     for pid,v in h.items():
         p=v.get('prompt',[])
         if len(p)>3 and p[3].get('yingxu_job_id')==j['id']:
@@ -168,7 +209,7 @@ def reconcile_unknown(j,q):
     return j
 
 def poll_once():
-    active=[j for j in jobs() if j['status'] not in ['done','failed','cancelled']]
+    active=[j for j in jobs() if j['status'] not in ['done','failed','cancelled','abandoned']]
     if not active:return
     q=requests.get(BASE+'/queue',timeout=15);q.raise_for_status();q=q.json()
     running={x[1] for x in q.get('queue_running',[])}
@@ -176,10 +217,10 @@ def poll_once():
     for j in active:
         try:
             if not j.get('prompt_id'):
-                if time.time()*1000-j['started']<90000:continue
+                if time.time()*1000-j['started']<90000 and not j.get('cancel_requested'):continue
                 j=reconcile_unknown(j,q)
                 if not j.get('prompt_id'):
-                    update(j['id'],status='unknown',stage='提交状态待确认',error='连接中断，尚不能确认任务是否已提交。为防重复消耗，暂不重新提交；请检查算力卡队列。')
+                    update(j['id'],status='cancelling' if j.get('cancel_requested') else 'unknown',stage='取消请求已保存 · 等待找回任务编号' if j.get('cancel_requested') else '提交状态待确认',error='远端任务未确认，不会重复提交。可停止本地等待；这不代表远端已经停止。')
                     continue
             pid=j['prompt_id']
             h=requests.get(BASE+'/history/'+pid,timeout=20);h.raise_for_status();h=h.json().get(pid)
@@ -196,9 +237,13 @@ def poll_once():
             elif pid in running:
                 cancelling=job(j['id']).get('cancel_requested')
                 update(j['id'],status='cancelling' if cancelling else 'running',stage='正在取消任务' if cancelling else '生成中',connection_error=None)
-            elif pid in pending:update(j['id'],status='queued',stage=f'排队中 · 前面还有 {pending.index(pid)} 个任务',connection_error=None)
+            elif pid in pending:update(j['id'],status='cancelling' if job(j['id']).get('cancel_requested') else 'queued',stage='等待取消确认' if job(j['id']).get('cancel_requested') else f'排队中 · 前面还有 {pending.index(pid)} 个任务',connection_error=None)
             elif j['status'] not in ['submitting','unknown']:
                 update(j['id'],stage='正在核对算力卡任务记录',connection_error='任务暂未出现在队列或历史中，请保留此页；不会重复提交。')
+            current=job(j['id'])
+            if current.get('cancel_requested') and current['status'] not in ['done','failed','cancelled','abandoned'] and pid in running|set(pending):
+                try:attempt_cancel(current,q)
+                except HTTPException as e:update(j['id'],cancel_error=str(e.detail),stage='取消待确认',status='cancelling')
         except (requests.RequestException,ValueError) as e:
             update(j['id'],connection_error='视频尚未取回，连接恢复后自动重试。' if j['status']=='downloading' else '连接暂时中断，正在重连；任务不会重复提交。')
 
@@ -207,7 +252,7 @@ def monitor():
         try:poll_once()
         except Exception:
             for j in jobs():
-                if j['status'] not in ['done','failed','cancelled']:update(j['id'],connection_error='算力卡暂时不可达，正在重连；已完成文件保留在本地。')
+                if j['status'] not in ['done','failed','cancelled','abandoned']:update(j['id'],connection_error='算力卡暂时不可达，正在重连；已完成文件保留在本地。')
         stopping.wait(3)
 
 def listen():
@@ -222,7 +267,7 @@ def listen():
                 event=json.loads(raw);kind=event.get('type');d=event.get('data',{})
                 if kind not in ['executing','progress','execution_start']:continue
                 pid=d.get('prompt_id')
-                j=next((j for j in jobs() if j.get('prompt_id')==pid and j['status'] not in ['done','failed','cancelled']),None)
+                j=next((j for j in jobs() if j.get('prompt_id')==pid and j['status'] not in ['done','failed','cancelled','abandoned']),None)
                 if not j or j.get('cancel_requested'):continue
                 if kind=='progress':update(j['id'],status='running',stage='生成中',progress=None,connection_error=None)
                 elif kind=='executing' and d.get('node'):
@@ -235,12 +280,28 @@ def listen():
 @asynccontextmanager
 async def lifespan(app):
     stopping.clear()
-    threading.Thread(target=monitor,daemon=True).start()
-    threading.Thread(target=listen,daemon=True).start()
+    if BASE:
+        threading.Thread(target=monitor,daemon=True).start()
+        threading.Thread(target=listen,daemon=True).start()
     yield
     stopping.set()
 
 app=FastAPI(lifespan=lifespan,docs_url=None,redoc_url=None)
+
+class DirectorySelection(BaseModel):
+    initial: str = Field(default='', max_length=4096)
+
+@app.post('/api/local-directory')
+def local_directory(request:Request,body:DirectorySelection):
+    # A remote/tunnel caller must not launch UI on the owner's desktop.
+    if not request.client or request.client.host not in ('127.0.0.1','::1') or request.url.hostname not in ('127.0.0.1','localhost','::1'):
+        raise HTTPException(403,'请在运行网站的这台电脑上选择文件夹，或直接填写运行端目录。')
+    origin=request.headers.get('origin')
+    if not origin or origin.rstrip('/')!=str(request.base_url).rstrip('/'):
+        raise HTTPException(403,'目录选择只允许当前本地页面调用。')
+    try:return {'path':choose_directory(body.initial)}
+    except (RuntimeError,OSError,ValueError) as error:
+        raise HTTPException(503,str(error)) from None
 
 @app.middleware('http')
 async def local_origin(request:Request,call_next):
@@ -263,10 +324,16 @@ async def local_origin(request:Request,call_next):
     return response
 
 @app.get('/api/workflows')
-def list_workflows():return WORKFLOWS
+def list_workflows():return [w for w in WORKFLOWS if workflow_path(w['id']).is_file()] if BASE else []
+
+@app.get('/api/catalog-connections')
+def catalog_connections():
+    return [{**{k:w[k] for k in ['id','name','source','source_hash','output']},
+             'validation':'api-pending' if w['id'] in ('local-card-105','local-card-106') else 'live-verified'} for w in CATALOG_WORKFLOWS if BASE and workflow_path(w['id']).is_file()]
 
 @app.get('/api/health')
 def health():
+    if not BASE:return dict(online=False,configured=False,message='演示模式：在 .env 中设置 CHENYU_CARD_URL 后可接入真实生成。')
     try:
         r=requests.get(BASE+'/queue',timeout=8);r.raise_for_status()
         return dict(online=True,queue=len(r.json().get('queue_pending',[])),running=len(r.json().get('queue_running',[])))
@@ -314,19 +381,44 @@ async def upload(file:UploadFile=File(...)):
 class Submission(BaseModel):
     model_config=ConfigDict(extra='forbid')
     workflow_id:str
+    source_hash:str|None=None
     prompt:str=Field(min_length=1,max_length=6000)
     negative:str=Field(default='',max_length=2000)
     settings:dict=Field(default_factory=dict)
     asset_ids:list[str]=Field(default_factory=list,max_length=9)
+    api_profiles:dict=Field(default_factory=dict)
     token:str=Field(min_length=8,max_length=100)
+
+API_PROFILE_NODES={'local-card-82':('161','30'),'local-card-105':('190','182'),'local-card-106':('178','158')}
+def bind_api_profiles(workflow_id,graph,profiles):
+    allowed=API_PROFILE_NODES.get(workflow_id)
+    if not isinstance(profiles,dict) or (profiles and not allowed):
+        raise HTTPException(400,'此工作流没有可替换的 API 入口。')
+    if not profiles:return graph
+    node,output=allowed
+    if set(profiles)!={node}:raise HTTPException(400,'API 配置与原工作流节点不匹配。')
+    choice=profiles[node]
+    if not isinstance(choice,dict) or set(choice)!={'mode','base_url','model','api_key'} or choice.get('mode')!='custom':
+        raise HTTPException(400,'请检查自有 API 配置。')
+    base_url,model,api_key=(choice[k].strip() if isinstance(choice[k],str) else '' for k in ('base_url','model','api_key'))
+    parsed=urlsplit(base_url)
+    if parsed.scheme not in ('http','https') or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment or len(base_url)>400:
+        raise HTTPException(400,'Base URL 需要是有效的 HTTP 或 HTTPS 地址。')
+    if not model or len(model)>120:raise HTTPException(400,'请填写有效的 Model 名称。')
+    if not api_key or len(api_key)>500:raise HTTPException(400,'请填写 API key。')
+    graph[node]['inputs'].update(api_baseurl=base_url,model=model,api_key=api_key)
+    return prune(graph,[output])
 
 @app.post('/api/jobs')
 def submit(body:Submission):
+    if not BASE:raise HTTPException(503,'尚未配置算力服务，请在 .env 中设置 CHENYU_CARD_URL；演示生成仍可使用。')
     with lock,database() as db:
         old=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
         if old:return public(json.loads(old[0]))
         w=manifest(body.workflow_id)
         if not w:raise HTTPException(400,'此工作流尚未接入。')
+        if w.get('source_hash') and body.source_hash!=w['source_hash']:
+            raise HTTPException(409,'工作流原文件已经变化，请刷新页面后重试。')
         try:s=settings_for(w,body.settings)
         except ValueError as e:raise HTTPException(400,str(e))
         if not body.prompt.strip():raise HTTPException(400,'请填写希望生成或修改的画面。')
@@ -335,13 +427,26 @@ def submit(body:Submission):
         for kind,lo,hi in [('image','minImages','maxImages'),('video','minVideos','maxVideos')]:
             n=sum(a['kind']==kind for a in aa)
             if not w[lo]<=n<=w[hi]:raise HTTPException(400,f'{w["name"]}需要 {w[lo]}–{w[hi]} 份'+('图片' if kind=='image' else '视频')+'素材。')
+        if w['id']=='local-card-15':
+            require_edit_mask(aa[0])
         if w['id']=='bernini-edit':
             source=next(a for a in aa if a['kind']=='video')
             if s['trim_start']+s['duration']>video_length(source)+0.05:
                 raise HTTPException(400,'选择的片段超出原视频时长，请缩短片段或调整起点。')
         aa=[ensure_remote(a) for a in aa]
+        if w['id']=='local-card-16':
+            aa[0]={**aa[0],'has_edit_mask':has_edit_mask(aa[0])}
         id=uuid.uuid4().hex
-        graph=build_graph(w['id'],body.prompt,body.negative,s,aa,id)
+        try:graph=bind_api_profiles(w['id'],build_graph(w['id'],body.prompt,body.negative,s,aa,id),body.api_profiles)
+        except FileNotFoundError:raise HTTPException(503,'缺少此工作流的 API 模板，请核对 workflows/api 及部署说明。') from None
+        for node in graph.values():
+            inputs=node.get('inputs',{})
+            key=inputs.get('api_key')
+            if isinstance(key,list) and len(key)==2:
+                key_node=graph.get(str(key[0]),{}).get('inputs',{})
+                key=next((key_node[k] for k in ('prompt','text','value') if k in key_node),key)
+            if isinstance(key,str) and not key.strip():
+                raise HTTPException(400,'此工作流需要自己的 API key，请在自有 API 配置中填写，或配置私有工作流模板。')
         j=dict(id=id,token=body.token,workflow_id=w['id'],prompt=body.prompt,negative=body.negative,settings=s,asset_ids=body.asset_ids,status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None)
         db.execute('INSERT INTO jobs VALUES (?,?,?)',(id,body.token,json.dumps(j,ensure_ascii=False)))
     return dispatch(j)
@@ -351,11 +456,14 @@ def dispatch(j):
     try:
         r=requests.post(BASE+'/prompt',json={'prompt':graph,'client_id':CLIENT,'extra_data':{'yingxu_job_id':id}},timeout=(15,60))
         if r.status_code>=400:
-            detail=r.json();(PRIVATE/'receipts'/f'{id}-validation.json').write_text(json.dumps(detail,ensure_ascii=False,indent=2),'utf-8')
+            try:detail=r.json()
+            except ValueError:detail={'http_status':r.status_code,'message':r.text[:1000]}
+            (PRIVATE/'receipts'/f'{id}-validation.json').write_text(json.dumps(detail,ensure_ascii=False,indent=2),'utf-8')
             return public(update(id,status='failed',stage='工作流校验失败',error=friendly(json.dumps(detail.get('node_errors',detail),ensure_ascii=False)[:500]),ended=time.time()*1000))
         out=r.json()
-        return public(update(id,prompt_id=out['prompt_id'],status='queued',stage='等待算力卡执行'))
-    except (requests.RequestException,ValueError,KeyError):
+        return public(update(id,prompt_id=out['prompt_id'],status='queued',stage='等待算力卡执行',error=None,connection_error=None))
+    except (requests.RequestException,ValueError,KeyError) as error:
+        (PRIVATE/'receipts'/f'{id}-transport.json').write_text(json.dumps({'type':type(error).__name__,'message':str(error)[:1000]},ensure_ascii=False,indent=2),'utf-8')
         return public(update(id,status='unknown',stage='正在确认提交状态',error='连接中断，正在核对任务，暂不重复提交。'))
 
 class Rerun(BaseModel):
@@ -368,21 +476,108 @@ def rerun(id:str,body:Rerun):
         previous=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
         if previous:return public(json.loads(previous[0]))
         original=job(id)
-        if original['status'] not in ['done','failed','cancelled']:
+        if original['status'] not in ['done','failed','cancelled','abandoned']:
             raise HTTPException(409,'原任务尚未结束，请等待结果后再试。')
         aa=[ensure_remote(asset(key)) for key in original['asset_ids']]
         new_id=uuid.uuid4().hex
         settings=copy.deepcopy(original['settings'])
-        old_seed=settings['seed']
-        settings['seed']=(old_seed+1+secrets.randbelow(2**48-1))%(2**48)
+        if 'seed' in settings:
+            old_seed=settings['seed']
+            settings['seed']=(old_seed+1+secrets.randbelow(2**48-1))%(2**48)
         graph=copy.deepcopy(original['graph'])
-        seed_nodes=['55'] if original['workflow_id']=='h3-reference' else ['384','386']
-        for key in seed_nodes:graph[key]['inputs']['noise_seed']=settings['seed']
-        output='54' if original['workflow_id']=='h3-reference' else '443'
+        if original['workflow_id']=='local-card-2':
+            graph['536']['inputs']['seed']=settings['seed']
+            graph['518:489']['inputs']['switch']=True
+        elif original['workflow_id']=='local-card-1':
+            graph['476']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-85':
+            for key in ['58','63']:graph[key]['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-9':
+            graph['96']['inputs']['noise_seed']=settings['seed']
+        elif original['workflow_id']=='local-card-10':
+            graph['75']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-12':
+            graph['158']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-13':
+            graph['95']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-14':
+            graph['95']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-19':
+            graph['88']['inputs']['noise_seed']=settings['seed']
+        elif original['workflow_id']=='local-card-21':
+            graph['21']['inputs']['noise_seed']=settings['seed']
+        elif original['workflow_id'] in ('local-card-104','local-card-129'):
+            graph['116']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-107':
+            graph['3']['inputs']['seed']=settings['seed']
+            graph['80']['inputs']['seed']=settings['seed']%(2**32)
+        elif original['workflow_id'] in ('local-card-109','local-card-128'):
+            graph['57']['inputs']['seed']=settings['seed']
+            graph['48' if settings['branch']=='lora' else '51']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-130':
+            graph['5']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-108':
+            settings['prompt_seed']=(settings['prompt_seed']+1+secrets.randbelow(2**32-1))%(2**32)
+            graph['53']['inputs']['seed']=settings['seed']
+            graph['60']['inputs']['sampling_mode.seed']=settings['prompt_seed']
+        elif original['workflow_id']=='local-card-110':
+            graph['63']['inputs']['noise_seed']=settings['seed']
+        elif original['workflow_id']=='local-card-3':
+            graph['558']['inputs']['seed']=settings['seed']
+            graph['540:489']['inputs']['switch']=True
+        elif original['workflow_id']=='local-card-84':
+            graph['515']['inputs']['seed']=settings['seed']
+            graph['497:468']['inputs']['switch']=True
+        elif original['workflow_id']=='local-card-78':
+            graph['14']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-83':
+            graph['221']['inputs']['seed']=settings['seed']
+        elif original['workflow_id']=='local-card-134':
+            pass  # Deterministic color match; a retry keeps the same inputs.
+        elif original['workflow_id'] in ('local-card-11','local-card-15','local-card-16','local-card-17','local-card-18','local-card-20'):
+            for node,key in {'local-card-11':[('157','seed')],
+                             'local-card-15':[('141','seed')],
+                             'local-card-16':[('17','seed')],
+                             'local-card-17':[('101','noise_seed'),('118','noise_seed')],
+                             'local-card-18':[('104','noise_seed'),('117','noise_seed')],
+                             'local-card-20':[('7','noise_seed')]}[original['workflow_id']]:
+                graph[node]['inputs'][key]=settings['seed']
+        elif original['workflow_id']=='local-card-82':
+            settings['prompt_seed']=(settings['prompt_seed']+1+secrets.randbelow(2**48-1))%(2**48)
+            graph['161']['inputs']['seed']=settings['prompt_seed']
+            graph['28']['inputs']['seed']=settings['seed']
+        elif original['workflow_id'] in ('local-card-105','local-card-106'):
+            settings['noise_seed']=(settings['noise_seed']+1+secrets.randbelow(2**48-1))%(2**48)
+            graph['190' if original['workflow_id']=='local-card-105' else '178']['inputs']['seed']=settings['seed']
+            graph['187:18' if original['workflow_id']=='local-card-105' else '98:18']['inputs']['noise_seed']=settings['noise_seed']
+        else:
+            seed_nodes=['55'] if original['workflow_id']=='h3-reference' else ['384','386']
+            for key in seed_nodes:graph[key]['inputs']['noise_seed']=settings['seed']
+        output={'local-card-2':'517','local-card-1':'461','local-card-3':'539','local-card-9':'104','local-card-10':'31','local-card-11':'62','local-card-15':'135','local-card-16':'26','local-card-17':'9','local-card-18':'9','local-card-20':'15','local-card-12':'62','local-card-13':'62','local-card-14':'62','local-card-19':'9','local-card-21':'14','local-card-78':'80','local-card-82':'30','local-card-83':'228','local-card-84':'494','local-card-85':'54','local-card-104':'99','local-card-105':'182','local-card-106':'158','local-card-107':'site-output','local-card-108':'29','local-card-109':'site-output','local-card-110':'106','local-card-128':'site-output','local-card-129':'99','local-card-130':'26','local-card-134':'14','h3-reference':'54'}.get(original['workflow_id'],'443')
         graph[output]['inputs']['filename_prefix']='yingxu/'+new_id
+        for node,branch in {'local-card-11':[('62','Flux-9B'),('147','Qwen-AIO')],
+                            'local-card-17':[('9','single'),('94','double')],
+                            'local-card-18':[('9','single'),('94','double')]}.get(original['workflow_id'],[]):
+            graph[node]['inputs']['filename_prefix']='yingxu/'+new_id+'/'+branch
+        if original['workflow_id']=='local-card-12':
+            for node,branch in [('62','Anything-to-Real'),('170','Turn2Real'),('179','anime2real-semi')]:graph[node]['inputs']['filename_prefix']='yingxu/'+new_id+'/'+branch
         # Restore upstream files if the card was restarted; all other graph inputs stay intact.
         for ix,a in enumerate(a for a in aa if a['kind']=='image'):
-            graph[f'upload_{ix}']['inputs']['image']=a['remote']
+            if original['workflow_id']=='local-card-2':graph[['530','527'][ix]]['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-3':graph[['551','547'][ix]]['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-84':graph['506']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-78':graph['31']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-82':graph['31']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-12':graph['63']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-13':graph['63']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-14':graph['63']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-83':graph['227']['inputs']['image']=a['remote']
+            elif original['workflow_id']=='local-card-134':graph[['11','12'][ix]]['inputs']['image']=a['remote']
+            elif original['workflow_id'] in ('local-card-11','local-card-15','local-card-16','local-card-17','local-card-18','local-card-20'):
+                node={'local-card-11':['63','64'],'local-card-15':['148'],'local-card-16':['36','25'],
+                      'local-card-17':['76','81'],'local-card-18':['76','81'],'local-card-20':['43']}[original['workflow_id']][ix]
+                graph[node]['inputs']['image']=a['remote']
+            else:graph[f'upload_{ix}']['inputs']['image']=a['remote']
         if original['workflow_id']=='bernini-edit':
             graph['425']['inputs']['video']=next(a['remote'] for a in aa if a['kind']=='video')
         j=dict(id=new_id,token=body.token,workflow_id=original['workflow_id'],prompt=original['prompt'],negative=original['negative'],settings=settings,asset_ids=list(original['asset_ids']),status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None,rerun_of=id)
@@ -397,48 +592,76 @@ def asset_content(id:str):
 @app.get('/api/jobs/{id}/workflow')
 def workflow_download(id:str):
     j=job(id)
-    return JSONResponse(j['graph'],headers={'Content-Disposition':f'attachment; filename="yingxu-{id[:8]}-workflow-api.json"'})
+    return JSONResponse(public_graph(j['graph']),headers={'Content-Disposition':f'attachment; filename="yingxu-{id[:8]}-workflow-api.json"'})
 
 @app.get('/api/jobs')
 def get_jobs():return [public(j) for j in jobs()]
 @app.get('/api/jobs/{id}')
 def get_job(id:str):return public(job(id))
-@app.post('/api/jobs/{id}/cancel')
-def cancel(id:str):
-    j=job(id)
-    if j['status'] in ['done','failed','cancelled']:return public(j)
-    if j.get('cancel_requested'):return public(j)
-    pid=j.get('prompt_id')
-    if not pid:raise HTTPException(409,'正在确认提交记录，取得任务编号后可取消。')
+def attempt_cancel(j,q=None):
+    """Retry a persisted intent using only the task-scoped remote API."""
+    id=j['id'];pid=j.get('prompt_id')
+    if not pid or j.get('cancel_sent'):return public(j)
     try:
-        response=requests.get(BASE+'/queue',timeout=15);response.raise_for_status();q=response.json()
+        if q is None:
+            response=requests.get(BASE+'/queue',timeout=15);response.raise_for_status();q=response.json()
         pending={x[1] for x in q.get('queue_pending',[])}
         running={x[1] for x in q.get('queue_running',[])}
-        if pid not in pending|running:raise HTTPException(409,'任务已离开队列，正在核对结果。请稍后查看状态。')
-        # The task-scoped API checks identity atomically. Never use global /interrupt.
+        if pid not in pending|running:
+            return public(update(id,status='cancelling',stage='正在核对取消结果'))
         response=requests.post(BASE+'/api/jobs/'+pid+'/cancel',timeout=15)
         if response.status_code in (404,405):
-            if pid in running:raise HTTPException(409,'当前算力卡不支持按任务取消运行，请升级 ComfyUI 后重试。')
+            if pid in running:raise HTTPException(409,'算力卡不支持按任务取消运行；请在算力卡端处理，或停止本地等待。')
             requests.post(BASE+'/queue',json={'delete':[pid]},timeout=15).raise_for_status()
         else:
             response.raise_for_status()
-            if response.json().get('cancelled') is not True:
-                raise HTTPException(409,'任务可能已完成，正在核对结果；尚未确认取消。')
+            if response.json().get('cancelled') is not True:raise HTTPException(409,'远端尚未确认取消，将继续核对。')
         if pid in pending:
             response=requests.get(BASE+'/queue',timeout=15);response.raise_for_status();q=response.json()
             if pid not in {x[1] for x in q.get('queue_running',[])+q.get('queue_pending',[])}:
-                return public(update(id,status='cancelled',stage='已取消任务',cancel_requested=True,ended=time.time()*1000))
-        return public(update(id,status='cancelling',stage='正在取消任务',cancel_requested=True,connection_error=None))
-    except (requests.RequestException,ValueError):raise HTTPException(502,'连接中断，尚未确认取消成功。请检查任务状态后重试；可能已经产生费用。')
+                return public(update(id,status='cancelled',stage='已取消任务',cancel_requested=True,ended=time.time()*1000,cancel_error=None,connection_error=None,error=None))
+        return public(update(id,status='cancelling',stage='正在取消任务',cancel_requested=True,cancel_sent=True,cancel_error=None,connection_error=None))
+    except (requests.RequestException,ValueError):
+        return public(update(id,status='cancelling',stage='取消请求已保存 · 等待连接',cancel_error='远端未确认停止；恢复连接后自动重试。'))
+
+@app.post('/api/jobs/{id}/cancel')
+def cancel(id:str):
+    with lock:
+        j=job(id)
+        if j['status'] in ['done','failed','cancelled','abandoned'] or j.get('cancel_requested'):return public(j)
+        j=update(id,cancel_requested=True,status='cancelling',stage='取消请求已保存',cancel_error=None)
+    if not j.get('prompt_id'):
+        return public(update(id,stage='取消请求已保存 · 等待找回任务编号',cancel_error='尚未取得远端编号；连接恢复后自动取消，不会重复提交。'))
+    try:
+        response=requests.get(BASE+'/queue',timeout=15);response.raise_for_status();q=response.json()
+        pid=j['prompt_id'];present={x[1] for x in q.get('queue_running',[])+q.get('queue_pending',[])}
+        if pid not in present:
+            raise HTTPException(409,'任务已离开队列，正在核对结果。请稍后查看状态。')
+        return attempt_cancel(j,q)
+    except (requests.RequestException,ValueError):
+        return public(update(id,status='cancelling',stage='取消请求已保存 · 等待连接',cancel_error='远端未确认停止；恢复连接后自动重试。'))
+    except HTTPException as e:
+        update(id,cancel_error=str(e.detail));raise
+
+@app.post('/api/jobs/{id}/abandon')
+def abandon(id:str):
+    # Explicitly stop local tracking; never claim the remote execution was stopped.
+    with lock:
+        j=job(id)
+        if j['status'] in ['done','failed','cancelled','abandoned']:return public(j)
+        if not j.get('cancel_requested'):raise HTTPException(409,'请先请求取消任务。')
+        return public(update(id,status='abandoned',stage='已停止本地等待 · 远端状态未确认',ended=time.time()*1000,connection_error=None,error='远端任务可能仍运行并产生费用，请在算力卡端确认。'))
 
 @app.get('/api/media/{id}/{filename}')
 def media(id:str,filename:str):
     j=job(id)
-    if filename not in [f'{i}.mp4' for i in range(len(j.get('outputs',[])))]:raise HTTPException(404,'找不到视频。')
+    if filename not in [Path(o['src']).name for o in j.get('outputs',[])]:raise HTTPException(404,'找不到作品。')
     p=PRIVATE/'outputs'/j['id']/filename
-    if not p.is_file():raise HTTPException(404,'本地视频文件已被移除。')
+    if not p.is_file():raise HTTPException(404,'本地作品文件已被移除。')
+    if p.suffix.lower()!='.mp4':
+        return FileResponse(p,media_type=mimetypes.guess_type(str(p))[0],filename=f'映序-{id[:8]}-{filename}',content_disposition_type='inline')
     with lock:
-        embed_workflow(p,j['graph'])
+        embed_workflow(p,public_graph(j['graph']))
         current=job(id)
         index=int(filename.split('.')[0])
         out=current['outputs'][index]
@@ -447,8 +670,22 @@ def media(id:str,filename:str):
             update(id,outputs=current['outputs'])
     return FileResponse(p,media_type='video/mp4',filename=f'映序-{id[:8]}-{filename}',content_disposition_type='inline')
 
+@app.post('/api/image/cutout')
+async def image_cutout(file:UploadFile=File(...),bounds:str=Form('{}')):
+    # Compute in memory; original files, jobs and the remote card are untouched.
+    from local_cutout import cutout_png
+    data=await file.read(40*1024*1024+1)
+    if len(data)>40*1024*1024:raise HTTPException(413,'图片超过 40 MB，请缩小后再试。')
+    try:
+        region=json.loads(bounds)
+        if not isinstance(region,dict):raise ValueError('主体范围格式不正确。')
+        png=await asyncio.to_thread(cutout_png,data,region or None)
+    except ImportError:raise HTTPException(503,'本地抠图组件未安装，可先使用框选或圈选。')
+    except (ValueError,OSError,Image.DecompressionBombError) as error:raise HTTPException(400,str(error) or '无法读取图片。')
+    return Response(png,media_type='image/png',headers={'Cache-Control':'no-store'})
+
 app.mount('/',StaticFiles(directory=ROOT/'public',html=True),name='site')
 
 if __name__=='__main__':
     import uvicorn
-    uvicorn.run(app,host='127.0.0.1',port=int(os.environ.get('PORT','8770')))
+    uvicorn.run(app,host=os.environ.get('HOST','127.0.0.1'),port=int(os.environ.get('PORT','8770')))

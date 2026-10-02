@@ -1,0 +1,466 @@
+{
+  "4": {
+    "inputs": {
+      "strength": 1,
+      "pre_cfg": false,
+      "model": [
+        "56",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "加速与显存 · CFGNorm"
+    }
+  },
+  "5": {
+    "inputs": {
+      "mode": "always",
+      "volume": 1,
+      "file": "notify.mp3",
+      "any": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "PlaySound|pysssss",
+    "_meta": {
+      "title": "辅助连接 · PlaySound|pysssss"
+    }
+  },
+  "6": {
+    "inputs": {
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "预览 · Preview Image"
+    }
+  },
+  "8": {
+    "inputs": {
+      "font_file": "Alibaba-PuHuiTi-Heavy.ttf",
+      "font_size": 30,
+      "border": 8,
+      "color_theme": "light",
+      "reel_1": [
+        "21",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageReelComposit",
+    "_meta": {
+      "title": "辅助连接 · LayerUtility: ImageReelComposit"
+    }
+  },
+  "9": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "25",
+        0
+      ],
+      "image1": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "操作区 · TextEncodeQwenImageEditPlus"
+    }
+  },
+  "10": {
+    "inputs": {
+      "prompt": [
+        "164",
+        0
+      ],
+      "clip": [
+        "25",
+        0
+      ],
+      "image1": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "操作区 · TextEncodeQwenImageEditPlus"
+    }
+  },
+  "11": {
+    "inputs": {
+      "conditioning": [
+        "10",
+        0
+      ],
+      "latent": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考潜变量 · Ref Latent"
+    }
+  },
+  "12": {
+    "inputs": {
+      "conditioning": [
+        "9",
+        0
+      ],
+      "latent": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "参考潜变量 · Ref Latent"
+    }
+  },
+  "13": {
+    "inputs": {
+      "samples": [
+        "28",
+        0
+      ],
+      "vae": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE 解码 · VAE Decode"
+    }
+  },
+  "14": {
+    "inputs": {
+      "pixels": [
+        "19",
+        0
+      ],
+      "vae": [
+        "55",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE 编码 · VAE Encode"
+    }
+  },
+  "19": {
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "16",
+      "scale_to_side": "longest",
+      "scale_to_length": [
+        "26",
+        0
+      ],
+      "background_color": "#000000",
+      "image": [
+        "31",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "_meta": {
+      "title": "预处理 · LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "21": {
+    "inputs": {
+      "image1_text": "original",
+      "image2_text": "Final Effect",
+      "image3_text": "",
+      "image4_text": "",
+      "reel_height": 1024,
+      "border": 32,
+      "image1": [
+        "19",
+        0
+      ],
+      "image2": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "LayerUtility: ImageReel",
+    "_meta": {
+      "title": "辅助连接 · LayerUtility: ImageReel"
+    }
+  },
+  "25": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "文本编码器 · CLIP"
+    }
+  },
+  "26": {
+    "inputs": {
+      "value": 1536
+    },
+    "class_type": "INTConstant",
+    "_meta": {
+      "title": "最长边，longest"
+    }
+  },
+  "28": {
+    "inputs": {
+      "seed": 381852950162141,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta57",
+      "denoise": 1,
+      "model": [
+        "4",
+        0
+      ],
+      "positive": [
+        "11",
+        0
+      ],
+      "negative": [
+        "12",
+        0
+      ],
+      "latent_image": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "采样器 · KSampler"
+    }
+  },
+  "29": {
+    "inputs": {
+      "rgthree_comparer": {
+        "images": [
+          {
+            "name": "A",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_bxord_00001_.png&type=temp&subfolder=&rand=0.4612378366488822"
+          },
+          {
+            "name": "B",
+            "selected": true,
+            "url": "/api/view?filename=rgthree.compare._temp_bxord_00002_.png&type=temp&subfolder=&rand=0.3722096679773941"
+          }
+        ]
+      },
+      "image_a": [
+        "13",
+        0
+      ],
+      "image_b": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "Image Comparer (rgthree)",
+    "_meta": {
+      "title": "输出预览 · Image Comparer (rgthree)"
+    }
+  },
+  "30": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "13",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "保存图像 · Save Image"
+    }
+  },
+  "31": {
+    "inputs": {
+      "image": "reference.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "加载图像 · Load Image"
+    }
+  },
+  "42": {
+    "inputs": {
+      "lora_name": "qwen/anime2real-2511.safetensors",
+      "strength_model": 0.7,
+      "model": [
+        "53",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 加载 · LoRA Loader"
+    }
+  },
+  "43": {
+    "inputs": {
+      "text": "变成真实风格,将图像转换为逼真的照片。亚洲女性"
+    },
+    "class_type": "TextInput_",
+    "_meta": {
+      "title": "操作区 · TextInput_"
+    }
+  },
+  "52": {
+    "inputs": {
+      "unet_name": "qwen/qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "主模型 · Main UNET"
+    }
+  },
+  "53": {
+    "inputs": {
+      "lora_name": "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-fp32.safetensors",
+      "strength_model": 1.0000000000000002,
+      "model": [
+        "52",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 加载 · LoRA Loader"
+    }
+  },
+  "55": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "VAE 编解码 · VAE"
+    }
+  },
+  "56": {
+    "inputs": {
+      "shift": 3.1,
+      "sampling": "flow",
+      "model": [
+        "58",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "加速与显存 · ModelSamplingAuraFlow"
+    }
+  },
+  "58": {
+    "inputs": {
+      "lora_name": "qwen/Anything2Real2601A.safetensors",
+      "strength_model": 0.73,
+      "model": [
+        "42",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRA 加载 · LoRA Loader"
+    }
+  },
+  "161": {
+    "inputs": {
+      "api_baseurl": "https://api.avemujica.moe/v1",
+      "api_key": "",
+      "model": "gpt-5.6-luna",
+      "role": [
+        "163",
+        0
+      ],
+      "prompt": "",
+      "temperature": 0.6,
+      "seed": 1950,
+      "ref_image": [
+        "19",
+        0
+      ]
+    },
+    "class_type": "RH_LLMAPI_NODE",
+    "_meta": {
+      "title": "LLM API · LLM Node"
+    }
+  },
+  "163": {
+    "inputs": {
+      "value": ""
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "文本输入 · Text Input"
+    }
+  },
+  "164": {
+    "inputs": {
+      "text_0": "",
+      "text": [
+        "165",
+        0
+      ]
+    },
+    "class_type": "ShowText|pysssss",
+    "_meta": {
+      "title": "显示文本 · Show Text"
+    }
+  },
+  "165": {
+    "inputs": {
+      "delimiter": "",
+      "string1": [
+        "43",
+        0
+      ],
+      "string2": [
+        "166",
+        0
+      ]
+    },
+    "class_type": "JoinStrings",
+    "_meta": {
+      "title": "操作区 · JoinStrings"
+    }
+  },
+  "166": {
+    "inputs": {
+      "text": "",
+      "anything": [
+        "161",
+        0
+      ]
+    },
+    "class_type": "easy showAnything",
+    "_meta": {
+      "title": "显示 · Show Anything"
+    }
+  }
+}

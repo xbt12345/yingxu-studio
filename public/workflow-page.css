@@ -5,3 +5,87 @@ body.production.workflow-focus{--side:63px;padding-left:var(--side)}body.workflo
 .wf-demo-editor .extra-control{display:none}
 .wf-demo-source img{display:block;width:100%;max-height:38vh;object-fit:contain;background:#111}
 .wf-editor .wf-section:has(#prompt){position:relative}.wf-editor .wf-section.has-mention-overlay .prompt-mirror{z-index:2}.wf-editor .wf-section.has-mention-overlay .mention-feedback{z-index:3;bottom:7px;right:15px}
+
+/* V0.16: one compact editing surface, with trim built into video playback. */
+.studio-home-head>span{display:none}
+.studio-home-head{margin:0 0 18px}
+.studio-home-head h1,.inspiration-page h1,.workflow-top h1,.workflow-page .library-head h1,.works-page .library-head h1,.asset-head h1{
+  background:linear-gradient(105deg,#fff 12%,#e9e4f5 56%,#bca9de 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.inspiration-page{padding:clamp(18px,2.6vw,38px)}
+.inspiration-page>header{margin:0 0 16px}
+.inspiration-page h1{font-size:22px;line-height:1.25}
+.inspiration-grid{gap:12px}
+.inspiration-card>span{padding:10px 12px}
+.inspiration-card small{color:#a99ab7}
+.wf-trim-source>video{cursor:pointer}
+.wf-player-bar{position:absolute;inset:auto 0 0;z-index:3;display:grid;grid-template-columns:28px 43px minmax(0,1fr) 43px 28px 28px;align-items:center;gap:8px;min-height:49px;padding:7px 12px 9px;background:linear-gradient(0deg,#08070bed,#100f14d9 72%,transparent);border-radius:0 0 12px 12px}
+.wf-player-bar>button{position:static;min-width:28px;height:28px;padding:0;border:0;border-radius:7px;background:#ffffff0d;color:#eee8f4;box-shadow:none;font-size:15px;line-height:1;backdrop-filter:none}
+.wf-player-bar>button:hover{background:#ffffff23}
+.wf-player-bar>output{white-space:nowrap;text-align:center;color:#ece7f1;font-size:10px;font-variant-numeric:tabular-nums}
+.wf-player-bar .wf-trim{position:relative;min-width:0;height:32px;padding:0;display:flex;align-items:center}
+.wf-player-bar .wf-trim-track{position:relative;width:100%;height:6px;margin:0 7px;border-radius:99px;background:#ffffff49;cursor:pointer;z-index:1}
+.wf-player-bar .wf-trim-track>span{position:absolute;inset:0 calc(100% - var(--trim-end)) 0 var(--trim-start);border-radius:99px;background:#c4ace9}
+.wf-player-bar .wf-trim-track>i{position:absolute;left:var(--trim-playhead);top:-10px;width:7px;height:7px;background:#f1c984;border-radius:2px;transform:translateX(-50%) rotate(45deg);pointer-events:none;box-shadow:0 1px 5px #0006}
+.wf-player-bar .wf-trim input[type=range]{position:absolute;top:4px;left:7px;width:calc(100% - 14px);height:24px;margin:0;z-index:2;pointer-events:none;appearance:none;-webkit-appearance:none;background:transparent;box-shadow:none}
+.wf-player-bar .wf-trim input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;pointer-events:auto;width:10px;height:25px;border:1px solid #e5cef7;border-radius:3px;background:linear-gradient(90deg,#b79acb 35%,#eee0f6 35%,#eee0f6 55%,#b79acb 55%);box-shadow:0 0 0 2px #30253b;cursor:ew-resize}
+.wf-player-bar .wf-trim input[type=range]::-moz-range-thumb{pointer-events:auto;width:10px;height:25px;border:1px solid #e5cef7;border-radius:3px;background:#b79acb;cursor:ew-resize}
+.wf-trim-source:fullscreen{display:grid;place-items:center;background:#050507;border-radius:0}
+.wf-trim-source:fullscreen video{width:100%;height:100%;max-height:100vh}
+.wf-demo-editor .advanced-group{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:0;padding:0}
+.wf-demo-editor .advanced-field{min-width:0;margin:0;padding:10px 12px;border:1px solid #ffffff12;border-radius:11px;background:#ffffff05}
+.wf-demo-editor .advanced-field label,.wf-demo-editor .advanced-field legend{font-size:11px;color:#d9d4e0}
+.wf-demo-editor .advanced-field output{font-size:13px;color:#e8d9f9}
+.wf-demo-editor .advanced-field input{width:100%;margin:9px 0 4px;accent-color:#bca1de}
+.wf-demo-editor .advanced-choices{gap:4px}
+.wf-demo-editor .advanced-choices button{padding:7px 6px;min-height:31px;font-size:10px}
+.wf-demo-editor .workflow-strip{display:none}
+.wf-demo-editor .composer .advanced-group{margin:12px 0 9px}
+.wf-demo-editor .writing-area textarea{min-height:100px;height:100px}
+@media(max-width:720px){.inspiration-page{padding:66px 16px 24px}.wf-player-bar{grid-template-columns:27px 36px minmax(0,1fr) 36px 27px;gap:4px;padding:6px 8px}.wf-player-bar>[data-trim-fullscreen]{display:none}.wf-demo-editor .advanced-group{grid-template-columns:1fr 1fr;gap:7px}.wf-demo-editor .advanced-field{padding:8px}}
+
+
+/* V0.17: titles carry the single visual accent; utility copy stays quiet. */
+:root{--title-gradient:linear-gradient(105deg,#fbfaff 8%,#e8def8 55%,#bda5df 100%)}
+:where(.studio-home-head h1,.workflow-page .library-head h1,.works-page .library-head h1,.asset-page .asset-head h1,.settings-page h1,.workflow-top h1,.section-heading h2,.workflow-info h2,.inspiration-card strong,.featured-caption strong,.job-prompt>p,.session-link span){
+  background:var(--title-gradient);-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+}
+.inspiration-page{padding:clamp(16px,2.2vw,32px)}
+.inspiration-page>.inspiration-grid{margin-top:0}
+.inspiration-card strong,.featured-caption strong{display:block}
+.job-prompt>p{font-weight:500}
+.wf-player-bar .wf-trim{touch-action:none}
+.wf-trim-source video{display:block}
+@media(max-width:720px){.inspiration-page{padding:60px 14px 22px}}
+
+
+/* Task surfaces are distraction-free by default; navigation is one deliberate reveal away. */
+body.production.workflow-focus{--side:0px;padding-left:0}
+.workflow-focus .sidebar{width:190px;padding:22px 12px 16px;transform:translateX(calc(-100% - 20px));opacity:0;pointer-events:none;transition:transform .24s ease,opacity .18s ease;box-shadow:18px 0 42px #0008}
+.workflow-focus.wf-nav-expanded .sidebar{width:190px;padding:22px 12px 16px;transform:translateX(0);opacity:1;pointer-events:auto}
+.workflow-focus .wf-nav-toggle{left:16px;bottom:18px;transition:left .24s ease;background:#17171be8;border-color:#ffffff16;box-shadow:0 8px 26px #0007}
+.workflow-focus.wf-nav-expanded .wf-nav-toggle{left:206px}
+.workflow-focus.wf-nav-expanded .nav-curtain{display:block;position:fixed;inset:0;z-index:34;background:#09090bcc;backdrop-filter:blur(5px);pointer-events:auto}
+
+@media(max-width:720px){
+  .workflow-focus .sidebar{display:flex;width:210px;left:10px;top:10px;bottom:10px;z-index:70;transform:translateX(-110%);opacity:0;pointer-events:none}
+  .workflow-focus.nav-open .sidebar{transform:translateX(0);opacity:1;pointer-events:auto}
+  .workflow-focus .wf-nav-toggle{display:none}
+  .workflow-focus .mobile-menu{display:grid}
+  .workflow-focus.nav-open .nav-curtain{display:block;position:fixed;inset:0;z-index:65;background:#09090bcc;backdrop-filter:blur(5px);pointer-events:auto}
+}
+
+.wf-trim-source .wf-playhead-time{position:absolute;left:14px;bottom:53px;border-radius:6px;padding:4px 7px;background:#15111bba;color:#edcc96;font-size:10px;font-variant-numeric:tabular-nums;pointer-events:none}
+.wf-player-bar .wf-trim input:focus-visible{outline:none}.wf-player-bar .wf-trim input:focus-visible::-webkit-slider-thumb{box-shadow:0 0 0 3px #574466}
+
+/* The selection is a single band. Playback information stays beneath the picture. */
+.wf-trim-source .wf-player-bar{position:relative;inset:auto;display:grid;grid-template-columns:28px minmax(0,1fr) 28px 28px;gap:10px;padding:9px 14px 0;min-height:40px;background:#15131a;border-radius:0}
+.wf-player-bar .wf-trim-track{height:8px;border-radius:3px;background:#403747}
+.wf-player-bar .wf-trim-track>span{border-radius:3px;background:#b49aca}
+.wf-player-bar .wf-trim-track>i{top:0;left:var(--trim-start);width:max(0%,calc(var(--trim-playhead) - var(--trim-start)));max-width:calc(var(--trim-end) - var(--trim-start));height:100%;transform:none;border-radius:3px;background:#dbc8ec;box-shadow:none}
+.wf-player-bar .wf-trim input[type=range]::-webkit-slider-thumb{width:12px;height:20px;border-radius:4px;border:2px solid #bda0d3;background:#302537;box-shadow:none}
+.wf-player-bar .wf-trim input[type=range]::-moz-range-thumb{width:9px;height:17px;border-radius:4px;border:2px solid #bda0d3;background:#302537;box-shadow:none}
+.wf-trim-summary{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:4px 15px 12px;background:#15131a;color:#8d7f99;font-size:10px;font-variant-numeric:tabular-nums}
+.wf-trim-summary output{color:#c4b5d2}.wf-trim-source:fullscreen .wf-player-bar{position:absolute;bottom:30px;width:100%}.wf-trim-source:fullscreen .wf-trim-summary{position:absolute;bottom:0;width:100%;box-sizing:border-box}
+@media(max-width:720px){.wf-trim-source .wf-player-bar{grid-template-columns:28px minmax(0,1fr) 28px}}

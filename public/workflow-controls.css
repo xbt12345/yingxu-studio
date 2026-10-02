@@ -1,0 +1,125 @@
+/* A continuous editing surface: groups are separated by space, not nested cards. */
+.production .workflow-inline-controls{min-width:0;width:100%;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;box-sizing:border-box}
+.workflow-inline-controls>.wf-section-title{margin:0 0 12px}
+.production .workflow-inline-controls>.wf-section-title strong{font-size:12px;font-weight:500;color:#d4cfdb;background:none;-webkit-text-fill-color:currentColor}
+.workflow-inline-controls .catalog-fields{padding:0;gap:22px 14px}
+.workflow-inline-controls .catalog-field{gap:8px}
+.workflow-inline-controls .catalog-text-field:last-child{margin-bottom:0}
+.catalog-inline-groups{display:grid;gap:24px;min-width:0;width:100%}
+.workflow-inline-controls .picture-section:last-child{margin-bottom:0}
+.workflow-inline-controls .duration-panel{margin-top:18px}
+.workflow-inline-controls .live-field{display:block;margin:0}
+.workflow-inline-controls .live-field input{width:100%;box-sizing:border-box}
+.workflow-inline-controls input:disabled{opacity:.45;cursor:not-allowed}
+.workflow-inline-controls .negative-input{display:block;box-sizing:border-box;width:100%;resize:vertical;min-height:82px;max-height:240px}
+.production .wf-demo-editor .composer>.workflow-inline-controls{margin-top:16px}
+.workflow-inline-controls .advanced-group{margin-top:18px}
+.workflow-inline-controls .catalog-field-help{white-space:normal}
+.workflow-inline-controls .catalog-camera-guide,.workflow-inline-controls .catalog-outpaint-guide{margin-bottom:16px}
+.workflow-inline-controls .seed-setting>.catalog-field-help{margin:0}
+.workflow-inline-controls input:focus-visible,.workflow-inline-controls select:focus-visible,.workflow-inline-controls textarea:focus-visible{outline:1px solid #bba1dd;outline-offset:2px}
+.workflow-inline-controls .catalog-custom-size input:focus-visible,.workflow-inline-controls .megapixel-value input:focus-visible,.workflow-inline-controls .catalog-custom-number input:focus-visible{outline:none;box-shadow:none}
+.production .workflow-inline-controls>.workflow-inline-controls{margin-bottom:26px}
+.production .workflow-inline-controls .catalog-camera-guide,.production .workflow-inline-controls .catalog-outpaint-guide{background:transparent;border:0;padding:0;border-radius:0}
+.production .workflow-inline-controls .seed-settings-compact .seed-setting{border:0;border-radius:0;background:transparent;padding:0}
+.production .workflow-inline-controls .catalog-toggle-field{padding:0;border:0;border-radius:0;background:transparent}
+.production .workflow-inline-controls .catalog-toggle-field>span:first-child{font-weight:500;color:#b9afc5}
+.production .workflow-inline-controls .catalog-toggle-field .catalog-switch-track{background:#56505b}
+.production .workflow-inline-controls .catalog-toggle-field input:checked+.catalog-switch-track{background:#9c76c6}
+.production .workflow-inline-controls .catalog-toggle-field:focus-within{outline:none}
+.production .workflow-inline-controls .catalog-toggle-field input:focus-visible+.catalog-switch-track{outline:1px solid #c6a8e7;outline-offset:3px}
+.production .workflow-inline-controls .catalog-preset-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch}
+.production .workflow-inline-controls .live-edge-controls .segmented-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.production .workflow-inline-controls .catalog-preset-options>button,.production .workflow-inline-controls .catalog-custom-number{min-height:42px;height:auto;margin:0;box-sizing:border-box}
+.production .workflow-inline-controls .catalog-custom-number{gap:5px;min-width:0}
+.production .workflow-inline-controls .catalog-custom-number input{flex:0 1 7ch;width:7ch;max-width:9ch;min-width:0;min-height:0;margin-left:auto;padding:0;text-align:right;appearance:textfield;outline:none;box-shadow:none;border:0;background:transparent}
+.production .workflow-inline-controls .catalog-custom-number span{white-space:nowrap;flex-shrink:0}
+.production .workflow-inline-controls .catalog-custom-number span:last-child{margin-left:0}
+.production .workflow-inline-controls .catalog-custom-number input::-webkit-inner-spin-button,.production .workflow-inline-controls .catalog-custom-number input::-webkit-outer-spin-button{appearance:none;margin:0}
+.production .workflow-inline-controls .catalog-custom-number:focus-within{box-shadow:none}
+.production .workflow-inline-controls .catalog-resolution-field>label:first-child{margin-bottom:0;font-weight:500}
+.catalog-directory-field{grid-column:1/-1}.catalog-directory-input{display:flex;gap:8px;min-width:0}.catalog-directory-input input{flex:1;min-width:0}.catalog-directory-input button{flex-shrink:0;padding:0 12px;border:1px solid #ffffff24;border-radius:9px;background:#ffffff07;color:#cfbddf;font:inherit;font-size:12px;cursor:pointer}
+.outpaint-links{display:flex;gap:10px;margin:0 0 14px}.outpaint-links button{flex:1;min-height:34px;border:1px solid #ffffff20;border-radius:8px;background:#ffffff05;color:#aa9bb6;font:inherit;font-size:11px;cursor:pointer}.outpaint-links button[aria-pressed=true]{color:#d9c2ed;border-color:#bda4dc66;background:#baa0d211}.outpaint-links button span{margin-left:8px;opacity:.75}
+.production .catalog-camera-guide svg{height:auto;max-height:340px;overflow:visible;touch-action:none}.camera-direction{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin-bottom:9px}.camera-direction small{color:#8e809b;font-size:10px}.camera-orbit-point{transition:transform 140ms ease}.catalog-camera-guide.is-dragging .camera-orbit-point{transition:none}.camera-orbit-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:8px 0 14px}.camera-orbit-presets button{border:1px solid #ffffff18;border-radius:7px;background:#ffffff04;color:#a99ab7;font:inherit;font-size:11px;padding:7px;cursor:pointer}.camera-orbit-presets button[aria-pressed=true]{border-color:#c3a3db88;color:#e3d1ef;background:#c3a3db14}.camera-elevation{display:flex;gap:9px;align-items:center;color:#b8acc4;font-size:11px;margin:9px 0}.camera-elevation input{flex:1;min-width:70px;accent-color:#84c9cf}.camera-elevation strong{width:34px;text-align:right}.camera-instruction{margin-top:5px}
+.production .catalog-camera-guide input[type=range]{appearance:none;height:26px;margin:0;padding:0;border:0;background:transparent;border-radius:0;box-shadow:none}
+.production .catalog-camera-guide input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:5px;background:#514657}
+.production .catalog-camera-guide input[type=range]::-webkit-slider-thumb{appearance:none;width:15px;height:15px;margin-top:-5px;border-radius:50%;border:2px solid #efe3fc;background:#b99fd1;box-shadow:0 0 0 3px #c8a8e517}
+.production .catalog-camera-guide input[type=range]::-moz-range-track{height:5px;border-radius:5px;background:#514657}
+.production .catalog-camera-guide input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;border:2px solid #efe3fc;background:#b99fd1}
+@media(prefers-reduced-motion:reduce){.camera-orbit-point{transition:none}}
+@media(max-width:480px){.workflow-inline-controls .catalog-fields{gap:20px 10px}.catalog-directory-input{flex-wrap:wrap}.catalog-directory-input input{flex-basis:65%}}
+
+/* Every enumerated workflow parameter uses the same accessible popover. */
+.wf-select{position:relative;min-width:0;width:100%}
+.wf-select .wf-select-value{display:none}
+.wf-select-trigger{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:42px;padding:11px 13px;border:1px solid #ffffff12;border-radius:11px;background:#111015;color:#d8d1e1;font:inherit;font-size:13px;text-align:left;cursor:pointer;box-sizing:border-box}
+.wf-select-trigger>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wf-select-trigger svg{width:15px;height:15px;flex-shrink:0;color:#a799b6;transition:transform .15s}
+.wf-select-trigger:hover{background:#1b1721;border-color:#baa0d242}
+.wf-select-trigger[aria-expanded=true],.wf-select-trigger:focus-visible{outline:0;border-color:#b79aca;background:#201a29}
+.wf-select-trigger[aria-expanded=true] svg{transform:rotate(180deg)}
+.wf-select-menu{position:fixed;z-index:20000;box-sizing:border-box;overflow:auto;padding:5px;border:1px solid #bda2d33b;border-radius:14px;background:#292230;box-shadow:0 12px 34px #0007;color:#ded4e7;font-size:13px;scrollbar-width:thin;scrollbar-color:#675570 transparent}
+.wf-select-menu [role=option]{position:relative;padding:11px 30px 11px 11px;border-radius:9px;cursor:pointer;line-height:1.4;overflow-wrap:anywhere}
+.wf-select-menu [role=option].is-active,.wf-select-menu [role=option]:hover{background:#b99bd421}
+.wf-select-menu [aria-selected=true]{color:#f3e7ff;background:#b99bd414}
+.wf-select-menu [aria-selected=true]::after{content:'✓';position:absolute;right:11px;color:#d1b1ed}
+.camera-visuals{display:grid;grid-template-columns:minmax(0,1fr) 104px;gap:16px;align-items:center}
+.camera-framing{margin:0;min-width:0}
+.production .catalog-camera-guide .camera-framing svg{display:block;width:100%;height:auto;overflow:hidden;border-radius:12px;background:radial-gradient(ellipse at 50% 25%,#3b3048,#17131d);border:1px solid #ffffff19;box-sizing:border-box}
+.camera-framing [data-camera-framing-person]{transition:transform 140ms ease}
+.camera-framing figcaption{display:flex;flex-direction:column;align-items:center;gap:4px;margin-top:8px;font-size:12px;color:#ded0e8}
+.camera-framing figcaption small{font-size:10px;color:#90849c}
+.production .catalog-camera-guide input[type=range]::-webkit-slider-runnable-track{background:linear-gradient(to right,#c3a5de var(--range-progress,50%),#514657 var(--range-progress,50%))}
+.production .catalog-camera-guide input[type=range]::-moz-range-track{background:linear-gradient(to right,#c3a5de var(--range-progress,50%),#514657 var(--range-progress,50%))}
+.catalog-camera-batch{grid-column:1/-1;display:grid;gap:20px}
+.catalog-camera-batch fieldset{min-width:0;margin:0;padding:0;border:0}
+.catalog-camera-batch legend{padding:0;margin-bottom:10px;color:#d3c5de;font-size:12px}
+.workflow-inline-controls .catalog-camera-batch .catalog-fields{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:480px){.camera-visuals{grid-template-columns:minmax(0,1fr) 80px;gap:9px}.workflow-inline-controls .catalog-camera-batch .catalog-fields{gap:6px}}
+@media(prefers-reduced-motion:reduce){.camera-framing [data-camera-framing-person],.wf-select-trigger svg{transition:none}}
+
+.workflow-inline-controls .catalog-camera-values .catalog-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+.workflow-inline-controls .advanced-field{min-width:0;margin:0;padding:0;border:0;border-radius:0;background:transparent}
+
+/* Review 59: explanations sit beside the controls, without adding module frames. */
+.control-range{display:block;color:#95899f;font-size:11px;line-height:1.6;font-variant-numeric:tabular-nums;margin-top:1px}
+.catalog-field .control-range{margin:0}.catalog-task-field{grid-column:1/-1}
+.processing-duration .duration-seconds{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid #ffffff16;border-radius:10px;background:#111015;color:#b6a8c4;font-size:12px}
+.processing-duration .duration-seconds[hidden]{display:none}
+.processing-duration .duration-seconds input{flex:0 1 8ch;min-width:0;width:8ch;margin-left:auto;text-align:right;padding:0;border:0;background:transparent;box-shadow:none;min-height:24px}
+.processing-duration .duration-seconds:focus-within{border-color:#bea1d6}
+.processing-duration .duration-seconds input:focus-visible{outline:none;box-shadow:none}
+.multi-camera-guide{min-width:0}.multi-camera-explanation,.multi-camera-caption{margin:0;color:#a79bae;font-size:12px;line-height:1.7}
+.multi-camera-caption{font-size:11px;color:#998aa5}
+.multi-camera-guide svg{display:block;width:100%;height:auto;max-height:320px;overflow:visible;margin:8px auto}
+.multi-camera-axis{fill:#91849e;font-size:10px}.multi-camera-marker{cursor:pointer;outline:none}
+.multi-camera-ray{fill:none;stroke:#c8a8e331;stroke-dasharray:3 4}.multi-camera-leader{fill:none;stroke:#b39aca66}
+.multi-camera-marker circle{fill:#322a3e;stroke:#9f85b9;stroke-width:1.5}.multi-camera-marker text{fill:#e7dbee;font-size:11px;font-weight:600;pointer-events:none}
+.multi-camera-marker.is-active circle,.multi-camera-marker:hover circle,.multi-camera-marker:focus-visible circle{fill:#d5b473;stroke:#e9cda0;stroke-width:2}
+.multi-camera-marker.is-active text,.multi-camera-marker:hover text{fill:#221b2b}.multi-camera-marker.is-active .multi-camera-ray{stroke:#d5b473;stroke-dasharray:none}
+.catalog-camera-batch{gap:18px}.catalog-camera-batch fieldset{padding:8px 0 0;border-top:1px solid #ffffff0c}
+.catalog-camera-batch legend{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 9px;font-size:11px}
+.catalog-camera-batch legend b{display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;border-radius:6px;background:#baa0d215;font-weight:500;color:#d8bce9}
+.catalog-camera-batch legend span{margin-left:auto;color:#9b8aa8;font-size:10px}
+.catalog-camera-batch fieldset.is-active legend b{background:#d5b473;color:#241e2c}
+/* Review 60: a single quiet note; errors and editable prompts retain full space. */
+.catalog-field-help,.control-range,.camera-instruction,.multi-camera-explanation,.catalog-outpaint-guide>small,.catalog-input-purpose{display:block;min-width:0;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.6}
+.multi-camera-marker,.camera-orbit-point{touch-action:none;cursor:grab}
+.multi-camera-marker.is-dragging,.catalog-camera-guide.is-dragging .camera-orbit-point{cursor:grabbing}
+.multi-camera-guide svg{touch-action:none}
+.timecode-control{position:relative}
+.timecode-control .timecode-native{position:absolute!important;width:1px!important;height:1px!important;opacity:0;pointer-events:none;padding:0!important;border:0!important}
+.timecode-input{display:flex;align-items:center;background:#111015;border:1px solid #ffffff15;border-radius:11px;overflow:hidden;min-width:0}
+.timecode-input:focus-within{border-color:#bda2d4}
+.catalog-field .timecode-input input{min-width:0;width:100%;border:0;background:transparent;outline:none;box-shadow:none;font-variant-numeric:tabular-nums;letter-spacing:.04em}
+.timecode-input button{border:0;background:transparent;color:#b5a2c3;display:grid;place-items:center;flex:0 0 40px;align-self:stretch;border-radius:0}
+.timecode-input button:hover{background:#bba0d316}.timecode-input button svg{width:16px;height:16px}
+.timecode-menu{position:fixed;z-index:1800;width:244px;padding:15px 16px 10px;border:1px solid #55475f;border-radius:17px;background:#211c28;box-shadow:0 15px 48px #0007;box-sizing:border-box;color:#e2d5eb}
+.timecode-column-head{display:grid;grid-template-columns:1fr 1fr;text-align:center;gap:18px;color:#9f8daf;font-size:11px;padding-bottom:9px}
+.timecode-wheels{display:grid;grid-template-columns:1fr 1fr;gap:18px;position:relative}
+.timecode-wheels:before{content:'';position:absolute;top:64px;left:0;right:0;height:32px;border-radius:8px;background:#b698cd19;border:1px solid #bca2d229;pointer-events:none}
+.timecode-wheel{position:relative;display:grid;grid-template-rows:repeat(5,32px);touch-action:none;cursor:ns-resize;outline:none;mask-image:linear-gradient(transparent,#000 25%,#000 75%,transparent)}
+.timecode-wheel:focus-visible{background:#c2a9d708;border-radius:10px}
+.timecode-wheel button{font:inherit;font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:.08em;color:#aa97b8;border:0;background:none;padding:0;cursor:ns-resize;border-radius:8px;min-height:0}
+.timecode-wheel button.is-selected{font-weight:600;font-size:19px;color:#f3e7fc}.timecode-wheel button:disabled{visibility:hidden}
+.workflow-inline-controls .range-ends{font-size:10px;color:#9b8ca8}.workflow-inline-controls .advanced-group{align-items:start}

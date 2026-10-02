@@ -1,0 +1,10 @@
+*
+!requirements.txt
+!*.py
+!public/
+!public/**
+!workflows/
+!workflows/**
+_update_workflow_*.py
+_verify_ui_*.py
+test_*.py
