@@ -128,7 +128,7 @@ export async function editReference({ref,originalSrc,cutoutSrc,onSave}){
 export function referenceShelfMarkup(refs,{pinned=false}={}){
  // Jimeng's public reference group: 48 × 64 cards, a 4 px gap and one upload item.
  const foldedAngles=[8,-4,22,-8,8,-4,7,-4,8,-8,22,-4],openAngles=[8,-5,8,-5,8,-4,8,-4,8,-5,8,-5];
- return `<div class="api-reference-shelf ${pinned?'pinned expanded':''}" style="--reference-row-width:${(refs.length+1)*52+12}px" aria-label="本次参考素材，${refs.length}项"><div class="api-reference-head"><button type="button" data-action="reference-stack" aria-label="${pinned?'收起全部参考图':'全部展开参考图'}" aria-expanded="${pinned}" title="${pinned?'收起参考图':'固定展开参考图'}">${I(pinned?'down':'expand')}<span>${pinned?'收起':'全部展开'}</span></button></div><div class="api-reference-row">${refs.map((r,i)=>`<div class="api-reference-tile" style="--ref-index:${i};--folded-angle:${foldedAngles[i%12]}deg;--open-angle:${openAngles[i%12]}deg"><button type="button" data-preview-ref="${esc(r.id)}" aria-label="${r.kind==='image'?'编辑':'查看'}${esc(r.id)}">${r.kind==='image'?`<img src="${esc(r.src)}" alt="${esc(r.id)}">`:r.kind==='video'?`<video src="${esc(r.src)}" ${r.poster?`poster="${esc(r.poster)}"`:''} muted preload="metadata" playsinline></video>`:I('audio')}<span class="api-ref-label">${esc(r.id)}</span></button><button type="button" class="api-reference-remove" data-remove="${esc(r.id)}" aria-label="移除${esc(r.id)}">${I('close')}</button>${r.referenceEdits?.autoCutout||r.referenceEdits?.regions?.length||r.referenceEdits?.cutouts?.length?'<i class="reference-edited" title="已编辑"></i>':''}</div>`).join('')}<button type="button" class="api-reference-add" style="--ref-index:${refs.length}" data-action="open-assets" aria-label="添加参考素材" title="添加参考素材">${I('plus')}</button></div></div>`;
+ return `<div class="api-reference-shelf ${pinned?'pinned expanded':''}" style="--reference-row-width:${(refs.length+1)*52+12}px" aria-label="本次参考素材，${refs.length}项"><div class="api-reference-head"><button type="button" data-action="reference-stack" aria-label="${pinned?'收起全部参考图':'全部展开参考图'}" aria-expanded="${pinned}" title="${pinned?'收起参考图':'固定展开参考图'}">${I(pinned?'down':'expand')}<span>${pinned?'收起':'全部展开'}</span></button></div><div class="api-reference-row">${refs.map((r,i)=>`<div class="api-reference-tile" style="--ref-index:${i};--folded-angle:${foldedAngles[i%12]}deg;--open-angle:${openAngles[i%12]}deg"><button type="button" data-preview-ref="${esc(r.id)}" aria-label="${r.kind==='image'?'编辑':'查看'}${esc(r.id)}">${r.kind==='image'?`<img src="${esc(r.src)}" alt="${esc(r.id)}">`:r.kind==='video'?`<video src="${esc(r.src)}" ${r.poster?`poster="${esc(r.poster)}"`:''} muted preload="metadata" playsinline></video>`:I('audio')}<span class="api-ref-label">${esc(r.id)}</span></button><button type="button" class="api-reference-remove" data-remove="${esc(r.id)}" aria-label="移除${esc(r.id)}">${I('close')}</button>${r.referenceEdits?.autoCutout||r.referenceEdits?.regions?.length||r.referenceEdits?.cutouts?.length?'<i class="reference-edited" title="已编辑"></i>':''}</div>`).join('')}<button type="button" class="api-reference-add" style="--ref-index:${refs.length}" data-action="add-reference" aria-haspopup="dialog" aria-expanded="false" aria-label="添加参考素材" title="添加参考素材">${I('plus')}</button></div></div>`;
 }
 
 function expandShelf(shelf,expanded){
@@ -186,18 +186,22 @@ export function installReferenceShelf(shelf){
   },350);
  };
  function refreshPreview(){const button=previewTarget;hidePreview();if(button&&(button.matches(':hover')||button.contains(doc.activeElement)))showPreview(button);}
- const enter=()=>{
-  pointerInside=true;clearTimeout(enterTimer);
-  if(!shelf.foldedByUser)enterTimer=setTimeout(()=>{if(!disposed&&pointerInside)expandShelf(shelf,true);},100);
- };
+ const enter=()=>{pointerInside=true;};
  const leave=()=>{
   pointerInside=false;clearTimeout(enterTimer);shelf.foldedByUser=false;hidePreview();
   if(!shelf.classList.contains('pinned')&&!shelf.matches(':focus-within')){expandShelf(shelf,false);row.scrollLeft=0;}
  };
- const over=e=>{const button=e.target.closest?.('[data-preview-ref]');if(button&&!button.contains(e.relatedTarget))showPreview(button);};
- const out=e=>{if(previewTarget&&!previewTarget.contains(e.relatedTarget))hidePreview();};
+ const over=e=>{
+  // Only the image deck unfolds. Hovering the add button must leave its hit area still.
+  const tile=e.target.closest?.('.api-reference-tile');
+  clearTimeout(enterTimer);
+  if(tile&&!shelf.foldedByUser&&!shelf.classList.contains('expanded'))enterTimer=setTimeout(()=>{if(!disposed&&pointerInside)expandShelf(shelf,true);},100);
+  const button=e.target.closest?.('[data-preview-ref]');if(button&&!button.contains(e.relatedTarget))showPreview(button);
+ };
+ const out=e=>{clearTimeout(enterTimer);if(previewTarget&&!previewTarget.contains(e.relatedTarget))hidePreview();};
  const focus=e=>{
-  if(row.contains(e.target)&&!shelf.foldedByUser){clearTimeout(enterTimer);expandShelf(shelf,true);const button=e.target.closest?.('[data-preview-ref]');if(button)showPreview(button);}
+  clearTimeout(enterTimer);
+  if(e.target.closest?.('.api-reference-tile')&&!shelf.foldedByUser){expandShelf(shelf,true);const button=e.target.closest?.('[data-preview-ref]');if(button)showPreview(button);}
  };
  const blur=e=>{hidePreview();if(shelf.contains(e.relatedTarget))return;shelf.foldedByUser=false;if(!shelf.classList.contains('pinned')&&!pointerInside){expandShelf(shelf,false);row.scrollLeft=0;}};
  const escape=e=>{if(e.key==='Escape'){e.preventDefault();clearTimeout(enterTimer);hidePreview();const button=shelf.querySelector('[data-action="reference-stack"]');if(shelf.classList.contains('pinned'))button.click();shelf.foldedByUser=true;expandShelf(shelf,false);button.focus();}};

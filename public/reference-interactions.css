@@ -30,11 +30,15 @@
 .production .api-reference-shelf.expanded .api-reference-tile:hover,.production .api-reference-shelf.expanded .api-reference-tile:focus-within{z-index:40;transform:translateX(calc(52px * var(--ref-index))) translateY(-8px) rotate(var(--open-angle)) scale(1.125)}
 .production .api-reference-shelf.expanded .api-reference-tile:hover .api-reference-remove,.production .api-reference-shelf.expanded .api-reference-tile:focus-within .api-reference-remove{opacity:1;pointer-events:auto}
 .production .api-reference-shelf.expanded .api-ref-label{opacity:1}
-.production .api-reference-add{position:absolute;left:43px;top:64px;width:28px;height:28px;margin:0;padding:0;display:grid;place-items:center;border-radius:50%;background:#37313ff5;border:1px solid #93869f;box-shadow:0 2px 7px #0005;z-index:41;transition:transform var(--reference-transition),width var(--reference-transition),height var(--reference-transition),left var(--reference-transition),top var(--reference-transition),border-radius var(--reference-transition)}
+.production .api-reference-add{position:absolute;left:43px;top:54px;width:28px;height:28px;margin:0;padding:0;display:grid;place-items:center;border-radius:50%;background:#37313ff5;border:1px solid #93869f;box-shadow:0 2px 7px #0005;z-index:41;transition:transform var(--reference-transition),width var(--reference-transition),height var(--reference-transition),left var(--reference-transition),top var(--reference-transition),border-radius var(--reference-transition)}
 .production .api-reference-add .icon{width:17px;height:17px}
 .production .api-reference-shelf.expanded .api-reference-add{left:8px;top:18px;transform:translateX(calc(52px * var(--ref-index)));width:48px;height:64px;border-radius:5px;background:#3a3342;border:1px dashed #887d95;box-shadow:none}
 .production .api-reference-shelf.pinned .api-reference-tile,.production .api-reference-shelf.pinned .api-reference-add{top:10px}
 .production .api-reference-add:hover{background:#4c4258}
+.production .api-reference-add{pointer-events:auto;touch-action:manipulation}
+.production .reference-import-popup{width:220px}
+.production .reference-import-options .context-option{justify-content:flex-start;gap:10px;color:#ded9e8}
+.production .reference-import-options .context-option:hover,.production .reference-import-options .context-option:focus-visible{background:#ffffff0b}
 .production .api-reference-shelf.pinned .api-reference-tile{transform:translateX(calc(52px * var(--ref-index)))}
 .production .api-reference-shelf.pinned .api-reference-tile:hover,.production .api-reference-shelf.pinned .api-reference-tile:focus-within{transform:translateX(calc(52px * var(--ref-index))) translateY(-8px) scale(1.125)}
 .reference-hover-preview{position:fixed;z-index:90;pointer-events:none;overflow:hidden;border:1px solid #ffffff20;border-radius:16px;background:#242229;box-shadow:0 12px 36px #0008;animation:reference-preview-in .12s ease}
