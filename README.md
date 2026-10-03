@@ -72,12 +72,16 @@ docker compose up --build --wait
 | `YINGXU_DATA_DIR` | 项目 `private/`；SQLite、上传、作品和回执 |
 | `YINGXU_WORKFLOW_DIR` | 项目 `workflows/api/`；可使用自己的模板目录 |
 | `YINGXU_ALLOWED_ORIGINS` | 可选反向代理的完整 Origin，多个以逗号分隔 |
+| `YINGXU_ACCESS_USERNAME` | 对外共享创作台的访问账号，默认 `yingxu` |
+| `YINGXU_ACCESS_PASSWORD` | 对外访问的随机密码，至少 16 位；Railway 未配置时拒绝网站访问 |
 
 新克隆直接使用公开模板，不依赖作者电脑的配置。已有所有者环境继续优先使用 `private/*.api.json`、`private/platform-compiled/*.api.json` 和 `private/backend.json`。公开模板已清理密钥、个人输入提示词及素材名，保留模型和节点绑定；详见模板清单。
 
 浏览器素材、草稿、作品列表使用 IndexedDB / 本地状态；真实生成文件及任务另存后端数据目录。备份需要同时保留浏览器数据与后端数据。清除站点数据、换浏览器或删除数据目录会影响对应记录。
 
-当前是个人创作台，没有多人账号与数据隔离，默认只监听本机；共享体验建议每人独立搭建。对外部署先配置反向代理认证，不能直接当成公共多人服务。
+当前是个人创作台，没有多人账号与数据隔离，默认只监听本机；共享体验建议每人独立搭建。对外共享可设置上述访问账号与密码（HTTP Basic，须使用 HTTPS），只向受邀用户开放。Railway 的自动域名会自动放行对应 HTTPS Origin，健康检查使用不依赖 GPU 的 `/healthz`。访问密码不能代替多人数据隔离，不能直接当成公共多人服务。
+
+Railway 的费用、变量、持久卷、预算与逐步操作见 [Railway 部署指南](docs/railway-deployment.md)。
 
 在线真实生成的部署路线、Pages 的边界与多人体验条件见 [在线工作流接入](docs/online-workflows.md)。自由创作的参考素材加号支持“本地导入”和“素材库选择”；本地文件先保存在当前浏览器，提交真实任务时才上传到后端。
 

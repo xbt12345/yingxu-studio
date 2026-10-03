@@ -1,4 +1,4 @@
-"""Local-only MVP: persistent jobs, real ComfyUI execution and locally retained videos."""
+"""Personal studio: persistent jobs, real ComfyUI execution and retained videos."""
 import asyncio
 import copy
 import secrets
@@ -32,6 +32,7 @@ from adapters import ROOT, WORKFLOWS, CATALOG_WORKFLOWS, manifest, settings_for,
 from local_directory import choose_directory
 from portable import embed_workflow
 from configuration import DATA_DIR, workflow_path
+from deployment_access import access_denied, railway_origin
 
 try:
     local_config=json.loads((ROOT/'private/backend.json').read_text('utf-8'))
@@ -305,10 +306,14 @@ def local_directory(request:Request,body:DirectorySelection):
 
 @app.middleware('http')
 async def local_origin(request:Request,call_next):
-    # This personal MVP binds loopback. Do not let another website submit GPU jobs.
+    denied=access_denied(request.url.path,request.headers.get('authorization'))
+    if denied is not None:return denied
+    # Authentication and the origin guard serve different purposes.
     origin=request.headers.get('origin')
     allowed={f'http://127.0.0.1:{request.url.port}',f'http://localhost:{request.url.port}'}
     allowed.update(x.strip().rstrip('/') for x in os.environ.get('YINGXU_ALLOWED_ORIGINS','').split(',') if x.strip())
+    public_origin=railway_origin()
+    if public_origin:allowed.add(public_origin)
     try:
         private_origin=json.loads((PRIVATE/'access.json').read_text('utf-8-sig')).get('origin','')
         from urllib.parse import urlparse
@@ -322,6 +327,10 @@ async def local_origin(request:Request,call_next):
     response=await call_next(request)
     if request.url.path.startswith('/api') and not request.url.path.startswith('/api/media'):response.headers['Cache-Control']='no-store'
     return response
+
+@app.get('/healthz')
+def liveness():
+    return JSONResponse({'status':'ok'},headers={'Cache-Control':'no-store'})
 
 @app.get('/api/workflows')
 def list_workflows():return [w for w in WORKFLOWS if workflow_path(w['id']).is_file()] if BASE else []

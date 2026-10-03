@@ -9,12 +9,14 @@ services:
       CHENYU_CARD_URL: ${CHENYU_CARD_URL:-}
       YINGXU_DATA_DIR: /app/private
       YINGXU_ALLOWED_ORIGINS: ${YINGXU_ALLOWED_ORIGINS:-}
+      YINGXU_ACCESS_USERNAME: ${YINGXU_ACCESS_USERNAME:-yingxu}
+      YINGXU_ACCESS_PASSWORD: ${YINGXU_ACCESS_PASSWORD:-}
     volumes:
       - yingxu-data:/app/private
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8770/studio.html', timeout=3)"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8770/healthz', timeout=3)"]
       interval: 5s
       timeout: 4s
       retries: 12
