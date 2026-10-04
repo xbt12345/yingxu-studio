@@ -9,9 +9,10 @@ let seedCount=0;
 for(const original of catalog){
  const w={...original,interface:interfaces[original.id]},untouched=JSON.stringify(w);
  const draft={prompt:'复现验证',refs:[],catalogValues:{},catalogTexts:{},catalogSeedModes:{}};
+ for(const f of w.interface.controls.filter(f=>f.kind==='points')){assert.throws(()=>prepareCatalogSnapshot(w,cloneDraft(draft)),/至少点选一个/);draft.catalogValues[f.id]='{"positive":[{"x":0.5,"y":0.5}],"negative":[]}';}
  const first=prepareCatalogSnapshot(w,cloneDraft(draft)),second=prepareCatalogSnapshot(w,cloneDraft(draft));
  assert.equal(first.workflowSourceHash,w.interface.sourceHash);
- for(const f of w.fields)if(!w.interface.controls.some(c=>c.kind==='seed'&&(c.members||[c]).some(m=>m.id===f.id)))assert.equal(first.catalogValues[f.id],f.value,`${w.id}: hidden default ${f.id}`);
+ for(const f of w.fields){const control=w.interface.controls.find(c=>c.id===f.id);if(control?.defaultAdjustment){assert.equal(control.sourceDefault,f.value,`${w.id}: original invalid default is documented`);assert.equal(control.defaultAdjustment.from,control.sourceDefault);assert.equal(control.defaultAdjustment.to,control.value);assert.ok(control.value>=control.min&&control.value<=control.max);assert.ok(control.defaultAdjustment.reason?.trim());assert.ok(control.defaultAdjustment.source?.includes('object_info'));assert.equal(first.catalogValues[f.id],control.value,`${w.id}: reviewed replacement default`);}else if(!w.interface.controls.some(c=>c.kind==='seed'&&(c.members||[c]).some(m=>m.id===f.id)))assert.equal(first.catalogValues[f.id],f.value,`${w.id}: hidden default ${f.id}`);}
  for(const f of w.interface.controls){
   assert.ok(Object.hasOwn(first.catalogValues,f.id),`${w.id}: missing snapshot ${f.id}`);
   if(f.kind!=='seed')continue;
@@ -34,7 +35,7 @@ for(const original of catalog){
  assert.deepEqual(restored.catalogValues,first.catalogValues,`${w.id}: fixed restoration`);
  const redraw=prepareCatalogSnapshot(w,cloneDraft(first),{redraw:true});
  for(const f of w.interface.controls){if(f.kind==='seed')assert.notEqual(redraw.catalogValues[f.id],first.catalogValues[f.id]);else assert.equal(redraw.catalogValues[f.id],first.catalogValues[f.id]);}
- assert.deepEqual(draft.catalogValues,{});assert.equal(JSON.stringify(w),untouched);
+ assert.ok(Object.keys(draft.catalogValues).every(id=>w.interface.controls.some(f=>f.id===id&&f.kind==='points')));assert.equal(JSON.stringify(w),untouched);
  const seed=w.interface.controls.find(f=>f.kind==='seed');if(seed){const invalid=cloneDraft(first);invalid.catalogValues[seed.id]=Number.MAX_SAFE_INTEGER+1;assert.throws(()=>prepareCatalogSnapshot(w,invalid),/整数/);}
  // Every configured media port must stay directly editable, empty and populated alike.
  for(const populated of [false,true]){
@@ -59,9 +60,11 @@ assert.equal(interfaces['local-card-1'].texts.find(t=>t.role==='prompt').id,'459
 assert.equal(interfaces['local-card-55'].controls.find(c=>c.kind==='duration').id,'105:value_1');
 assert.deepEqual(interfaces['local-card-56'].media.map(m=>[m.id,m.label]),[['130','首帧'],['136','尾帧']]);
 assert.equal(interfaces['local-card-72'].controls.filter(c=>c.kind==='camera').length,27);
+const adjustedCamera={...catalog.find(w=>w.id==='local-card-72'),interface:interfaces['local-card-72']};
+assert.throws(()=>prepareCatalogSnapshot(adjustedCamera,{prompt:'',refs:[],catalogValues:{'119:widget_1':90}}),/范围/,'invalid older view defaults must be rejected without silent clamping');
 assert.ok(!interfaces['local-card-98'].controls.some(c=>c.node==='ImageFromBatch'&&c.key==='length'));
 assert.equal(interfaces['local-card-134'].controls[0].kind,'color');
-console.log(JSON.stringify({workflows:catalog.length,seedBindings:seedCount,randomFixedRedrawRecovery:'passed',sourceDefaults:'preserved',criticalGraphBindings:'passed',mediaPortsAlwaysVisible:'passed',allParameterBindingsInline:'passed',megapixelPresetConstraints:'passed'}));
+console.log(JSON.stringify({workflows:catalog.length,seedBindings:seedCount,randomFixedRedrawRecovery:'passed',sourceDefaults:'preserved except recordedCameraAdjustment',recordedCameraAdjustment:'119:widget_1: 90 → 0; verified range -30 to 60',criticalGraphBindings:'passed',mediaPortsAlwaysVisible:'passed',allParameterBindingsInline:'passed',megapixelPresetConstraints:'passed'}));
 
 const clean=interfaces['local-card-92'];assert.ok(clean.controls.some(c=>c.kind==='mask'&&c.options.length===3));assert.ok(clean.texts.some(t=>t.id==='22:value'));assert.equal(clean.controls.filter(c=>c.kind==='seed').length,1);
 assert.deepEqual(interfaces['local-card-103'].controls.filter(c=>c.kind==='seed').map(c=>c.id),['3:seed','79:seed','85:seed']);
@@ -121,5 +124,5 @@ const audio=migrated('local-card-98',{'15:offset_seconds':3,'15:duration_seconds
 assert.equal(audio.catalogValues['15:audio_end_seconds'],11);
 assert.equal(migrated('local-card-98',{'15:offset_seconds':3,'15:audio_end_seconds':10}).catalogValues['15:duration_seconds'],7);
 assert.throws(()=>migrated('local-card-98',{'15:offset_seconds':3,'15:audio_end_seconds':2}),/终点/);
-for(const cfg of Object.values(interfaces))for(const f of [...cfg.controls,...cfg.texts])assert.ok(!f.help||(!f.help.includes('\n')&&f.help.length<=12));
+for(const cfg of Object.values(interfaces))for(const f of [...cfg.controls,...cfg.texts]){assert.ok(!f.help||!f.help.includes('\n'));if(f.kind==='indices')assert.match(f.help,/编号以检测结果为准/);else assert.ok(!f.help||f.help.length<=12);}
 console.log(JSON.stringify({sourceOmissions:'covered',secondsToNativeFrames:'passed',audioEndToNativeDuration:'passed',oldDraftMigration:'passed'}));

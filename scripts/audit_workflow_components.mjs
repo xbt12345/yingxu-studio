@@ -13,7 +13,7 @@ const kinds={},totals={controls:0,texts:0,media:0,apis:0,exactSharedFields:0,sha
 const styleSheets=path=>[...readFileSync(path,'utf8').matchAll(/href="([^"]+\.css\?v=[^"]+)"/g)].map(m=>m[1]);
 const productionStyles=styleSheets('public/studio.html');
 const libraryStyles=styleSheets('public/workflow-control-library.html');
-assert.deepEqual(libraryStyles.filter(x=>x!=='workflow-control-library.css?v=60.1'),productionStyles,'component library and production CSS must match');
+assert.deepEqual(libraryStyles.filter(x=>x.split('?')[0]!=='workflow-control-library.css'),productionStyles,'component library and production CSS must match');
 for(const w of catalog){
  const cfg=schemas[w.id],draft={prompt:'',refs:[],catalogValues:{}},html=catalogEditor({...w,interface:cfg},draft);
  const ids=[...html.matchAll(/data-catalog-field="([^"]+)"/g)].map(x=>x[1]);

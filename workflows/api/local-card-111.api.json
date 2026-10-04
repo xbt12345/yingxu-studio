@@ -1,0 +1,250 @@
+{
+  "35": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "36": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "31": {
+    "class_type": "CLIPSetLastLayer",
+    "inputs": {
+      "clip": [
+        "36",
+        0
+      ],
+      "stop_at_clip_layer": -2
+    },
+    "_meta": {
+      "title": "CLIPSetLastLayer"
+    }
+  },
+  "33": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "35",
+        0
+      ],
+      "clip": [
+        "31",
+        0
+      ],
+      "lora_name": "z_image/ZIT_Gigantic_Breasts_Realistic_巨乳写实风格.safetensors",
+      "strength_model": 0.6,
+      "strength_clip": 0.6
+    },
+    "_meta": {
+      "title": "LoraLoader"
+    }
+  },
+  "34": {
+    "class_type": "LoraLoader",
+    "inputs": {
+      "model": [
+        "33",
+        0
+      ],
+      "clip": [
+        "33",
+        1
+      ],
+      "lora_name": "z_image/Oppai_Nipple_Remake_巨乳和胸.safetensors",
+      "strength_model": 0.4,
+      "strength_clip": 0.4
+    },
+    "_meta": {
+      "title": "LoraLoader"
+    }
+  },
+  "32": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "34",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "28": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "34",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "26": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "width": 720,
+      "height": 1280,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "30": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "34",
+        0
+      ],
+      "seed": 403699842628892,
+      "steps": 9,
+      "cfg": 1.2,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "32",
+        0
+      ],
+      "negative": [
+        "28",
+        0
+      ],
+      "latent_image": [
+        "26",
+        0
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "18": {
+    "class_type": "LatentUpscaleBy",
+    "inputs": {
+      "samples": [
+        "30",
+        0
+      ],
+      "upscale_method": "bilinear",
+      "scale_by": 1.5
+    },
+    "_meta": {
+      "title": "LatentUpscaleBy"
+    }
+  },
+  "21": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "34",
+        0
+      ],
+      "seed": 403699842628892,
+      "steps": 9,
+      "cfg": 1.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "32",
+        0
+      ],
+      "negative": [
+        "28",
+        0
+      ],
+      "latent_image": [
+        "18",
+        0
+      ],
+      "denoise": 0.6
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "37": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "UltraFluxV1.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "22": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "21",
+        0
+      ],
+      "vae": [
+        "37",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "2": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "22",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  },
+  "23": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "30",
+        0
+      ],
+      "vae": [
+        "37",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "24": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "23",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  }
+}

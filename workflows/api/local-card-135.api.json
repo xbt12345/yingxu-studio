@@ -1,0 +1,45 @@
+{
+  "12": {
+    "class_type": "LoadImageListFromDir //Inspire",
+    "inputs": {
+      "directory": "",
+      "image_load_cap": 0,
+      "start_index": 0,
+      "load_always": false,
+      "sort_method": "None"
+    },
+    "_meta": {
+      "title": "LoadImageListFromDir //Inspire"
+    }
+  },
+  "11": {
+    "class_type": "ImageListToBatch+",
+    "inputs": {
+      "image": [
+        "12",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageListToBatch+"
+    }
+  },
+  "10": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "frame_rate": 6,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "image/gif",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

@@ -1,5 +1,7 @@
+import {installPointPickers} from './point-picker.js?v=70.1';
+import {resultMediaMarkup} from './result-media.js?v=70.0';
 import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=69.0';
-import {outputActionMarkup,installOutputActionPlacement} from './output-actions.js?v=67.0';
+import {outputActionMarkup,installOutputActionPlacement} from './output-actions.js?v=70.0';
 import {installTimecodeControls} from './timecode-control.js?v=60.1';
 import {installMultiCamera} from './multi-camera.js?v=60.1';
 import {installProcessingDurations} from './processing-duration.js?v=60.1';
@@ -9,8 +11,8 @@ import {installWorkflowSelects} from './workflow-select.js?v=63.0';
 import {annotateImage} from './region-annotation.js?v=54.0';
 import {esc} from './data.js';
 import {advancedFields} from './advanced.js?v=60.1';
-import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=62.0';
-import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=63.0';
+import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=70.1';
+import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=70.1';
 
 // The library renders production components with harmless sample values; no saving or generation.
 const [catalog,schemas,live]=await Promise.all([
@@ -37,6 +39,7 @@ fieldExample('number','数值与强度','强度、色彩、数量和修复值使
 fieldExample('color','调色强度','独立于视角与扩图；保留真实节点的数值范围和步长。',f=>f.kind==='color');
 fieldExample('motion','动作参数','按源节点的帧数或强度直接输入，不推断为统一百分比。',f=>f.kind==='motion');
 fieldExample('count','生成数量','套图数量沿用原节点的整数输入。',f=>f.kind==='count');
+add('object-indices','选择处理对象','留空处理全部对象；可填写检测编号如 0,2。两个处理步骤各自保留输入，未检测时不造对象预览。',source('local-card-22'),(d,w)=>controlSection('',`<div class="catalog-fields">${w.interface.controls.filter(f=>f.kind==='indices').map(f=>controlField(d,f)).join('')}</div>`));
 fieldExample('restoration','修复幅度','重绘与修复数值保留工作流自己的范围。',f=>f.kind==='restoration');
 fieldExample('mask-source','掩膜来源','只列出此工作流实际连通的掩膜分支。',f=>f.kind==='mask');
 fieldExample('style','风格选择','源工作流允许的风格选项共用圆角菜单。',f=>f.kind==='style');
@@ -57,6 +60,8 @@ for(const kind of ['video','audio']){
  const w=records.find(w=>w.interface.media.some(m=>m.kind===kind)),m=w.interface.media.find(m=>m.kind===kind);
  add('media-'+kind,kind==='video'?'视频素材':'音频素材','沿用正式素材卡，保留素材类型、替换与上传；原生播放控件按媒体类型显示。',w,(d,w)=>fragment(w,{...d,refs:kind==='video'?[{id:'视频1',catalogSlot:m.id,kind,src:'assets/award-film-10s.mp4',name:'示例视频'}]:[]},`[data-catalog-drop-slot="${m.id}"]`));
 }
+const pointWorkflow=records.find(w=>w.interface.controls.some(f=>f.kind==='points'));
+if(pointWorkflow){const f=pointWorkflow.interface.controls.find(f=>f.kind==='points');add('subject-points','视频主体点选','使用合成测试图案的起始帧；绿点保留主体、红点排除干扰，点击点移除。预览按正式处理比例裁切。',pointWorkflow,(d,w)=>controlSection('',controlField({...d,refs:[{id:'视频1',catalogSlot:f.mediaSlotId,kind:'video',src:'assets/point-picker-sample.mp4',name:'合成测试图案'}]},f)));}
 add('demo-range','演示滑轨与分段选项','仅用于内置演示工作流；不能把这些百分比复制为真实节点的参数。',{id:'image-video'},(d,w)=>controlSection('',advancedFields(d,w)));
 const apiSource=records.find(w=>w.interface.apiProfiles?.length);
 add('api','工作流自有 API','保持来源、地址、模型及密钥布局；真实密钥只在工作区填写。',apiSource,(d,w)=>apiPanel({...w,interface:{...w.interface,apiProfiles:[{...w.interface.apiProfiles[0],baseUrl:'https://api.example.com/v1',model:'示例模型'}]}},d));
@@ -74,13 +79,19 @@ function referenceExample(pinned=false,prompt=''){return `<div class="api-compos
 add('reference-shelf','参考图折叠与编辑','左侧叠放，悬停向右展开并预览大图；全部展开可固定在上方。编辑只更新本页示例。',{id:'model'},()=>referenceExample());
 add('output-actions','作品直接操作','悬停或聚焦显示图标；对比可在本页切换，其他按钮前往正式工作区。',{id:'model'},()=>`<article class="output" tabindex="0"><img src="assets/forest.jpg" alt="操作示例" style="width:100%;max-height:220px;object-fit:cover"><div class="output-action-bar" role="group" aria-label="作品操作示例">${outputActionMarkup({id:'library-example',type:'image',src:'assets/forest.jpg'},{icons:true})}</div></article>`);
 
+const textExample={id:'library-text-result',type:'text',text:'保持人物身份与服饰，沿用原片动作、机位和场景光线。\n结果正文可直接复制或下载。',src:''};
+textExample.src='data:text/plain;charset=utf-8,'+encodeURIComponent(textExample.text);
+add('text-result','文本生成结果','提示词工具的真实正文可直接复制、下载；不会显示图像或视频操作。',records.find(w=>w.output==='text')||{id:'model'},()=>`<article class="output output-text" tabindex="0"><div class="media-open">${resultMediaMarkup(textExample,{preview:true})}</div><div class="output-action-bar" role="group" aria-label="文本结果操作">${outputActionMarkup(textExample,{icons:true})}</div></article>`);
+const audioExample={id:'library-audio-result',type:'audio',src:'assets/audio-result-sample.wav'};
+add('audio-result','音频生成结果','使用 2 秒合成测试音；原生控件可播放，下载按钮直接下载 WAV 文件。其他操作前往正式工作区，不调用模型。',{id:'model'},()=>`<article class="output output-audio" tabindex="0"><div class="media-open result-static">${resultMediaMarkup(audioExample)}</div><div class="output-action-bar" role="group" aria-label="音频结果操作">${outputActionMarkup(audioExample,{icons:true})}</div></article>`);
+
 function renderDemo(e){
  const template=document.createElement('template');template.innerHTML=e.render(e.d,e.w);
  for(const node of template.content.querySelectorAll('[id]')){const previous=node.id;if(previous==='wf-source-video')continue;node.id=e.id+'-'+previous;for(const label of template.content.querySelectorAll('[for]'))if(label.htmlFor===previous)label.htmlFor=node.id;}
  return template.innerHTML;
 }
 const root=document.getElementById('component-library');
-root.innerHTML=examples.map(e=>`<article class="library-example" id="${e.id}"><header><h2>${e.title}</h2><p title="${esc(e.note)}">${esc(e.note)}</p><a href="studio.html?review=69.0#${e.w.id==='model'?'create':'workflow/'+e.w.id}" target="_blank" rel="noopener">在对应工作流中查看 ↗</a></header><div class="library-demo catalog-editor">${renderDemo(e)}</div></article>`).join('');
+root.innerHTML=examples.map(e=>`<article class="library-example" id="${e.id}"><header><h2>${e.title}</h2><p title="${esc(e.note)}">${esc(e.note)}</p><a href="studio.html?review=70.0#${e.w.id==='model'?'create':'workflow/'+e.w.id}" target="_blank" rel="noopener">在对应工作流中查看 ↗</a></header><div class="library-demo catalog-editor">${renderDemo(e)}</div></article>`).join('');
 document.getElementById('library-index').innerHTML=examples.map(e=>`<a href="#${e.id}">${e.title}</a>`).join('');
 const counts={};for(const w of records)for(const f of w.interface.controls)counts[f.kind]=(counts[f.kind]||0)+1;
 document.getElementById('library-counts').textContent=`${records.length} 个本地工作流 · ${Object.values(counts).reduce((a,b)=>a+b,0)} 个已配置参数 · ${examples.length} 组组件示例 · 2 个独立接入页 / 12 个内置演示共用控件`;
@@ -105,7 +116,7 @@ document.addEventListener('click',event=>{
  if(id){const f=e.w.interface?.controls.find(f=>f.id===id);e.d.catalogValues[id]=f.type==='number'?Number(button.dataset.value):button.dataset.value;const input=[...document.getElementById(e.id).querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===id);if(input)input.value=button.dataset.value;update(e);}
  if(button.dataset.catalogSeedMode){e.d.catalogSeedModes[button.dataset.catalogSeedMode]=button.dataset.value;update(e);}
  if(e.id==='media'&&button.dataset.catalogAnnotate){annotateImage({src:'assets/coast.jpg',mode:'visual',optional:true,help:'组件示例，标注不写入素材库。',onSave:async()=>{}});return;}
- if(e.id.startsWith('media'))window.open(`studio.html?review=69.0#workflow/${e.w.id}`,'_blank','noopener');
+ if(e.id.startsWith('media'))window.open(`studio.html?review=70.0#workflow/${e.w.id}`,'_blank','noopener');
 });
 document.addEventListener('change',event=>{
  const e=context(event);if(!e)return;
@@ -131,13 +142,14 @@ installWorkflowSelects();
 installProcessingDurations();
 installMultiCamera();
 installTimecodeControls();
+installPointPickers();
 installDirectoryPicker({getCommit:button=>{const e=examples.find(x=>x.id===button.closest('.library-example')?.id);return e?path=>{e.d.catalogValues[button.dataset.localDirectory]=path;}:null;}});
 
 document.addEventListener('click',event=>{
- const output=event.target.closest('#output-actions button');if(output){if(output.dataset.select){const selected=output.getAttribute('aria-pressed')!=='true';output.setAttribute('aria-pressed',String(selected));output.classList.toggle('active',selected);output.setAttribute('aria-label',selected?'取消对比':'加入对比');output.title=selected?'取消对比':'加入对比';}else window.open('studio.html?review=69.0#create','_blank','noopener');return;}
+ const copy=event.target.closest('#text-result [data-action="copy-output"]');if(copy){navigator.clipboard.writeText(textExample.text).catch(()=>{});return;}const audio=event.target.closest('#audio-result button');if(audio){window.open('studio.html?review=70.0#create','_blank','noopener');return;}const output=event.target.closest('#output-actions button');if(output){if(output.dataset.select){const selected=output.getAttribute('aria-pressed')!=='true';output.setAttribute('aria-pressed',String(selected));output.classList.toggle('active',selected);output.setAttribute('aria-label',selected?'取消对比':'加入对比');output.title=selected?'取消对比':'加入对比';}else window.open('studio.html?review=70.0#create','_blank','noopener');return;}
  const example=event.target.closest('#reference-shelf');if(!example)return;
  const remove=event.target.closest('[data-remove]');if(remove){const index=referenceSamples.findIndex(r=>r.id===remove.dataset.remove);if(index>=0){if(referenceSamples[index].cutoutSrc)URL.revokeObjectURL(referenceSamples[index].cutoutSrc);referenceSamples.splice(index,1);}const pinned=example.querySelector('.api-reference-shelf').classList.contains('pinned');const prompt=example.querySelector('textarea').value;clearExampleShelf();example.querySelector('.api-composer').outerHTML=referenceExample(pinned,prompt);clearExampleShelf=installReferenceShelf(example.querySelector('.api-reference-shelf'));return;}
- const add=event.target.closest('[data-action="add-reference"]');if(add){window.open('studio.html?review=69.0#create','_blank','noopener');return;}
+ const add=event.target.closest('[data-action="add-reference"]');if(add){window.open('studio.html?review=70.0#create','_blank','noopener');return;}
  const toggle=event.target.closest('[data-action="reference-stack"]');if(toggle){const shelf=toggle.closest('.api-reference-shelf');toggleReferenceShelf(shelf);}
  const preview=event.target.closest('[data-preview-ref]');if(preview){const ref=referenceSamples.find(r=>r.id===preview.dataset.previewRef);editReference({ref,cutoutSrc:ref.cutoutSrc,onSave:async result=>{ref.referenceEdits=result.edits;ref.referenceStrength=result.strength;if(result.settingsOnly)return;if(ref.cutoutSrc)URL.revokeObjectURL(ref.cutoutSrc);ref.cutoutSrc=result.cutout?URL.createObjectURL(result.cutout):null;const image=preview.querySelector('img');if(image.dataset.previousBlob)URL.revokeObjectURL(image.dataset.previousBlob);const url=URL.createObjectURL(result.image);image.src=url;image.dataset.previousBlob=url;}}).catch(console.error);}
 });

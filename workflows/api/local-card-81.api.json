@@ -1,0 +1,383 @@
+{
+  "272": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen/qwen_image_edit_2511_fp8mixed.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "273": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "272",
+        0
+      ],
+      "lora_name": "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-fp32.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "301": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "273",
+        0
+      ],
+      "lora_name": "qwen/next-scene_lora-v2-3000.safetensors",
+      "strength_model": 0.8
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "274": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "301",
+        0
+      ],
+      "shift": 3.1000000000000005,
+      "sampling": "flow"
+    },
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "276": {
+    "class_type": "CFGNorm",
+    "inputs": {
+      "model": [
+        "274",
+        0
+      ],
+      "strength": 1,
+      "pre_cfg": false
+    },
+    "_meta": {
+      "title": "CFGNorm"
+    }
+  },
+  "265": {
+    "class_type": "Seed (rgthree)",
+    "inputs": {
+      "seed": -1
+    },
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "275": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "285": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": ""
+    },
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
+  "306": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": ""
+    },
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
+  "297": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 3
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "294": {
+    "class_type": "CR Integer To String",
+    "inputs": {
+      "int_": [
+        "297",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CR Integer To String"
+    }
+  },
+  "288": {
+    "class_type": "CR Text Replace",
+    "inputs": {
+      "text": [
+        "306",
+        0
+      ],
+      "find1": "[条数]",
+      "replace1": [
+        "294",
+        0
+      ],
+      "find2": "",
+      "replace2": "",
+      "find3": "",
+      "replace3": ""
+    },
+    "_meta": {
+      "title": "CR Text Replace"
+    }
+  },
+  "270": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 3,
+      "string_1": [
+        "285",
+        0
+      ],
+      "delimiter": " ",
+      "return_list": false,
+      "string_2": [
+        "288",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "JoinStringMulti"
+    }
+  },
+  "295": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "281": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "shortest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "295",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "308": {
+    "class_type": "RH_LLMAPI_NODE",
+    "inputs": {
+      "api_baseurl": "https://api.apilio.ai/v1",
+      "api_key": "",
+      "model": "grok-4.6",
+      "role": [
+        "270",
+        0
+      ],
+      "prompt": "",
+      "temperature": 0.6,
+      "seed": 355,
+      "ref_image": [
+        "281",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "RH_LLMAPI_NODE"
+    }
+  },
+  "287": {
+    "class_type": "TextSplitByDelimiter",
+    "inputs": {
+      "text": [
+        "308",
+        0
+      ],
+      "delimiter": "|",
+      "start_index": 0,
+      "skip_every": 0,
+      "max_count": [
+        "297",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "TextSplitByDelimiter"
+    }
+  },
+  "290": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "287",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  },
+  "266": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "277": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1664,
+      "background_color": "#000000",
+      "image": [
+        "295",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "303": {
+    "class_type": "TextEncodeQwenImageEditPlusAdvance_lrzjason",
+    "inputs": {
+      "clip": [
+        "275",
+        0
+      ],
+      "prompt": [
+        "290",
+        0
+      ],
+      "vae": [
+        "266",
+        0
+      ],
+      "vl_resize_image1": [
+        "277",
+        0
+      ],
+      "target_size": 1344,
+      "target_vl_size": 384,
+      "upscale_method": "lanczos",
+      "crop_method": "center",
+      "instruction": "Describe the key features of the input image (color, shape, size, texture, objects, background), then explain how the user's text instruction should alter or modify the image. Generate a new image that meets the user's requirements while maintaining consistency with the original input where appropriate."
+    },
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlusAdvance_lrzjason"
+    }
+  },
+  "279": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "303",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ConditioningZeroOut"
+    }
+  },
+  "280": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "276",
+        0
+      ],
+      "seed": [
+        "265",
+        0
+      ],
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "positive": [
+        "303",
+        0
+      ],
+      "negative": [
+        "279",
+        0
+      ],
+      "latent_image": [
+        "303",
+        1
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "284": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "280",
+        0
+      ],
+      "vae": [
+        "266",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "291": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "284",
+        0
+      ],
+      "filename_prefix": "yingxu/result"
+    },
+    "_meta": {
+      "title": "SaveImage"
+    }
+  }
+}

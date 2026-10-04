@@ -1,0 +1,211 @@
+{
+  "3": {
+    "class_type": "Upscale Model Loader",
+    "inputs": {
+      "model_name": "RealESRGAN_x2plus__通用真人照片2x.pth"
+    },
+    "_meta": {
+      "title": "Upscale Model Loader"
+    }
+  },
+  "15": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": 24,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "VHS_LoadVideo"
+    }
+  },
+  "16": {
+    "class_type": "easy imageSizeByLongerSide",
+    "inputs": {
+      "image": [
+        "15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageSizeByLongerSide"
+    }
+  },
+  "19": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1000
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "18": {
+    "class_type": "ImpactCompare",
+    "inputs": {
+      "cmp": "a >= b",
+      "a": [
+        "16",
+        0
+      ],
+      "b": [
+        "19",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImpactCompare"
+    }
+  },
+  "20": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1536,
+      "background_color": "#000000",
+      "image": [
+        "15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "17": {
+    "class_type": "easy ifElse",
+    "inputs": {
+      "boolean": [
+        "18",
+        0
+      ],
+      "on_true": [
+        "20",
+        0
+      ],
+      "on_false": [
+        "15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy ifElse"
+    }
+  },
+  "13": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1000
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "14": {
+    "class_type": "easy compare",
+    "inputs": {
+      "a": [
+        "20",
+        0
+      ],
+      "b": [
+        "13",
+        0
+      ],
+      "comparison": "a >= b"
+    },
+    "_meta": {
+      "title": "easy compare"
+    }
+  },
+  "6": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 8
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "7": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 12
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "12": {
+    "class_type": "easy ifElse",
+    "inputs": {
+      "boolean": [
+        "14",
+        0
+      ],
+      "on_true": [
+        "6",
+        0
+      ],
+      "on_false": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy ifElse"
+    }
+  },
+  "5": {
+    "class_type": "ImageUpscaleWithModelBatched",
+    "inputs": {
+      "upscale_model": [
+        "3",
+        0
+      ],
+      "images": [
+        "17",
+        0
+      ],
+      "per_batch": [
+        "12",
+        0
+      ],
+      "downscale_ratio": 1,
+      "downscale_method": "lanczos",
+      "precision": "float32"
+    },
+    "_meta": {
+      "title": "ImageUpscaleWithModelBatched"
+    }
+  },
+  "9": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "5",
+        0
+      ],
+      "frame_rate": 8,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

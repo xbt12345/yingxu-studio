@@ -3,6 +3,7 @@ import asyncio
 import copy
 import secrets
 import mimetypes
+import math
 import hashlib
 import io
 import json
@@ -13,7 +14,7 @@ import threading
 import time
 import uuid
 import sys
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 
@@ -33,6 +34,7 @@ from local_directory import choose_directory
 from portable import embed_workflow
 from configuration import DATA_DIR, workflow_path
 from deployment_access import access_denied, railway_origin
+import schema_adapters
 
 try:
     local_config=json.loads((ROOT/'private/backend.json').read_text('utf-8'))
@@ -102,6 +104,38 @@ def video_length(a):
         pass
     raise HTTPException(400,'无法读取原视频时长，请重新导出 MP4 后再试。')
 
+def points_geometry(spec,values,records):
+    recipe=spec.get('pointsRecipe')
+    if not recipe:return None
+    source=records.get(recipe.get('slotId'))
+    if not source or source.get('kind')!='video':raise ValueError('主体点选需要绑定原视频。')
+    try:
+        with av.open(str(asset_file(source))) as container:
+            stream=next((s for s in container.streams if s.type=='video'),None)
+            width,height=(stream.width,stream.height) if stream else (0,0)
+    except (av.error.FFmpegError,OSError,ValueError):raise ValueError('无法读取原视频尺寸，请重新导入。') from None
+    long_side=values.get(recipe.get('longSideControlId'),recipe.get('longSide'))
+    multiple=recipe.get('multiple')
+    if not width or not height or not isinstance(long_side,(int,float)) or isinstance(long_side,bool) or not math.isfinite(long_side) or long_side<=0 or not isinstance(multiple,int) or multiple<=0:
+        raise ValueError('主体点选的缩放尺寸未完成审查。')
+    source_multiple=recipe.get('sourceMultiple',1)
+    if not isinstance(source_multiple,int) or isinstance(source_multiple,bool) or source_multiple<=0:
+        raise ValueError('主体点选的原视频尺寸转换未完成审查。')
+    # VHS AnimateDiff first center-crops to its format's nearest dimension
+    # multiple, before LayerStyle receives the frame. Match its int(x+.5)
+    # rounding instead of Python's ties-to-even round().
+    width=int(width/source_multiple+0.5)*source_multiple
+    height=int(height/source_multiple+0.5)*source_multiple
+    if not width or not height:raise ValueError('原视频尺寸过小，无法进行主体点选。')
+    # LayerUtility original/longest: truncate proportional short side, then
+    # round both dimensions upward before its fit-crop resize.
+    if width>=height:target_width,target_height=int(long_side),int(long_side*height/width)
+    else:target_width,target_height=int(long_side*width/height),int(long_side)
+    target_width=int(math.ceil(target_width/multiple)*multiple)
+    target_height=int(math.ceil(target_height/multiple)*multiple)
+    return {'width':target_width,'height':target_height,'node':recipe['node'],
+            **({'negativeTarget':recipe['negativeTarget']} if recipe.get('negativeTarget') else {})}
+
 def public_asset(a):
     try:asset_file(a);available=True
     except HTTPException:available=False
@@ -109,16 +143,33 @@ def public_asset(a):
 
 def public(j):
     references=[]
-    for id in j.get('asset_ids',[]):
-        try:references.append(public_asset(asset(id)))
-        except HTTPException:references.append(dict(id=id,available=False,kind='unknown',name='原素材缺失',src=''))
-    return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items']},'request_token':j['token'],'references':references}
+    catalog_slots=[slot['id'] for slot in j.get('schema_spec',{}).get('media',[]) if slot['id'] in j.get('catalog_assets',{})]
+    for index,id in enumerate(j.get('asset_ids',[])):
+        try:reference=public_asset(asset(id))
+        except HTTPException:reference=dict(id=id,available=False,kind='unknown',name='原素材缺失',src='')
+        if index<len(catalog_slots):reference['catalogSlot']=catalog_slots[index]
+        references.append(reference)
+    return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items','schema_spec']},'request_token':j['token'],'references':references}
 
 def public_graph(graph):
     """Keep execution credentials out of workflow downloads and video metadata."""
+    graph=copy.deepcopy(graph)
+    protected=set()
+    def credential_source(node):
+        if node in protected or node not in graph:return
+        protected.add(node)
+        for value in graph[node].get('inputs',{}).values():
+            if isinstance(value,list) and len(value)==2 and isinstance(value[0],str):credential_source(value[0])
+    for node in graph.values():
+        for key,value in node.get('inputs',{}).items():
+            if any(part in key.lower() for part in ('api_key','apikey','access_token','authorization','password','secret')) and isinstance(value,list) and len(value)==2:
+                credential_source(str(value[0]))
+    for node in protected:
+        for key,value in graph[node].get('inputs',{}).items():
+            if isinstance(value,str):graph[node]['inputs'][key]='[请填写自己的密钥]'
     def clean(value,key=''):
         name=key.lower()
-        if any(part in name for part in ('api_key','access_token','authorization','password','secret')):
+        if any(part in name for part in ('api_key','apikey','access_token','authorization','password','secret')):
             return '[请填写自己的密钥]' if not isinstance(value,list) else value
         if isinstance(value,str) and re.fullmatch(r'sk-[A-Za-z0-9_-]{16,}',value):
             return '[请填写自己的密钥]'
@@ -148,43 +199,77 @@ def friendly(message):
     if 'connection' in low or 'timeout' in low:return '暂时无法连接算力卡。请确认卡已开机，恢复连接后本页会继续查询。'
     return '工作流执行失败：'+message[:500]+'。提示词和素材已保留，可修改参数后重试。'
 
-def output_items(h,kind='video'):
+MEDIA_KINDS={'.png':'image','.jpg':'image','.jpeg':'image','.webp':'image','.gif':'image',
+             '.mp4':'video','.webm':'video','.mov':'video',
+             '.wav':'audio','.mp3':'audio','.flac':'audio','.ogg':'audio','.m4a':'audio',
+             '.txt':'text'}
+def output_items(h,kind='video',output_nodes=None):
     found=[]
-    for node in h.get('outputs',{}).values():
-        for key in (['images'] if kind=='image' else ['gifs','videos']):
-            for v in node.get(key,[]):
-                suffix=Path(v.get('filename','')).suffix.lower() if isinstance(v,dict) else ''
-                if isinstance(v,dict) and suffix in ({'.png','.jpg','.jpeg','.webp'} if kind=='image' else {'.mp4'}) and v.get('type')=='output':
-                    if v not in found:found.append(v)
+    nodes=h.get('outputs',{})
+    if output_nodes is not None:nodes={str(k):nodes[str(k)] for k in output_nodes if str(k) in nodes}
+    for node_id,node in nodes.items():
+        for key in ('images','gifs','videos','audio','audios','files'):
+            entries=node.get(key,[])
+            if isinstance(entries,dict):entries=[entries]
+            if not isinstance(entries,list):continue
+            for value in entries:
+                suffix=Path(value.get('filename','')).suffix.lower() if isinstance(value,dict) else ''
+                accepted_types=('output','temp') if output_nodes is not None else ('output',)
+                if isinstance(value,dict) and suffix in MEDIA_KINDS and value.get('type') in accepted_types:
+                    item={**value,'kind':MEDIA_KINDS[suffix]}
+                    if item not in found:found.append(item)
+        if kind=='text' or output_nodes is not None:
+            for key in ('text','string','strings'):
+                entries=node.get(key,[])
+                if isinstance(entries,str):entries=[entries]
+                if not isinstance(entries,list):continue
+                texts=[v for v in entries if isinstance(v,str)]
+                if texts:
+                    text='\n'.join(texts)
+                    if len(text.encode('utf-8'))>1024*1024:raise ValueError('返回的文字超过允许大小。')
+                    item={'kind':'text','text':text,'filename':str(node_id)+'.txt','type':'output'}
+                    if item not in found:found.append(item)
     return found
 
 def collect(j,h):
-    kind=manifest(j['workflow_id']).get('output','video')
-    items=output_items(h,kind)
+    spec=j.get('schema_spec') or manifest(j['workflow_id']) or schema_adapters.manifest(j['workflow_id']) or {}
+    kind=spec.get('output','video')
+    items=output_items(h,kind,spec.get('outputs') if j.get('schema_spec') else None)
     if not items:
-        update(j['id'],status='failed',stage='没有作品输出',error='工作流已结束，但没有返回可保存的'+('图片' if kind=='image' else '视频')+'。请检查输出节点。',ended=time.time()*1000)
+        update(j['id'],status='failed',stage='没有作品输出',error='工作流已结束，但没有返回可保存的作品。请检查输出节点。',ended=time.time()*1000)
         return
     update(j['id'],status='downloading',stage='正在取回作品',error=None)
     folder=PRIVATE/'outputs'/j['id'];folder.mkdir(exist_ok=True)
     outputs=[]
     for i,item in enumerate(items):
+        kind=item['kind']
         suffix=Path(item['filename']).suffix.lower();dest=folder/f'{i}{suffix}';tmp=dest.with_suffix('.part')
         if not dest.exists():
-            with requests.get(BASE+'/view',params={k:item.get(k,'') for k in ['filename','subfolder','type']},stream=True,timeout=(15,120)) as r:
-                r.raise_for_status()
-                size=0
-                with tmp.open('wb') as f:
-                    for chunk in r.iter_content(1024*1024):
-                        size+=len(chunk)
-                        if size>(100 if kind=='image' else 1024)*1024*1024:raise ValueError('返回的作品超过允许大小。')
-                        f.write(chunk)
+            if 'text' in item:tmp.write_bytes(item['text'].encode('utf-8'))
+            else:
+                with requests.get(BASE+'/view',params={k:item.get(k,'') for k in ['filename','subfolder','type']},stream=True,timeout=(15,120)) as r:
+                    r.raise_for_status()
+                    size=0
+                    with tmp.open('wb') as f:
+                        for chunk in r.iter_content(1024*1024):
+                            size+=len(chunk)
+                            limit=1 if kind=='text' else 100 if kind=='image' else 1024
+                            if size>limit*1024*1024:raise ValueError('返回的作品超过允许大小。')
+                            f.write(chunk)
+            try:
                 if kind=='image':
                     with Image.open(tmp) as preview:preview.verify()
-                else:
+                elif kind=='text':tmp.read_text('utf-8')
+                elif kind=='video' and suffix=='.mp4':
                     with tmp.open('rb') as f:head=f.read(64)
                     if b'ftyp' not in head:raise ValueError('算力卡返回的文件不是有效 MP4，请检查视频保存节点。')
-                tmp.replace(dest)
-        if kind=='video':embed_workflow(dest,public_graph(j['graph']))
+                else:
+                    with av.open(str(tmp)) as container:
+                        if not any(stream.type==kind for stream in container.streams):raise ValueError('算力卡返回的媒体格式不正确。')
+            except (OSError,UnicodeError,av.error.FFmpegError) as error:raise ValueError('无法读取算力卡返回的作品。') from error
+            tmp.replace(dest)
+        embedded=kind=='video' and suffix=='.mp4'
+        if embedded:embed_workflow(dest,public_graph(j['graph']))
         branch_labels={'local-card-12':['Anything-to-Real','Turn2Real','anime2real-semi']}
         label=branch_labels.get(j['workflow_id'],[])
         branch_name=None
@@ -192,7 +277,7 @@ def collect(j,h):
             for name,display in [('Flux-9B','Flux 9B 结果'),('Qwen-AIO','Qwen 结果'),('single','单图结果'),('double','双图结果')]:
                 if name in item.get('subfolder','').split('/') or item.get('filename','').startswith(name+'_'):
                     branch_name=display;break
-        outputs.append(dict(workflow_embedded=kind=='video',id=j['id']+'o'+str(i),type=kind,src=f'/api/media/{j["id"]}/{i}{suffix}',poster='',duration=j['settings'].get('duration') if kind=='video' else None,bytes=dest.stat().st_size,label=branch_name or (label[i] if i<len(label) else None)))
+        outputs.append(dict(workflow_embedded=embedded,id=j['id']+'o'+str(i),type=kind,src=f'/api/media/{j["id"]}/{i}{suffix}',poster='',duration=j.get('settings',{}).get('duration') if kind in ('video','audio') else None,bytes=dest.stat().st_size,label=branch_name or (label[i] if i<len(label) else None),**({'text':dest.read_text('utf-8')} if kind=='text' else {})))
     receipt={k:h.get(k) for k in ['outputs','status']}
     (PRIVATE/'receipts'/f'{j["id"]}.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),'utf-8')
     update(j['id'],status='done',stage='已保存作品',outputs=outputs,ended=time.time()*1000,error=None)
@@ -337,8 +422,51 @@ def list_workflows():return [w for w in WORKFLOWS if workflow_path(w['id']).is_f
 
 @app.get('/api/catalog-connections')
 def catalog_connections():
-    return [{**{k:w[k] for k in ['id','name','source','source_hash','output']},
+    if not BASE:return []
+    legacy=[{**{k:w[k] for k in ['id','name','source','source_hash','output']},'adapter':'legacy','available':True,
              'validation':'api-pending' if w['id'] in ('local-card-105','local-card-106') else 'live-verified'} for w in CATALOG_WORKFLOWS if BASE and workflow_path(w['id']).is_file()]
+    legacy_ids={w['id'] for w in CATALOG_WORKFLOWS}
+    generic=[]
+    for id,spec in schema_adapters.registry().items():
+        if id in legacy_ids:continue
+        ready=spec.get('validation')=='structural-verified'
+        available=bool(BASE) and ready and schema_adapters.template_path(spec).is_file()
+        generic.append({**{k:spec.get(k) for k in ('id','name','source','source_hash','output')},
+                        'adapter':'generic','available':available,'validation':spec.get('validation','blocked'),
+                        'blocking_reason':spec.get('blocking_reason') or ('' if available or not ready else '尚未配置算力服务或缺少执行模板。'),
+                        **public_schema(spec)})
+    return legacy+generic
+
+def public_schema(spec):
+    def control(field):
+        visible={key:copy.deepcopy(field[key]) for key in ('id','kind','key','value','type','label','nodeId','min','max','step','integer','options','customRange','derived','help','uiGroup','unit','guidanceRange','mediaSlotId') if key in field}
+        if field.get('previewRecipe'):
+            visible['previewRecipe']={key:copy.deepcopy(field['previewRecipe'][key]) for key in ('longSideControlId','longSide','multiple','sourceMultiple','fit','frameRate','skipControlId','skipFrames') if key in field['previewRecipe']}
+        if field.get('members'):visible['members']=[{key:member[key] for key in ('id','key','nodeId') if key in member} for member in field['members']]
+        return visible
+    def api_profile(profile):
+        visible={key:copy.deepcopy(profile[key]) for key in ('id','label','model','modelOptions','keyOnly','help','branchId') if key in profile}
+        try:
+            parsed=urlsplit(profile.get('baseUrl',''))
+            host=parsed.hostname or ''
+            if ':' in host:host='['+host+']'
+            if parsed.port:host+=':'+str(parsed.port)
+            visible['baseUrl']=urlunsplit((parsed.scheme,host,parsed.path,'','')) if parsed.scheme in ('http','https') else ''
+        except ValueError:visible['baseUrl']=''
+        return visible
+    media=[{**{key:copy.deepcopy(slot[key]) for key in ('id','kind','label','branchId') if key in slot},
+            'required':slot.get('required',not slot.get('optional',False)),
+            'optional':not slot.get('required',not slot.get('optional',False))} for slot in spec.get('media',[])]
+    constraints=[{key:item[key]for key in ('type','width','height')if key in item}
+                 for item in spec.get('constraints',[])if item.get('type')=='nonzero-size']
+    return {'supportedControlIds':[field['id'] for field in spec.get('controls',[])],
+            'supportedTextIds':[field['id'] for field in spec.get('texts',[])],
+            'constraints':constraints,
+            'supportedMediaIds':[slot['id'] for slot in spec.get('media',[])],
+            'controls':[control(field) for field in spec.get('controls',[])],
+            'texts':[{key:copy.deepcopy(field[key]) for key in ('id','key','role','label','help','branchId','default','value','required','preserveWhenEmpty') if key in field} for field in spec.get('texts',[])],
+            'media':media,'apiProfiles':[api_profile(profile) for profile in spec.get('apiProfiles',[])],
+            'external_api_account':spec.get('external_api_account',False)}
 
 @app.get('/api/health')
 def health():
@@ -351,19 +479,26 @@ def health():
 @app.post('/api/assets')
 async def upload(file:UploadFile=File(...)):
     ext=Path(file.filename or '').suffix.lower()
-    if ext not in ['.png','.jpg','.jpeg','.webp','.mp4']:raise HTTPException(400,'支持 PNG、JPG、WebP 图片和 MP4 视频。')
+    if ext not in MEDIA_KINDS or MEDIA_KINDS[ext]=='text':raise HTTPException(400,'支持 PNG、JPG、WebP、GIF 图片，MP4 / WebM 视频，以及 WAV、MP3、FLAC、OGG、M4A 音频。')
     chunks=[];size=0
     while chunk:=await file.read(1024*1024):
         size+=len(chunk)
         if size>200*1024*1024:raise HTTPException(413,'单个素材上限 200 MB，请压缩或截短后重试。')
         chunks.append(chunk)
     data=b''.join(chunks)
-    kind='video' if ext=='.mp4' else 'image'
+    kind=MEDIA_KINDS[ext]
     if kind=='image':
         try:
             with Image.open(io.BytesIO(data)) as im:im.verify()
         except Exception:raise HTTPException(400,'图片文件损坏或格式不符，请重新导出 PNG / JPG。')
-    elif b'ftyp' not in data[:64]:raise HTTPException(400,'请使用有效的 MP4 视频。')
+    elif kind=='video' and ext in ('.mp4','.mov'):
+        if b'ftyp' not in data[:64]:raise HTTPException(400,'请使用有效的 MP4 视频。')
+    else:
+        try:
+            with av.open(io.BytesIO(data)) as container:
+                stream=next((s for s in container.streams if s.type==kind),None)
+                if stream is None or next(container.decode(stream),None) is None:raise ValueError('没有有效媒体帧。')
+        except (av.error.FFmpegError,ValueError,OSError):raise HTTPException(400,'无法读取'+('音频' if kind=='audio' else '视频')+'，请重新导出后再上传。')
     id=hashlib.sha256(data).hexdigest()
     try:cached=asset(id)
     except HTTPException:cached=None
@@ -391,10 +526,13 @@ class Submission(BaseModel):
     model_config=ConfigDict(extra='forbid')
     workflow_id:str
     source_hash:str|None=None
-    prompt:str=Field(min_length=1,max_length=6000)
+    prompt:str=Field(default='',max_length=6000)
     negative:str=Field(default='',max_length=2000)
     settings:dict=Field(default_factory=dict)
-    asset_ids:list[str]=Field(default_factory=list,max_length=9)
+    asset_ids:list[str]=Field(default_factory=list,max_length=64)
+    catalog_values:dict=Field(default_factory=dict,max_length=256)
+    catalog_texts:dict=Field(default_factory=dict,max_length=128)
+    catalog_assets:dict[str,str]=Field(default_factory=dict,max_length=64)
     api_profiles:dict=Field(default_factory=dict)
     token:str=Field(min_length=8,max_length=100)
 
@@ -421,11 +559,20 @@ def bind_api_profiles(workflow_id,graph,profiles):
 @app.post('/api/jobs')
 def submit(body:Submission):
     if not BASE:raise HTTPException(503,'尚未配置算力服务，请在 .env 中设置 CHENYU_CARD_URL；演示生成仍可使用。')
+    if manifest(body.workflow_id) is None:
+        spec=schema_adapters.manifest(body.workflow_id)
+        if spec:
+            with lock,database() as db:
+                old=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
+                if old:return public(json.loads(old[0]))
+                j=prepare_schema_submission(body,spec,db)
+            return dispatch(j)
     with lock,database() as db:
         old=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
         if old:return public(json.loads(old[0]))
         w=manifest(body.workflow_id)
         if not w:raise HTTPException(400,'此工作流尚未接入。')
+        if body.catalog_values or body.catalog_texts or body.catalog_assets:raise HTTPException(400,'此工作流仍使用原有参数接口，请刷新页面后重试。')
         if w.get('source_hash') and body.source_hash!=w['source_hash']:
             raise HTTPException(409,'工作流原文件已经变化，请刷新页面后重试。')
         try:s=settings_for(w,body.settings)
@@ -433,6 +580,7 @@ def submit(body:Submission):
         if not body.prompt.strip():raise HTTPException(400,'请填写希望生成或修改的画面。')
         if body.negative.strip() and not w['negative']:raise HTTPException(400,'此工作流没有反向提示词输入，请把要求写入镜头描述。')
         aa=[asset(i) for i in body.asset_ids]
+        if any(a['kind'] not in ('image','video') for a in aa):raise HTTPException(400,'此工作流不支持音频素材。')
         for kind,lo,hi in [('image','minImages','maxImages'),('video','minVideos','maxVideos')]:
             n=sum(a['kind']==kind for a in aa)
             if not w[lo]<=n<=w[hi]:raise HTTPException(400,f'{w["name"]}需要 {w[lo]}–{w[hi]} 份'+('图片' if kind=='image' else '视频')+'素材。')
@@ -460,6 +608,63 @@ def submit(body:Submission):
         db.execute('INSERT INTO jobs VALUES (?,?,?)',(id,body.token,json.dumps(j,ensure_ascii=False)))
     return dispatch(j)
 
+def require_api_keys(graph,spec=None):
+    def resolved(value):
+        seen=set()
+        while isinstance(value,list) and len(value)==2:
+            node_id=str(value[0])
+            if node_id in seen:return None
+            seen.add(node_id)
+            source=graph.get(node_id,{}).get('inputs',{})
+            literal=next((source[key] for key in ('prompt','text','value','string') if key in source),value)
+            if literal is value:return value
+            value=literal
+        return value
+    # Registry profiles may bind to a primitive named "value", rather than
+    # an input named api_key. Check the actual reviewed targets after overrides
+    # and graph pruning, without requiring credentials during offline builds.
+    for profile in (spec or {}).get('apiProfiles',[]):
+        binding=profile.get('bindings',{}).get('apiKey')
+        targets=binding if isinstance(binding,list) else [binding]
+        for target in targets:
+            if not isinstance(target,dict) or str(target.get('node')) not in graph:continue
+            value=resolved(graph[str(target['node'])].get('inputs',{}).get(target.get('input')))
+            if value is None or isinstance(value,str) and not value.strip():
+                label=profile.get('label') or '此工作流的 API 配置'
+                raise HTTPException(400,f'{label}缺少 API key，请填写自己的 API key，或配置带密钥的私有工作流模板。')
+    for node in graph.values():
+        inputs=node.get('inputs',{})
+        for name,value in inputs.items():
+            if name.lower() not in ('api_key','apikey','access_token'):continue
+            value=resolved(value)
+            if isinstance(value,str) and not value.strip():raise HTTPException(400,'此工作流需要自己的 API key，请在自有 API 配置中填写，或配置私有工作流模板。')
+
+def prepare_schema_submission(body,spec,db):
+    if body.source_hash!=spec.get('source_hash'):raise HTTPException(409,'工作流原文件已经变化，请刷新页面后重试。')
+    if body.settings or body.asset_ids:raise HTTPException(400,'此工作流需要按控件与素材槽提交，请刷新页面后重试。')
+    try:
+        schema_adapters.require_ready(spec)
+        # Validate all inexpensive inputs before any remote upload or submission.
+        checked_values=schema_adapters.validate_values(spec,body.catalog_values)
+        schema_adapters.validate_texts(spec,body.catalog_texts,body.prompt,body.negative)
+        slots=spec.get('media',[])
+        if set(body.catalog_assets)-{slot['id'] for slot in slots}:raise ValueError('参考素材包含不属于此工作流的项目。')
+        records={slot['id']:asset(body.catalog_assets[slot['id']]) for slot in slots if slot['id'] in body.catalog_assets}
+        schema_adapters.validate_assets(spec,records)
+        geometry=points_geometry(spec,checked_values,records)
+        records={slot:ensure_remote(record) for slot,record in records.items()}
+        id=uuid.uuid4().hex
+        graph,values,texts=schema_adapters.build(spec,checked_values,body.catalog_texts,records,body.api_profiles,id,body.prompt,body.negative,geometry=geometry)
+    except FileNotFoundError:raise HTTPException(503,'缺少此工作流的执行模板，请核对部署文件。') from None
+    except (ValueError,KeyError,TypeError) as error:raise HTTPException(400,str(error)) from None
+    require_api_keys(graph,spec)
+    j=dict(id=id,token=body.token,workflow_id=spec['id'],prompt=body.prompt,negative=body.negative,settings={},
+           catalog_values=values,catalog_texts=texts,catalog_assets=dict(body.catalog_assets),schema_spec=copy.deepcopy(spec),
+           asset_ids=[body.catalog_assets[slot['id']] for slot in slots if slot['id'] in body.catalog_assets],
+           status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None)
+    db.execute('INSERT INTO jobs VALUES (?,?,?)',(id,body.token,json.dumps(j,ensure_ascii=False)))
+    return j
+
 def dispatch(j):
     id=j['id'];graph=j['graph']
     try:
@@ -481,6 +686,9 @@ class Rerun(BaseModel):
 
 @app.post('/api/jobs/{id}/rerun')
 def rerun(id:str,body:Rerun):
+    original=job(id)
+    if original.get('schema_spec'):
+        return rerun_schema(id,body)
     with lock,database() as db:
         previous=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
         if previous:return public(json.loads(previous[0]))
@@ -590,6 +798,24 @@ def rerun(id:str,body:Rerun):
         if original['workflow_id']=='bernini-edit':
             graph['425']['inputs']['video']=next(a['remote'] for a in aa if a['kind']=='video')
         j=dict(id=new_id,token=body.token,workflow_id=original['workflow_id'],prompt=original['prompt'],negative=original['negative'],settings=settings,asset_ids=list(original['asset_ids']),status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None,rerun_of=id)
+        db.execute('INSERT INTO jobs VALUES (?,?,?)',(new_id,body.token,json.dumps(j,ensure_ascii=False)))
+    return dispatch(j)
+
+def rerun_schema(id,body):
+    if not BASE:raise HTTPException(503,'尚未配置算力服务。')
+    with lock,database() as db:
+        previous=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
+        if previous:return public(json.loads(previous[0]))
+        original=job(id)
+        if original['status'] not in ['done','failed','cancelled','abandoned']:raise HTTPException(409,'原任务尚未结束，请等待结果后再试。')
+        records={slot:ensure_remote(asset(key)) for slot,key in original.get('catalog_assets',{}).items()}
+        new_id=uuid.uuid4().hex
+        try:graph,values=schema_adapters.rerun(original,records,new_id)
+        except (ValueError,KeyError,TypeError) as error:raise HTTPException(409,'原工作流的执行绑定无法恢复：'+str(error)) from None
+        j={**copy.deepcopy(original),'id':new_id,'token':body.token,'catalog_values':values,'graph':graph,
+           'status':'submitting','stage':'正在提交到算力卡','started':time.time()*1000,'ended':None,'outputs':[],
+           'prompt_id':None,'error':None,'rerun_of':id}
+        for key in ('cancel_requested','cancel_sent','cancel_error','connection_error','progress'):j.pop(key,None)
         db.execute('INSERT INTO jobs VALUES (?,?,?)',(new_id,body.token,json.dumps(j,ensure_ascii=False)))
     return dispatch(j)
 

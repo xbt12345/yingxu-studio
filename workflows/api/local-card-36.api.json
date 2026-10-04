@@ -1,0 +1,130 @@
+{
+  "7": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "9": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "10": {
+    "class_type": "Comfly_gpt_image_2_official",
+    "inputs": {
+      "prompt": [
+        "7",
+        0
+      ],
+      "image1": [
+        "2",
+        0
+      ],
+      "api_key": [
+        "9",
+        0
+      ],
+      "model": "gpt-image-2",
+      "n": 1,
+      "quality": "auto",
+      "size": "auto",
+      "background": "auto",
+      "output_format": "png",
+      "output_compression": 100,
+      "moderation": "auto",
+      "async_mode": true,
+      "webhook": "",
+      "max_poll_attempts": 300,
+      "poll_interval": 5,
+      "max_retries": 5,
+      "initial_timeout": 900,
+      "seed": 0,
+      "skip_error": false
+    },
+    "_meta": {
+      "title": "Comfly_gpt_image_2_official"
+    }
+  },
+  "11": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  },
+  "18": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "17": {
+    "class_type": "Comfly_gpt_image_2_official",
+    "inputs": {
+      "prompt": [
+        "18",
+        0
+      ],
+      "api_key": [
+        "9",
+        0
+      ],
+      "model": "gpt-image-2",
+      "n": 1,
+      "quality": "auto",
+      "size": "auto",
+      "background": "auto",
+      "output_format": "png",
+      "output_compression": 100,
+      "moderation": "auto",
+      "async_mode": true,
+      "webhook": "",
+      "max_poll_attempts": 300,
+      "poll_interval": 5,
+      "max_retries": 5,
+      "initial_timeout": 900,
+      "seed": 0,
+      "skip_error": false
+    },
+    "_meta": {
+      "title": "Comfly_gpt_image_2_official"
+    }
+  },
+  "16": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  }
+}

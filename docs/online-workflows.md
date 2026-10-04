@@ -32,6 +32,6 @@ Pages 托管静态 HTML、CSS、JavaScript，无法运行本项目 Python 后端
 
 当前后端没有按用户隔离任务和媒体，同一个实例应视为一个共享创作空间。少量受邀用户可在认证后共同体验这一空间；要各自保密，则每人独立实例和数据卷。要向陌生用户开放，需要先补账号、任务/素材归属校验、访问控制和生成额度，再开放生成入口。
 
-上线也不会自动接通未实现的功能：151 个目录中现有适配器覆盖 34 份 API 模板；自由创作内置模型仍为演示，参考强度尚未参与生成，任意工作流导入尚未实现。接通更多工具须补对应模板和适配器；自由创作须补模型 API，不能只把演示开关改成“真实”。
+当前有 132 份 API 模板：34 份既有适配器与 98 份新通用执行合同。新增图依据指定卡节点定义编译和核对输入，尚未逐图生成；缺节点的 3 份明确禁用，空文件需卡端补回。自由创作内置模型仍为演示，参考强度尚未参与生成，任意工作流导入尚未实现；自由创作须补模型 API，不能只把演示开关改成“真实”。
 
 依据：[GitHub Pages 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)、[ComfyUI HTTP / WebSocket 接口](https://docs.comfy.org/development/comfyui-server/comms_routes)、本项目 `server.py`、`configuration.py`、`compose.yaml` 与 `public/app.js`。

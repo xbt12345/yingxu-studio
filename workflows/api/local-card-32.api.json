@@ -1,0 +1,54 @@
+{
+  "37": {
+    "class_type": "CR Prompt Text",
+    "inputs": {
+      "prompt": ""
+    },
+    "_meta": {
+      "title": "CR Prompt Text"
+    }
+  },
+  "7": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "31": {
+    "class_type": "RH_LLMAPI_NODE",
+    "inputs": {
+      "api_baseurl": "https://api.apilio.ai/v1",
+      "api_key": [
+        "37",
+        0
+      ],
+      "model": "grok-4-fast-non-reasoning",
+      "role": "You are a helpful assistant",
+      "prompt": "",
+      "temperature": 0.6,
+      "seed": 159,
+      "ref_image": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "RH_LLMAPI_NODE"
+    }
+  },
+  "38": {
+    "class_type": "easy showAnything",
+    "inputs": {
+      "anything": [
+        "31",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy showAnything"
+    }
+  }
+}

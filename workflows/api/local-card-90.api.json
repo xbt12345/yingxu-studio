@@ -1,0 +1,486 @@
+{
+  "11": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "115": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  },
+  "14": {
+    "class_type": "SeedVR2LoadDiTModel",
+    "inputs": {
+      "model": "seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      "device": "cuda:0",
+      "blocks_to_swap": 0,
+      "swap_io_components": false,
+      "offload_device": "none",
+      "cache_model": false,
+      "attention_mode": "sdpa"
+    },
+    "_meta": {
+      "title": "SeedVR2LoadDiTModel"
+    }
+  },
+  "15": {
+    "class_type": "SeedVR2LoadVAEModel",
+    "inputs": {
+      "model": "ema_vae_fp16.safetensors",
+      "device": "cuda:0",
+      "encode_tiled": false,
+      "encode_tile_size": 1024,
+      "encode_tile_overlap": 128,
+      "decode_tiled": false,
+      "decode_tile_size": 1024,
+      "decode_tile_overlap": 128,
+      "tile_debug": "false",
+      "offload_device": "none",
+      "cache_model": false
+    },
+    "_meta": {
+      "title": "SeedVR2LoadVAEModel"
+    }
+  },
+  "13": {
+    "class_type": "SeedVR2VideoUpscaler",
+    "inputs": {
+      "image": [
+        "11",
+        0
+      ],
+      "dit": [
+        "14",
+        0
+      ],
+      "vae": [
+        "15",
+        0
+      ],
+      "seed": 622687745,
+      "resolution": 2048,
+      "max_resolution": 0,
+      "batch_size": 5,
+      "uniform_batch_size": false,
+      "color_correction": "lab",
+      "temporal_overlap": 0,
+      "prepend_frames": 0,
+      "input_noise_scale": 0,
+      "latent_noise_scale": 0,
+      "offload_device": "cpu",
+      "enable_debug": false
+    },
+    "_meta": {
+      "title": "SeedVR2VideoUpscaler"
+    }
+  },
+  "16": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  },
+  "77": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "smooth/Smooth Mix Wan t2v 2.2 low v2.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "78": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "77",
+        0
+      ],
+      "lora_name": "Wan22-Lightning/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank128_bf16.safetensors",
+      "strength_model": 1.0000000000000002
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "80": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "78",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "61": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "80",
+        0
+      ],
+      "shift": 8.000000000000002
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "109": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "61",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "81": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "73": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "81",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "60": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "81",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "84": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "RealESRGAN_x2plus__通用真人照片2x.pth"
+    },
+    "_meta": {
+      "title": "UpscaleModelLoader"
+    }
+  },
+  "75": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "crop",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1280,
+      "background_color": "#000000",
+      "image": [
+        "11",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "83": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "84",
+        0
+      ],
+      "image": [
+        "75",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageUpscaleWithModel"
+    }
+  },
+  "88": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": [
+        "83",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "megapixels": 4,
+      "resolution_steps": 1
+    },
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "85": {
+    "class_type": "TTP_Tile_image_size",
+    "inputs": {
+      "image": [
+        "88",
+        0
+      ],
+      "width_factor": 2,
+      "height_factor": 2,
+      "overlap_rate": 0.05
+    },
+    "_meta": {
+      "title": "TTP_Tile_image_size"
+    }
+  },
+  "87": {
+    "class_type": "TTP_Image_Tile_Batch",
+    "inputs": {
+      "image": [
+        "88",
+        0
+      ],
+      "tile_width": [
+        "85",
+        0
+      ],
+      "tile_height": [
+        "85",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "TTP_Image_Tile_Batch"
+    }
+  },
+  "65": {
+    "class_type": "easy imageBatchToImageList",
+    "inputs": {
+      "image": [
+        "87",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageBatchToImageList"
+    }
+  },
+  "63": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "67": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "65",
+        0
+      ],
+      "vae": [
+        "63",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEEncode"
+    }
+  },
+  "91": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "109",
+        0
+      ],
+      "seed": 547451245111443,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_2m",
+      "scheduler": "kl_optimal",
+      "positive": [
+        "73",
+        0
+      ],
+      "negative": [
+        "60",
+        0
+      ],
+      "latent_image": [
+        "67",
+        0
+      ],
+      "denoise": 0.17
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "68": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "91",
+        0
+      ],
+      "vae": [
+        "63",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "70": {
+    "class_type": "ImageListToImageBatch",
+    "inputs": {
+      "images": [
+        "68",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageListToImageBatch"
+    }
+  },
+  "59": {
+    "class_type": "easy cleanGpuUsed",
+    "inputs": {
+      "anything": [
+        "70",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy cleanGpuUsed"
+    }
+  },
+  "86": {
+    "class_type": "TTP_Image_Assy",
+    "inputs": {
+      "tiles": [
+        "59",
+        0
+      ],
+      "positions": [
+        "87",
+        1
+      ],
+      "original_size": [
+        "87",
+        2
+      ],
+      "grid_size": [
+        "87",
+        3
+      ],
+      "padding": 128
+    },
+    "_meta": {
+      "title": "TTP_Image_Assy"
+    }
+  },
+  "126": {
+    "class_type": "SeedVR2VideoUpscaler",
+    "inputs": {
+      "image": [
+        "86",
+        0
+      ],
+      "dit": [
+        "14",
+        0
+      ],
+      "vae": [
+        "15",
+        0
+      ],
+      "seed": 622687745,
+      "resolution": 2048,
+      "max_resolution": 0,
+      "batch_size": 5,
+      "uniform_batch_size": false,
+      "color_correction": "lab",
+      "temporal_overlap": 0,
+      "prepend_frames": 0,
+      "input_noise_scale": 0,
+      "latent_noise_scale": 0,
+      "offload_device": "cpu",
+      "enable_debug": false
+    },
+    "_meta": {
+      "title": "SeedVR2VideoUpscaler"
+    }
+  },
+  "128": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "126",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  },
+  "92": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "86",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  }
+}

@@ -1,0 +1,668 @@
+{
+  "5158:5132": {
+    "class_type": "CR Prompt Text",
+    "inputs": {
+      "prompt": ""
+    },
+    "_meta": {
+      "title": "超分"
+    }
+  },
+  "5158:5140": {
+    "class_type": "DualCLIPLoader",
+    "inputs": {
+      "clip_name1": "gemma_3_12B_it_fpmixed.safetensors",
+      "clip_name2": "ltx-2.3_text_projection_bf16.safetensors",
+      "type": "ltxv",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "DualCLIPLoader"
+    }
+  },
+  "5158:2483": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": [
+        "5158:5132",
+        0
+      ],
+      "clip": [
+        "5158:5140",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "5158:2612": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "5158:5140",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "5158:1241": {
+    "class_type": "LTXVConditioning",
+    "inputs": {
+      "positive": [
+        "5158:2483",
+        0
+      ],
+      "negative": [
+        "5158:2612",
+        0
+      ],
+      "frame_rate": 24
+    },
+    "_meta": {
+      "title": "LTXVConditioning"
+    }
+  },
+  "5158:5139": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "LTX23_video_vae_bf16.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "5154": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1280
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "5099": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": 0,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 0,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "VHS_LoadVideo"
+    }
+  },
+  "5158:5120": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": [
+        "5154",
+        0
+      ],
+      "background_color": "#000000",
+      "image": [
+        "5099",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "5158:5129": {
+    "class_type": "GetImageRangeFromBatch",
+    "inputs": {
+      "start_index": 0,
+      "num_frames": 1,
+      "images": [
+        "5158:5120",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "获取图像范围"
+    }
+  },
+  "5158:3336": {
+    "class_type": "LTXVPreprocess",
+    "inputs": {
+      "image": [
+        "5158:5129",
+        0
+      ],
+      "img_compression": 33
+    },
+    "_meta": {
+      "title": "LTXVPreprocess"
+    }
+  },
+  "5158:5026": {
+    "class_type": "ResizeImageMaskNode",
+    "inputs": {
+      "input": [
+        "5158:5120",
+        0
+      ],
+      "resize_type": "scale by multiplier",
+      "resize_type.multiplier": 1,
+      "scale_method": "lanczos"
+    },
+    "_meta": {
+      "title": "ResizeImageMaskNode"
+    }
+  },
+  "5158:5085": {
+    "class_type": "ResizeImageMaskNode",
+    "inputs": {
+      "input": [
+        "5158:5026",
+        0
+      ],
+      "resize_type": "scale to multiple",
+      "resize_type.multiple": 8,
+      "scale_method": "lanczos"
+    },
+    "_meta": {
+      "title": "ResizeImageMaskNode"
+    }
+  },
+  "5128": {
+    "class_type": "easy imageSize",
+    "inputs": {
+      "image": [
+        "5158:5120",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageSize"
+    }
+  },
+  "5158:5123": {
+    "class_type": "LayerUtility: ColorImage",
+    "inputs": {
+      "width": [
+        "5128",
+        0
+      ],
+      "height": [
+        "5128",
+        1
+      ],
+      "color": "#FFFFFF"
+    },
+    "_meta": {
+      "title": "LayerUtility: ColorImage"
+    }
+  },
+  "5158:5119": {
+    "class_type": "VHS_VideoInfoLoaded",
+    "inputs": {
+      "video_info": [
+        "5099",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "视频信息（已选中）"
+    }
+  },
+  "5158:5124": {
+    "class_type": "RepeatImageBatch",
+    "inputs": {
+      "image": [
+        "5158:5123",
+        0
+      ],
+      "amount": [
+        "5158:5119",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "RepeatImageBatch"
+    }
+  },
+  "5158:5146": {
+    "class_type": "ImageToMask",
+    "inputs": {
+      "image": [
+        "5158:5124",
+        0
+      ],
+      "channel": "red"
+    },
+    "_meta": {
+      "title": "ImageToMask"
+    }
+  },
+  "5158:5126": {
+    "class_type": "VAEEncodeForInpaint",
+    "inputs": {
+      "pixels": [
+        "5158:5085",
+        0
+      ],
+      "vae": [
+        "5158:5139",
+        0
+      ],
+      "mask": [
+        "5158:5146",
+        0
+      ],
+      "grow_mask_by": 6
+    },
+    "_meta": {
+      "title": "VAEEncodeForInpaint"
+    }
+  },
+  "5158:3159": {
+    "class_type": "LTXVImgToVideoConditionOnly",
+    "inputs": {
+      "vae": [
+        "5158:5139",
+        0
+      ],
+      "image": [
+        "5158:3336",
+        0
+      ],
+      "latent": [
+        "5158:5126",
+        0
+      ],
+      "strength": 0.7,
+      "bypass": false
+    },
+    "_meta": {
+      "title": "LTXVImgToVideoConditionOnly"
+    }
+  },
+  "5158:5012": {
+    "class_type": "LTXAddVideoICLoRAGuide",
+    "inputs": {
+      "positive": [
+        "5158:1241",
+        0
+      ],
+      "negative": [
+        "5158:1241",
+        1
+      ],
+      "vae": [
+        "5158:5139",
+        0
+      ],
+      "latent": [
+        "5158:3159",
+        0
+      ],
+      "image": [
+        "5158:5085",
+        0
+      ],
+      "frame_idx": 0,
+      "strength": 1,
+      "latent_downscale_factor": 1,
+      "crop": "disabled",
+      "use_tiled_encode": false,
+      "tile_size": 256,
+      "tile_overlap": 64
+    },
+    "_meta": {
+      "title": "LTXAddVideoICLoRAGuide"
+    }
+  },
+  "5158:5104": {
+    "class_type": "Seed (rgthree)",
+    "inputs": {
+      "seed": 0
+    },
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "5158:5106": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": [
+        "5158:5104",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "5158:5138": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "ltx2/ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "5158:4922": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "5158:5138",
+        0
+      ],
+      "lora_name": "ltx2/ltx-2.3-22b-distilled-1.1_lora-dynamic_fro09_avg_rank_111_bf16.safetensors",
+      "strength_model": 0.5
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "5158:5011": {
+    "class_type": "LTXICLoRALoaderModelOnly",
+    "inputs": {
+      "model": [
+        "5158:4922",
+        0
+      ],
+      "lora_name": "ltx2/LTX2.3-ICEdit-Insight /ltx2.3-ic-video-upscale-general_视频放大.safetensors",
+      "strength_model": 0.8
+    },
+    "_meta": {
+      "title": "LTXICLoRALoaderModelOnly"
+    }
+  },
+  "5158:5137": {
+    "class_type": "LTXICLoRALoaderModelOnly",
+    "inputs": {
+      "model": [
+        "5158:5011",
+        0
+      ],
+      "lora_name": "ltx2/LTX2.3-ICEdit-Insight /ltx2.3-video-restoration-general_视频修复.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LTXICLoRALoaderModelOnly"
+    }
+  },
+  "5158:5094": {
+    "class_type": "LTX2SamplingPreviewOverride",
+    "inputs": {
+      "model": [
+        "5158:5137",
+        0
+      ],
+      "preview_rate": 8
+    },
+    "_meta": {
+      "title": "LTX2SamplingPreviewOverride"
+    }
+  },
+  "5158:5107": {
+    "class_type": "CFGGuider",
+    "inputs": {
+      "model": [
+        "5158:5094",
+        0
+      ],
+      "positive": [
+        "5158:5012",
+        0
+      ],
+      "negative": [
+        "5158:5012",
+        1
+      ],
+      "cfg": 1
+    },
+    "_meta": {
+      "title": "CFGGuider"
+    }
+  },
+  "5158:5108": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler_ancestral"
+    },
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "5158:5109": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "1.0, 0.9375, 0.8125, 0.5625, 0.25, 0.0"
+    },
+    "_meta": {
+      "title": "ManualSigmas"
+    }
+  },
+  "5158:5100": {
+    "class_type": "SimpleMath+",
+    "inputs": {
+      "value": "a",
+      "a": [
+        "5158:5119",
+        0
+      ],
+      "b": 0.0,
+      "c": 0.0
+    },
+    "_meta": {
+      "title": "SimpleMath+"
+    }
+  },
+  "5158:5143": {
+    "class_type": "VAELoaderKJ",
+    "inputs": {
+      "vae_name": "LTX23_audio_vae_bf16.safetensors",
+      "device": "main_device",
+      "weight_dtype": "bf16"
+    },
+    "_meta": {
+      "title": "VAELoaderKJ"
+    }
+  },
+  "5158:3980": {
+    "class_type": "LTXVEmptyLatentAudio",
+    "inputs": {
+      "frames_number": [
+        "5099",
+        1
+      ],
+      "frame_rate": [
+        "5158:5100",
+        0
+      ],
+      "batch_size": 1,
+      "audio_vae": [
+        "5158:5143",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVEmptyLatentAudio"
+    }
+  },
+  "5158:4528": {
+    "class_type": "LTXVConcatAVLatent",
+    "inputs": {
+      "video_latent": [
+        "5158:5012",
+        2
+      ],
+      "audio_latent": [
+        "5158:3980",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVConcatAVLatent"
+    }
+  },
+  "5102": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "5158:5106",
+        0
+      ],
+      "guider": [
+        "5158:5107",
+        0
+      ],
+      "sampler": [
+        "5158:5108",
+        0
+      ],
+      "sigmas": [
+        "5158:5109",
+        0
+      ],
+      "latent_image": [
+        "5158:4528",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "5158:5112": {
+    "class_type": "LTXVSeparateAVLatent",
+    "inputs": {
+      "av_latent": [
+        "5102",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVSeparateAVLatent"
+    }
+  },
+  "5158:5111": {
+    "class_type": "LTXVCropGuides",
+    "inputs": {
+      "positive": [
+        "5158:5012",
+        0
+      ],
+      "negative": [
+        "5158:5012",
+        1
+      ],
+      "latent": [
+        "5158:5112",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVCropGuides"
+    }
+  },
+  "5158:5113": {
+    "class_type": "VAEDecodeTiled",
+    "inputs": {
+      "samples": [
+        "5158:5111",
+        2
+      ],
+      "vae": [
+        "5158:5139",
+        0
+      ],
+      "tile_size": 512,
+      "overlap": 64,
+      "temporal_size": 512,
+      "temporal_overlap": 4
+    },
+    "_meta": {
+      "title": "VAEDecodeTiled"
+    }
+  },
+  "5069": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "5158:5113",
+        0
+      ],
+      "frame_rate": [
+        "5158:5100",
+        1
+      ],
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "5099",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "5158:5134": {
+    "class_type": "ImageConcanate",
+    "inputs": {
+      "image1": [
+        "5099",
+        0
+      ],
+      "image2": [
+        "5158:5113",
+        0
+      ],
+      "direction": "right",
+      "match_image_size": true
+    },
+    "_meta": {
+      "title": "ImageConcanate"
+    }
+  },
+  "5135": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "5158:5134",
+        0
+      ],
+      "frame_rate": [
+        "5158:5100",
+        1
+      ],
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "5099",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

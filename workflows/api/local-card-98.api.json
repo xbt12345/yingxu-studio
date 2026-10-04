@@ -1,0 +1,404 @@
+{
+  "9": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "kijaiModel/S2v/Wan2_2-S2V-14B_fp8_e4m3fn_scaled_KJ.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "8": {
+    "class_type": "wanBlockSwap",
+    "inputs": {
+      "model": [
+        "9",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "wanBlockSwap"
+    }
+  },
+  "6": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "8",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "11": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "6",
+        0
+      ],
+      "lora_name": "Wan22-Lightning/lightx2v_I2V_14B_480p_cfg_step_distill_rank256_bf16.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "5": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "shift": 5
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "10": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "21": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "1": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "10",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "12": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "13": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "20": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "crop",
+      "method": "lanczos",
+      "round_to_multiple": "16",
+      "scale_to_side": "longest",
+      "scale_to_length": 832,
+      "background_color": "#000000",
+      "image": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "14": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": ""
+    },
+    "_meta": {
+      "title": "LoadAudio"
+    }
+  },
+  "15": {
+    "class_type": "AudioCropProcessUTK",
+    "inputs": {
+      "audio": [
+        "14",
+        0
+      ],
+      "gain_db": 0,
+      "offset_seconds": 0,
+      "duration_seconds": 7,
+      "resample_to_hz": 0,
+      "make_stereo": true
+    },
+    "_meta": {
+      "title": "AudioCropProcessUTK"
+    }
+  },
+  "4": {
+    "class_type": "CR Float To Integer",
+    "inputs": {
+      "_float": [
+        "15",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "CR Float To Integer"
+    }
+  },
+  "22": {
+    "class_type": "SimpleMath+",
+    "inputs": {
+      "value": "a*16+1",
+      "a": [
+        "4",
+        0
+      ],
+      "b": 0.0,
+      "c": 0.0
+    },
+    "_meta": {
+      "title": "SimpleMath+"
+    }
+  },
+  "3": {
+    "class_type": "AudioEncoderLoader",
+    "inputs": {
+      "audio_encoder_name": "wav2vec2_large_english_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "AudioEncoderLoader"
+    }
+  },
+  "2": {
+    "class_type": "AudioEncoderEncode",
+    "inputs": {
+      "audio_encoder": [
+        "3",
+        0
+      ],
+      "audio": [
+        "15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "AudioEncoderEncode"
+    }
+  },
+  "24": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": 0,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": [
+        "22",
+        0
+      ],
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "VHS_LoadVideo"
+    }
+  },
+  "36": {
+    "class_type": "OpenposePreprocessor",
+    "inputs": {
+      "image": [
+        "24",
+        0
+      ],
+      "detect_hand": "enable",
+      "detect_body": "enable",
+      "detect_face": "enable",
+      "resolution": 512,
+      "scale_stick_for_xinsr_cn": "disable"
+    },
+    "_meta": {
+      "title": "OpenposePreprocessor"
+    }
+  },
+  "25": {
+    "class_type": "WanSoundImageToVideo",
+    "inputs": {
+      "positive": [
+        "21",
+        0
+      ],
+      "negative": [
+        "1",
+        0
+      ],
+      "vae": [
+        "12",
+        0
+      ],
+      "width": [
+        "20",
+        3
+      ],
+      "height": [
+        "20",
+        4
+      ],
+      "length": [
+        "22",
+        0
+      ],
+      "batch_size": 1,
+      "audio_encoder_output": [
+        "2",
+        0
+      ],
+      "ref_image": [
+        "20",
+        0
+      ],
+      "control_video": [
+        "36",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "WanSoundImageToVideo"
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "seed": 1736,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "positive": [
+        "25",
+        0
+      ],
+      "negative": [
+        "25",
+        1
+      ],
+      "latent_image": [
+        "25",
+        2
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "18": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "12",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "34": {
+    "class_type": "ImageFromBatch+",
+    "inputs": {
+      "image": [
+        "18",
+        0
+      ],
+      "start": 0,
+      "length": -1
+    },
+    "_meta": {
+      "title": "ImageFromBatch+"
+    }
+  },
+  "26": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "34",
+        0
+      ],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "29": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "34",
+        0
+      ],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": false,
+      "audio": [
+        "15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

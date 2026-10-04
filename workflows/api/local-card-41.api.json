@@ -1,0 +1,801 @@
+{
+  "398": {
+    "class_type": "PrimitiveBoolean",
+    "inputs": {
+      "value": true
+    },
+    "_meta": {
+      "title": "Boolean (Enable Turbo LoRA?)"
+    }
+  },
+  "405": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "2.2bernini/wan2.2_bernini_r_low_noise_fp8_scaled.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "439": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "405",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "440": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "439",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "407": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "405",
+        0
+      ],
+      "lora_name": "Bernini/Bernini-R_LightX2V_low_noise.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "441": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "407",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "442": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "441",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "389": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "440",
+        0
+      ],
+      "on_true": [
+        "442",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Switch (Low Noise)"
+    }
+  },
+  "446": {
+    "class_type": "Seed (rgthree)",
+    "inputs": {
+      "seed": 99770050237077
+    },
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "397": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 5
+    },
+    "_meta": {
+      "title": "Float (CFG)"
+    }
+  },
+  "396": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 1
+    },
+    "_meta": {
+      "title": "Float (CFG)"
+    }
+  },
+  "395": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "397",
+        0
+      ],
+      "on_true": [
+        "396",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Switch (CFG)"
+    }
+  },
+  "390": {
+    "class_type": "CustomCombo",
+    "inputs": {
+      "choice": "Video Editing with Reference"
+    },
+    "_meta": {
+      "title": "CustomCombo"
+    }
+  },
+  "401:56": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": [
+        "390",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Int (line index)"
+    }
+  },
+  "401:1": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "401:56",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewAny"
+    }
+  },
+  "401:8": {
+    "class_type": "StringReplace",
+    "inputs": {
+      "string": "^(?:[^\\n]*\\n){index}([^\\n]*)(?:\\n|$)",
+      "find": "index",
+      "replace": [
+        "401:1",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "StringReplace"
+    }
+  },
+  "401:2": {
+    "class_type": "RegexExtract",
+    "inputs": {
+      "string": "You are a helpful assistant.\nYou are a helpful assistant specialized in text-to-image generation.\nYou are a helpful assistant specialized in text-to-video generation.\nYou are a helpful assistant specialized in image editing.\nYou are a helpful assistant specialized in subject-to-image generation.\nYou are a helpful assistant specialized in image-to-video generation.\nYou are a helpful assistant specialized in video editing.\nYou are a helpful assistant specialized in video editing on content propagation.\nYou are a helpful assistant specialized in video editing with reference.\nYou are a helpful assistant specialized in ads insertion.\nYou are a helpful assistant for editing. You may need to adjust the subject's action or position.\nYou are a helpful assistant for editing. You might need to adjust the video's style, lighting, colors, textures, and the subject's pose or action.",
+      "regex_pattern": [
+        "401:8",
+        0
+      ],
+      "mode": "First Group",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false,
+      "group_index": 1
+    },
+    "_meta": {
+      "title": "RegexExtract"
+    }
+  },
+  "400": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "提示词"
+    }
+  },
+  "391": {
+    "class_type": "StringConcatenate",
+    "inputs": {
+      "string_a": [
+        "401:2",
+        0
+      ],
+      "string_b": [
+        "400",
+        0
+      ],
+      "delimiter": ""
+    },
+    "_meta": {
+      "title": "StringConcatenate"
+    }
+  },
+  "376": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "388": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": [
+        "391",
+        0
+      ],
+      "clip": [
+        "376",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "378": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "376",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "377": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "428": {
+    "class_type": "easy float",
+    "inputs": {
+      "value": 16
+    },
+    "_meta": {
+      "title": "easy float"
+    }
+  },
+  "429": {
+    "class_type": "easy int",
+    "inputs": {
+      "value": 13
+    },
+    "_meta": {
+      "title": "秒数"
+    }
+  },
+  "426": {
+    "class_type": "easy convertAnything",
+    "inputs": {
+      "*": [
+        "428",
+        0
+      ],
+      "output_type": "int"
+    },
+    "_meta": {
+      "title": "easy convertAnything"
+    }
+  },
+  "427": {
+    "class_type": "Evaluate Integers",
+    "inputs": {
+      "python_expression": "a*b+1",
+      "print_to_console": "False",
+      "a": [
+        "429",
+        0
+      ],
+      "b": [
+        "426",
+        0
+      ],
+      "c": 0
+    },
+    "_meta": {
+      "title": "Evaluate Integers"
+    }
+  },
+  "425": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": [
+        "428",
+        0
+      ],
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": [
+        "427",
+        0
+      ],
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "VHS_LoadVideo"
+    }
+  },
+  "430": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "425",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "434": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "crop",
+      "method": "lanczos",
+      "round_to_multiple": "32",
+      "scale_to_side": "longest",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "430",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "111": {
+    "class_type": "GetImageSize",
+    "inputs": {
+      "image": [
+        "434",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSize"
+    }
+  },
+  "448": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "387": {
+    "class_type": "BerniniConditioning",
+    "inputs": {
+      "positive": [
+        "388",
+        0
+      ],
+      "negative": [
+        "378",
+        0
+      ],
+      "vae": [
+        "377",
+        0
+      ],
+      "width": [
+        "111",
+        0
+      ],
+      "height": [
+        "111",
+        1
+      ],
+      "length": [
+        "111",
+        2
+      ],
+      "batch_size": 1,
+      "source_video": [
+        "434",
+        0
+      ],
+      "reference_images.reference_image_0": [
+        "448",
+        0
+      ],
+      "ref_max_size": 1024
+    },
+    "_meta": {
+      "title": "BerniniConditioning"
+    }
+  },
+  "380": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "res_multistep"
+    },
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "403": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 40
+    },
+    "_meta": {
+      "title": "Int (Steps)"
+    }
+  },
+  "408": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 4
+    },
+    "_meta": {
+      "title": "Int (Steps)"
+    }
+  },
+  "392": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "403",
+        0
+      ],
+      "on_true": [
+        "408",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Switch (Steps)"
+    }
+  },
+  "385": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": [
+        "440",
+        0
+      ],
+      "scheduler": "simple",
+      "steps": [
+        "392",
+        0
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "393": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 20
+    },
+    "_meta": {
+      "title": "Int (Split Steps)"
+    }
+  },
+  "409": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 2
+    },
+    "_meta": {
+      "title": "Int (Split Steps)"
+    }
+  },
+  "394": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "393",
+        0
+      ],
+      "on_true": [
+        "409",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Switch (Low Steps)"
+    }
+  },
+  "379": {
+    "class_type": "SplitSigmas",
+    "inputs": {
+      "sigmas": [
+        "385",
+        0
+      ],
+      "step": [
+        "394",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "SplitSigmas"
+    }
+  },
+  "381": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "2.2bernini/wan2.2_bernini_r_high_noise_fp8_scaled.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "435": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "381",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "436": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "435",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "406": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "381",
+        0
+      ],
+      "lora_name": "Bernini/Bernini-R_LightX2V_high_noise.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "437": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "406",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "438": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "437",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "399": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": [
+        "398",
+        0
+      ],
+      "on_false": [
+        "436",
+        0
+      ],
+      "on_true": [
+        "438",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Switch (High Noise)"
+    }
+  },
+  "384": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": [
+        "399",
+        0
+      ],
+      "add_noise": true,
+      "noise_seed": [
+        "446",
+        0
+      ],
+      "cfg": [
+        "395",
+        0
+      ],
+      "positive": [
+        "387",
+        0
+      ],
+      "negative": [
+        "387",
+        1
+      ],
+      "sampler": [
+        "380",
+        0
+      ],
+      "sigmas": [
+        "379",
+        0
+      ],
+      "latent_image": [
+        "387",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "386": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": [
+        "389",
+        0
+      ],
+      "add_noise": false,
+      "noise_seed": [
+        "446",
+        0
+      ],
+      "cfg": [
+        "395",
+        0
+      ],
+      "positive": [
+        "387",
+        0
+      ],
+      "negative": [
+        "387",
+        1
+      ],
+      "sampler": [
+        "380",
+        0
+      ],
+      "sigmas": [
+        "379",
+        1
+      ],
+      "latent_image": [
+        "384",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "382": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "386",
+        0
+      ],
+      "vae": [
+        "377",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "443": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "382",
+        0
+      ],
+      "frame_rate": 8,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "425",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

@@ -1,0 +1,684 @@
+{
+  "71": {
+    "class_type": "easy int",
+    "inputs": {
+      "value": 0
+    },
+    "_meta": {
+      "title": "easy int"
+    }
+  },
+  "56": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "smooth/Smooth Mix Wan 2.2 I2V v2.0 GGUF low.gguf"
+    },
+    "_meta": {
+      "title": "UnetLoaderGGUF"
+    }
+  },
+  "76": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "56",
+        0
+      ],
+      "lora_name": "Wan22_lightx2v/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "7": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "Dasiwa/DaSiWa WAN 2.2 I2V low 14B v10.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "69": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "2.2remix/Wan2.2-Remix v3 low.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "67": {
+    "class_type": "easy anythingIndexSwitch",
+    "inputs": {
+      "index": [
+        "71",
+        0
+      ],
+      "value0": [
+        "76",
+        0
+      ],
+      "value1": [
+        "7",
+        0
+      ],
+      "value2": [
+        "69",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy anythingIndexSwitch"
+    }
+  },
+  "42": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "67",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "43": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "42",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "4": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "43",
+        0
+      ],
+      "shift": 8.000000000000002
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "72": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "5": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "12": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": [
+        "72",
+        0
+      ],
+      "clip": [
+        "5",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "20": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "5",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "2": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "78": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "Load First Frame"
+    }
+  },
+  "8": {
+    "class_type": "INTConstant",
+    "inputs": {
+      "value": 480
+    },
+    "_meta": {
+      "title": "INTConstant"
+    }
+  },
+  "11": {
+    "class_type": "INTConstant",
+    "inputs": {
+      "value": 832
+    },
+    "_meta": {
+      "title": "INTConstant"
+    }
+  },
+  "15": {
+    "class_type": "ImageResizeKJv2",
+    "inputs": {
+      "image": [
+        "78",
+        0
+      ],
+      "width": [
+        "8",
+        0
+      ],
+      "height": [
+        "11",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "top",
+      "divisible_by": 2,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "ImageResizeKJv2"
+    }
+  },
+  "9": {
+    "class_type": "INTConstant",
+    "inputs": {
+      "value": 6
+    },
+    "_meta": {
+      "title": "时长·time"
+    }
+  },
+  "10": {
+    "class_type": "SimpleMath+",
+    "inputs": {
+      "value": "a*16+1",
+      "a": [
+        "9",
+        0
+      ],
+      "b": 0.0,
+      "c": 0.0
+    },
+    "_meta": {
+      "title": "SimpleMath+"
+    }
+  },
+  "79": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "Load First Frame"
+    }
+  },
+  "48": {
+    "class_type": "ImageResizeKJv2",
+    "inputs": {
+      "image": [
+        "79",
+        0
+      ],
+      "width": [
+        "15",
+        2
+      ],
+      "height": [
+        "15",
+        2
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "top",
+      "divisible_by": 2,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "ImageResizeKJv2"
+    }
+  },
+  "60": {
+    "class_type": "WanFirstLastFrameToVideo",
+    "inputs": {
+      "positive": [
+        "12",
+        0
+      ],
+      "negative": [
+        "20",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ],
+      "width": [
+        "15",
+        1
+      ],
+      "height": [
+        "15",
+        2
+      ],
+      "length": [
+        "10",
+        0
+      ],
+      "batch_size": 1,
+      "start_image": [
+        "15",
+        0
+      ],
+      "end_image": [
+        "48",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "WanFirstLastFrameToVideo"
+    }
+  },
+  "55": {
+    "class_type": "UnetLoaderGGUF",
+    "inputs": {
+      "unet_name": "smooth/Smooth Mix Wan 2.2 I2V v2.0 GGUF high.gguf"
+    },
+    "_meta": {
+      "title": "UnetLoaderGGUF"
+    }
+  },
+  "77": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "55",
+        0
+      ],
+      "lora_name": "Wan22-Lightning/lightx2v_I2V_14B_480p_cfg_step_distill_rank128_bf16.safetensors",
+      "strength_model": 1.5
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "6": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "Dasiwa/DaSiWa WAN 2.2 I2V high 14B v10.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "68": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "2.2remix/Wan2.2-Remix v3 high.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "66": {
+    "class_type": "easy anythingIndexSwitch",
+    "inputs": {
+      "index": [
+        "71",
+        0
+      ],
+      "value0": [
+        "77",
+        0
+      ],
+      "value1": [
+        "6",
+        0
+      ],
+      "value2": [
+        "68",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy anythingIndexSwitch"
+    }
+  },
+  "40": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "66",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "41": {
+    "class_type": "ModelPatchTorchSettings",
+    "inputs": {
+      "model": [
+        "40",
+        0
+      ],
+      "enable_fp16_accumulation": true
+    },
+    "_meta": {
+      "title": "ModelPatchTorchSettings"
+    }
+  },
+  "3": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "41",
+        0
+      ],
+      "shift": 8.000000000000002
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "64": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "add_noise": "enable",
+      "noise_seed": 677347095805206,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "60",
+        0
+      ],
+      "negative": [
+        "60",
+        1
+      ],
+      "latent_image": [
+        "60",
+        2
+      ],
+      "start_at_step": 0,
+      "end_at_step": 0,
+      "return_with_leftover_noise": "enable"
+    },
+    "_meta": {
+      "title": "KSamplerAdvanced"
+    }
+  },
+  "61": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "add_noise": "disable",
+      "noise_seed": 279399037834453,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "positive": [
+        "60",
+        0
+      ],
+      "negative": [
+        "60",
+        1
+      ],
+      "latent_image": [
+        "64",
+        0
+      ],
+      "start_at_step": 3,
+      "end_at_step": 1000,
+      "return_with_leftover_noise": "disable"
+    },
+    "_meta": {
+      "title": "KSamplerAdvanced"
+    }
+  },
+  "62": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "61",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "65": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "62",
+        0
+      ],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "44": {
+    "class_type": "WanFirstMiddleLastFrameToVideo",
+    "inputs": {
+      "positive": [
+        "12",
+        0
+      ],
+      "negative": [
+        "20",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ],
+      "width": [
+        "15",
+        1
+      ],
+      "height": [
+        "15",
+        2
+      ],
+      "length": [
+        "10",
+        0
+      ],
+      "batch_size": 1,
+      "mode": "NORMAL",
+      "start_image": [
+        "15",
+        0
+      ],
+      "end_image": [
+        "48",
+        0
+      ],
+      "middle_frame_ratio": 0.5,
+      "high_noise_mid_strength": 0.52,
+      "low_noise_start_strength": 0.97,
+      "low_noise_mid_strength": 0,
+      "low_noise_end_strength": 0,
+      "structural_repulsion_boost": 1
+    },
+    "_meta": {
+      "title": "WanFirstMiddleLastFrameToVideo"
+    }
+  },
+  "18": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "model": [
+        "3",
+        0
+      ],
+      "add_noise": "enable",
+      "noise_seed": 587946889101639,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "44",
+        0
+      ],
+      "negative": [
+        "44",
+        2
+      ],
+      "latent_image": [
+        "44",
+        3
+      ],
+      "start_at_step": 0,
+      "end_at_step": 3,
+      "return_with_leftover_noise": "enable"
+    },
+    "_meta": {
+      "title": "KSamplerAdvanced"
+    }
+  },
+  "19": {
+    "class_type": "KSamplerAdvanced",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "add_noise": "disable",
+      "noise_seed": 893021869016418,
+      "steps": 6,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "beta",
+      "positive": [
+        "44",
+        1
+      ],
+      "negative": [
+        "44",
+        2
+      ],
+      "latent_image": [
+        "18",
+        0
+      ],
+      "start_at_step": 3,
+      "end_at_step": 1000,
+      "return_with_leftover_noise": "disable"
+    },
+    "_meta": {
+      "title": "KSamplerAdvanced"
+    }
+  },
+  "16": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "19",
+        0
+      ],
+      "vae": [
+        "2",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "34": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "16",
+        0
+      ],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

@@ -1,0 +1,436 @@
+{
+  "90": {
+    "class_type": "Upscale Model Loader",
+    "inputs": {
+      "model_name": "RealESRGAN_x2plus__通用真人照片2x.pth"
+    },
+    "_meta": {
+      "title": "Upscale Model Loader"
+    }
+  },
+  "26": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "aio/wan2.2-rapid-mega-aio-nsfw-v12.1.safetensors"
+    },
+    "_meta": {
+      "title": "CheckpointLoaderSimple"
+    }
+  },
+  "55": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "26",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "32": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "55",
+        0
+      ],
+      "shift": 8
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "74": {
+    "class_type": "Seed (rgthree)",
+    "inputs": {
+      "seed": -1
+    },
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "9": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "26",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "10": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "26",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "56": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1024
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "52": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": [
+        "56",
+        0
+      ],
+      "background_color": "#000000",
+      "image": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "48": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 81
+    },
+    "_meta": {
+      "title": "Number of Frames"
+    }
+  },
+  "37": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "54": {
+    "class_type": "LayerUtility: ImageMaskScaleAs",
+    "inputs": {
+      "scale_as": [
+        "52",
+        0
+      ],
+      "fit": "crop",
+      "method": "lanczos",
+      "image": [
+        "37",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageMaskScaleAs"
+    }
+  },
+  "34": {
+    "class_type": "WanVideoVACEStartToEndFrame",
+    "inputs": {
+      "num_frames": [
+        "48",
+        0
+      ],
+      "empty_frame_level": 0.5,
+      "start_image": [
+        "52",
+        0
+      ],
+      "end_image": [
+        "54",
+        0
+      ],
+      "start_index": 0,
+      "end_index": -1
+    },
+    "_meta": {
+      "title": "Bypass for T2V, use for I2V"
+    }
+  },
+  "28": {
+    "class_type": "WanVaceToVideo",
+    "inputs": {
+      "positive": [
+        "9",
+        0
+      ],
+      "negative": [
+        "10",
+        0
+      ],
+      "vae": [
+        "26",
+        2
+      ],
+      "width": [
+        "52",
+        3
+      ],
+      "height": [
+        "52",
+        4
+      ],
+      "length": [
+        "48",
+        0
+      ],
+      "batch_size": 1,
+      "strength": 1,
+      "control_video": [
+        "34",
+        0
+      ],
+      "control_masks": [
+        "34",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "T2V=Strength 0, I2V=Strength 1"
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "32",
+        0
+      ],
+      "seed": [
+        "74",
+        0
+      ],
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "beta",
+      "positive": [
+        "28",
+        0
+      ],
+      "negative": [
+        "28",
+        1
+      ],
+      "latent_image": [
+        "28",
+        2
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "11": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "26",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "70": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1000
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "69": {
+    "class_type": "easy compare",
+    "inputs": {
+      "a": [
+        "56",
+        0
+      ],
+      "b": [
+        "70",
+        0
+      ],
+      "comparison": "a >= b"
+    },
+    "_meta": {
+      "title": "easy compare"
+    }
+  },
+  "65": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 8
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "66": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 16
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "68": {
+    "class_type": "easy ifElse",
+    "inputs": {
+      "boolean": [
+        "69",
+        0
+      ],
+      "on_true": [
+        "65",
+        0
+      ],
+      "on_false": [
+        "66",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy ifElse"
+    }
+  },
+  "71": {
+    "class_type": "ImageUpscaleWithModelBatched",
+    "inputs": {
+      "upscale_model": [
+        "90",
+        0
+      ],
+      "images": [
+        "11",
+        0
+      ],
+      "per_batch": [
+        "68",
+        0
+      ],
+      "downscale_ratio": 1,
+      "downscale_method": "lanczos",
+      "precision": "float32"
+    },
+    "_meta": {
+      "title": "ImageUpscaleWithModelBatched"
+    }
+  },
+  "62": {
+    "class_type": "RIFE VFI",
+    "inputs": {
+      "ckpt_name": "rife49.pth",
+      "frames": [
+        "71",
+        0
+      ],
+      "clear_cache_after_n_frames": 10,
+      "multiplier": 2,
+      "fast_mode": true,
+      "ensemble": true,
+      "scale_factor": 1,
+      "dtype": "float32",
+      "torch_compile": false,
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "RIFE VFI"
+    }
+  },
+  "63": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "62",
+        0
+      ],
+      "frame_rate": 32,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "72": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "71",
+        0
+      ],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "39": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ],
+      "frame_rate": 16,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

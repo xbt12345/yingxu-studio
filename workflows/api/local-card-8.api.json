@@ -1,0 +1,67 @@
+{
+  "4": {
+    "class_type": "Qwen38VLLoader",
+    "inputs": {
+      "model_file": "Qwen3.8-27B-Uncensored-Q4_K_M.gguf",
+      "mmproj_file": "mmproj-Qwen3.8-27B-Uncensored-f16.gguf",
+      "batch_size": 1024,
+      "micro_batch_size": 512,
+      "gpu_layers": -1,
+      "free_comfy_vram": true
+    },
+    "_meta": {
+      "title": "Multimodel · Qwen3.8 Local Loader"
+    }
+  },
+  "3": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "2": {
+    "class_type": "VisionChat",
+    "inputs": {
+      "backend": [
+        "4",
+        0
+      ],
+      "system_prompt": "",
+      "prompt": [
+        "3",
+        0
+      ],
+      "thinking_mode": "medium",
+      "context_length": 8192,
+      "max_tokens": "",
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "top_k": 40,
+      "min_p": 0.05,
+      "repeat_penalty": 1.05,
+      "seed": 3484954964,
+      "max_video_frames": 8,
+      "video_transport": "auto",
+      "unload_after": true,
+      "tools_json": ""
+    },
+    "_meta": {
+      "title": "VisionChat"
+    }
+  },
+  "1": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "2",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  }
+}

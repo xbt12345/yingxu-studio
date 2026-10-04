@@ -1,0 +1,358 @@
+{
+  "507": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": 24,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 124,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "VHS_LoadVideo"
+    }
+  },
+  "493": {
+    "class_type": "easy imageSizeByLongerSide",
+    "inputs": {
+      "image": [
+        "507",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageSizeByLongerSide"
+    }
+  },
+  "496": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1500
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "500": {
+    "class_type": "ImpactCompare",
+    "inputs": {
+      "cmp": "a >= b",
+      "a": [
+        "493",
+        0
+      ],
+      "b": [
+        "496",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImpactCompare"
+    }
+  },
+  "499": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "total_pixel(kilo pixel)",
+      "scale_to_length": 1536,
+      "background_color": "#000000",
+      "image": [
+        "507",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "510": {
+    "class_type": "easy ifElse",
+    "inputs": {
+      "boolean": [
+        "500",
+        0
+      ],
+      "on_true": [
+        "499",
+        0
+      ],
+      "on_false": [
+        "507",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy ifElse"
+    }
+  },
+  "521": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "510",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "519": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 360
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "517": {
+    "class_type": "MathExpression|pysssss",
+    "inputs": {
+      "expression": "(a // b) + 1 ",
+      "a": [
+        "521",
+        3
+      ],
+      "b": [
+        "519",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "MathExpression|pysssss"
+    }
+  },
+  "488": {
+    "class_type": "easy forLoopStart",
+    "inputs": {
+      "total": [
+        "517",
+        0
+      ],
+      "initial_value1": [
+        "510",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy forLoopStart"
+    }
+  },
+  "514": {
+    "class_type": "VHS_SplitImages",
+    "inputs": {
+      "images": [
+        "488",
+        2
+      ],
+      "split_index": 0
+    },
+    "_meta": {
+      "title": "VHS_SplitImages"
+    }
+  },
+  "513": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "514",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "512": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "514",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "531": {
+    "class_type": "FlashVSRNode",
+    "inputs": {
+      "frames": [
+        "512",
+        0
+      ],
+      "model": "FlashVSR-v1.1",
+      "mode": "tiny",
+      "scale": 2,
+      "tiled_vae": true,
+      "tiled_dit": true,
+      "unload_dit": false,
+      "seed": 0
+    },
+    "_meta": {
+      "title": "FlashVSRNode"
+    }
+  },
+  "522": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "531",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "525": {
+    "class_type": "Pick From Batch (mtb)",
+    "inputs": {
+      "image": [
+        "522",
+        0
+      ],
+      "from_direction": "end",
+      "count": 1
+    },
+    "_meta": {
+      "title": "Pick From Batch (mtb)"
+    }
+  },
+  "523": {
+    "class_type": "RepeatImageBatch",
+    "inputs": {
+      "image": [
+        "525",
+        0
+      ],
+      "amount": 3
+    },
+    "_meta": {
+      "title": "RepeatImageBatch"
+    }
+  },
+  "526": {
+    "class_type": "easy batchAnything",
+    "inputs": {
+      "any_1": [
+        "522",
+        0
+      ],
+      "any_2": [
+        "523",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy batchAnything"
+    }
+  },
+  "527": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "526",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "515": {
+    "class_type": "easy batchAnything",
+    "inputs": {
+      "any_1": [
+        "488",
+        3
+      ],
+      "any_2": [
+        "527",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy batchAnything"
+    }
+  },
+  "503": {
+    "class_type": "easy forLoopEnd",
+    "inputs": {
+      "flow": [
+        "488",
+        0
+      ],
+      "initial_value1": [
+        "513",
+        0
+      ],
+      "initial_value2": [
+        "515",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy forLoopEnd"
+    }
+  },
+  "516": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "503",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "530": {
+    "class_type": "LayerUtility: PurgeVRAM V2",
+    "inputs": {
+      "anything": [
+        "516",
+        0
+      ],
+      "purge_cache": true,
+      "purge_models": true
+    },
+    "_meta": {
+      "title": "LayerUtility: PurgeVRAM V2"
+    }
+  },
+  "502": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "530",
+        0
+      ],
+      "frame_rate": 8,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "507",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

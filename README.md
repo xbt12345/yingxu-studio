@@ -1,6 +1,6 @@
 # 映序 YINGXU Studio
 
-将复杂工作流转换为素材、描述和参数组成的创作界面。包含当前 Review 69 的完整前端、Python 后端、交互组件库、151 个目录工作流的界面配置，以及 **34 份已接入工作流的 API 模板**。
+将复杂工作流转换为素材、描述和参数组成的创作界面。包含当前 Review 70 的完整前端、Python 后端、交互组件库、151 个目录工作流的界面配置，以及 **132 份 API 模板**。指定算力卡的 137 个文件已逐项核对：130 个独立工作流可构造任务，3 个缺节点、1 个空文件、3 个同图别名；真实生成和输出质量须另行验收。逐图输入与阻碍见 [参数审查](docs/card-workflow-parameter-audit.md)。
 
 [在线演示](https://xbt12345.github.io/yingxu-studio/) · [组件库](https://xbt12345.github.io/yingxu-studio/workflow-control-library.html) · [真实生成接入说明](workflows/README.md)
 
@@ -52,7 +52,7 @@ docker compose up --build --wait
 | --- | --- | --- |
 | 自由创作 | 图像/视频演示生成、参考图编辑、结果操作 | 内置模型列表尚未接入真实 API |
 | 创作工具目录 | 151 个工作流的素材、参数、种子、草稿与演示 | 未接入条目仍明确显示演示 |
-| 已接入工具 | 32 个图像工具 + H3 参考图生视频 + Bernini 视频编辑 | 自己的 ComfyUI、模型和自定义节点；部分工具另需 API key |
+| 已接入工具 | 132 份图像 / 视频 / 音频 / 文字 API 模板；可选素材、独立描述分支和主体点选 | 自己的 ComfyUI、模型和自定义节点；新增 98 份完成结构与离线构图检查，尚未逐图生成 |
 | 参考图编辑 | 框选、圈选、画笔、擦除、本地自动抠图、撤销、保存 | 自动抠图需要 Python 后端；参考强度目前只保存偏好，尚未影响生成 |
 | 作品与素材 | 对比、拖入创作、下载、批量导出、移除确认、恢复、引用定位 | 保存在本机浏览器和后端 |
 | 灵感库 | 图片/视频保存到素材、带配方进入创作 | 发布只保存到当前浏览器，尚无跨用户共享 |
@@ -75,7 +75,7 @@ docker compose up --build --wait
 | `YINGXU_ACCESS_USERNAME` | 对外共享创作台的访问账号，默认 `yingxu` |
 | `YINGXU_ACCESS_PASSWORD` | 对外访问的随机密码，至少 16 位；Railway 未配置时拒绝网站访问 |
 
-新克隆直接使用公开模板，不依赖作者电脑的配置。已有所有者环境继续优先使用 `private/*.api.json`、`private/platform-compiled/*.api.json` 和 `private/backend.json`。公开模板已清理密钥、个人输入提示词及素材名，保留模型和节点绑定；详见模板清单。
+新克隆直接使用公开模板，不依赖作者电脑的配置。已有所有者环境继续优先使用 `private/*.api.json`、`private/platform-compiled/*.api.json`、新增通用图的 `private/card-compiled/*.api.json` 和 `private/backend.json`。公开模板已清理密钥、个人输入提示词、素材名和素材选点，保留模型和节点绑定；详见模板清单。
 
 浏览器素材、草稿、作品列表使用 IndexedDB / 本地状态；真实生成文件及任务另存后端数据目录。备份需要同时保留浏览器数据与后端数据。清除站点数据、换浏览器或删除数据目录会影响对应记录。
 
@@ -104,6 +104,7 @@ npm test
 public/            前端、示例素材、组件库、预生成界面配置
 server.py          FastAPI、素材上传、任务和结果保存
 adapters.py        工作流节点绑定与参数校验
+schema_adapters.py 通用执行合同、字段绑定、音频/文字结果与主体选点
 configuration.py  环境配置与模板回退加载
 local_cutout.py    CPU 本地抠图
 workflows/         公开 API 模板、模型/节点清单、接入说明

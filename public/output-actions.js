@@ -1,12 +1,14 @@
 import {I,esc} from './data.js?v=64.0';
 // One action order for result overlays and the full-size viewer.
 export function outputActions(output,{library=false,selected=false}={}){
+ const media=['image','video','audio'].includes(output.type),visual=['image','video'].includes(output.type);
  return [
-  {action:'reference',icon:'reference',label:'用作参考'},
+  ...(media?[{action:'reference',icon:'reference',label:'用作参考'}]:[]),
+  ...(output.type==='text'?[{action:'copy-output',icon:'checklist',label:'复制文本'}]:[]),
   ...(output.type==='image'?[{action:'to-video',icon:'video',label:'生成视频'}]:[]),
-  {action:'save-output',icon:'assets',label:'保存到素材库'},
-  {action:'publish-output',icon:'star',label:output.published?'取消发布':'发布到灵感库',pressed:!!output.published},
-  ...(!library?[{action:'select-result',icon:'compare',label:selected?'取消对比':'加入对比',pressed:selected}]:[]),
+  ...(media?[{action:'save-output',icon:'assets',label:'保存到素材库'}]:[]),
+  ...(visual?[{action:'publish-output',icon:'star',label:output.published?'取消发布':'发布到灵感库',pressed:!!output.published}]:[]),
+  ...(!library&&visual?[{action:'select-result',icon:'compare',label:selected?'取消对比':'加入对比',pressed:selected}]:[]),
   {action:'download',icon:'download',label:'下载文件'},
   ...(library?[{action:'remove-work',icon:'trash',label:'移除作品'}]:[])
  ];

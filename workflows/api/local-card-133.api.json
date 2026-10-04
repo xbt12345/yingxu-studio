@@ -1,0 +1,99 @@
+{
+  "12": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "10": {
+    "class_type": "LayerMask: LoadBiRefNetModelV2",
+    "inputs": {
+      "version": "BiRefNet-General"
+    },
+    "_meta": {
+      "title": "LayerMask: LoadBiRefNetModelV2"
+    }
+  },
+  "11": {
+    "class_type": "LayerMask: BiRefNetUltraV2",
+    "inputs": {
+      "image": [
+        "12",
+        0
+      ],
+      "birefnet_model": [
+        "10",
+        0
+      ],
+      "detail_method": "VITMatte(local)",
+      "detail_erode": 4,
+      "detail_dilate": 2,
+      "black_point": 0.01,
+      "white_point": 0.99,
+      "process_detail": true,
+      "device": "cuda",
+      "max_megapixels": 2
+    },
+    "_meta": {
+      "title": "LayerMask: BiRefNetUltraV2"
+    }
+  },
+  "18": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "11",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  },
+  "19": {
+    "class_type": "LayerUtility: ColorPicker",
+    "inputs": {
+      "color": "#ffffff",
+      "mode": "HEX"
+    },
+    "_meta": {
+      "title": "LayerUtility: ColorPicker"
+    }
+  },
+  "16": {
+    "class_type": "LayerUtility: ImageRemoveAlpha",
+    "inputs": {
+      "RGBA_image": [
+        "11",
+        0
+      ],
+      "fill_background": true,
+      "background_color": [
+        "19",
+        0
+      ],
+      "mask": [
+        "11",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageRemoveAlpha"
+    }
+  },
+  "17": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "PreviewImage"
+    }
+  }
+}

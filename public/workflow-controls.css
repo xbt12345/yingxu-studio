@@ -123,3 +123,24 @@
 .timecode-wheel button{font:inherit;font-size:15px;font-variant-numeric:tabular-nums;letter-spacing:.08em;color:#aa97b8;border:0;background:none;padding:0;cursor:ns-resize;border-radius:8px;min-height:0}
 .timecode-wheel button.is-selected{font-weight:600;font-size:19px;color:#f3e7fc}.timecode-wheel button:disabled{visibility:hidden}
 .workflow-inline-controls .range-ends{font-size:10px;color:#9b8ca8}.workflow-inline-controls .advanced-group{align-items:start}
+.catalog-fields>.catalog-point-picker{grid-column:1/-1}
+.catalog-point-picker>strong{font-size:12px;font-weight:500;color:#c4b8cf;line-height:1.5;background:none;-webkit-text-fill-color:currentColor}
+.point-picker-tools{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.point-picker-tools button{display:inline-flex;align-items:center;gap:6px;padding:7px 9px;min-height:30px;font:inherit;font-size:11px;color:#cfc4db;border:1px solid #ffffff18;border-radius:8px;background:#18151c;cursor:pointer}
+.point-picker-tools button[aria-pressed=true]{border-color:#bda2d488;background:#ba9cd321;color:#eee3f5}
+.point-picker-tools button:disabled{opacity:.4;cursor:default}
+.point-picker-tools [data-point-count]{margin-left:auto;color:#a69aad;font-size:10px;font-variant-numeric:tabular-nums}
+.point-positive-dot,.point-negative-dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:#79d6ad}.point-negative-dot{background:#f398a1}
+.point-picker-stage{position:relative;width:100%;max-width:500px;aspect-ratio:16/9;overflow:hidden;border-radius:10px;background:#0f1013;cursor:crosshair;touch-action:manipulation}
+.point-picker-stage:focus-visible{outline:2px solid #baa1d4;outline-offset:3px}
+.point-picker-source-frame{position:absolute;left:50%;top:50%;width:100%;height:100%;transform:translate(-50%,-50%);overflow:hidden;pointer-events:none}
+.point-picker-stage video{display:block;width:100%;height:100%;position:absolute;inset:0;object-fit:cover;object-position:center;pointer-events:none}
+.point-picker-layer{position:absolute;inset:0;pointer-events:none}
+.point-picker-layer .point-picker-dot{position:absolute;transform:translate(-50%,-50%);display:grid;place-items:center;width:24px;height:24px;min-height:0;padding:0;border:2px solid #effaf5;border-radius:50%;background:#328064;color:#fff;font-size:10px;line-height:1;box-shadow:0 1px 5px #0009;cursor:pointer;pointer-events:auto}
+.point-picker-layer .point-picker-dot.is-negative{background:#ac4153;border-color:#fff1f1}
+.point-picker-dot:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.point-picker-cursor{position:absolute;width:16px;height:16px;transform:translate(-50%,-50%);border:1px solid #fff;border-radius:50%;box-shadow:0 0 0 1px #000a;pointer-events:none}
+.point-picker-cursor[hidden]{display:none}.point-picker-cursor:after{content:'';position:absolute;inset:6px;border-radius:50%;background:white}
+.point-picker-loading{position:absolute;inset:0;display:grid;place-items:center;background:#0f1013bb;color:#b1a7bb;font-size:11px;pointer-events:none}.point-picker-loading[hidden]{display:none}
+.point-picker-empty{display:grid;place-items:center;min-height:110px;background:#141219;border:1px dashed #ffffff20;border-radius:10px;color:#9d91aa;font-size:11px;text-align:center;padding:12px}
+.catalog-point-picker .point-picker-error{margin:0;font-size:11px;color:#eeb5be;line-height:1.65;white-space:normal;overflow:visible}.point-picker-error[hidden]{display:none}

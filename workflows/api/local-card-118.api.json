@@ -1,0 +1,138 @@
+{
+  "13": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": 24,
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": 200,
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "AnimateDiff"
+    },
+    "_meta": {
+      "title": "VHS_LoadVideo"
+    }
+  },
+  "31": {
+    "class_type": "easy imageSizeByLongerSide",
+    "inputs": {
+      "image": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageSizeByLongerSide"
+    }
+  },
+  "27": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1500
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "28": {
+    "class_type": "ImpactCompare",
+    "inputs": {
+      "cmp": "a >= b",
+      "a": [
+        "31",
+        0
+      ],
+      "b": [
+        "27",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImpactCompare"
+    }
+  },
+  "26": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "total_pixel(kilo pixel)",
+      "scale_to_length": 1536,
+      "background_color": "#000000",
+      "image": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "30": {
+    "class_type": "easy ifElse",
+    "inputs": {
+      "boolean": [
+        "28",
+        0
+      ],
+      "on_true": [
+        "26",
+        0
+      ],
+      "on_false": [
+        "13",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy ifElse"
+    }
+  },
+  "42": {
+    "class_type": "FlashVSRNode",
+    "inputs": {
+      "frames": [
+        "30",
+        0
+      ],
+      "model": "FlashVSR-v1.1",
+      "mode": "tiny-long",
+      "scale": 2,
+      "tiled_vae": true,
+      "tiled_dit": true,
+      "unload_dit": false,
+      "seed": 0
+    },
+    "_meta": {
+      "title": "FlashVSRNode"
+    }
+  },
+  "24": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "42",
+        0
+      ],
+      "frame_rate": 8,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "13",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

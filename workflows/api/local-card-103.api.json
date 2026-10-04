@@ -1,0 +1,528 @@
+{
+  "37": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "kijaiModel/S2v/Wan2_2-S2V-14B_fp8_e4m3fn_scaled_KJ.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "107": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "37",
+        0
+      ],
+      "lora_name": "Wan22_lightx2v/wan2.2_t2v_A14b_high_noise_lora_rank64_lightx2v_4step_1217.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "54": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "107",
+        0
+      ],
+      "shift": 8
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "103": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 4
+    },
+    "_meta": {
+      "title": "Steps"
+    }
+  },
+  "105": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 1
+    },
+    "_meta": {
+      "title": "CFG"
+    }
+  },
+  "38": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "38",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIP Text Encode (Negative Prompt)"
+    }
+  },
+  "39": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "104": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 77
+    },
+    "_meta": {
+      "title": "Chunk Length"
+    }
+  },
+  "57": {
+    "class_type": "AudioEncoderLoader",
+    "inputs": {
+      "audio_encoder_name": "wav2vec2_large_english_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "AudioEncoderLoader"
+    }
+  },
+  "58": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": ""
+    },
+    "_meta": {
+      "title": "LoadAudio"
+    }
+  },
+  "182": {
+    "class_type": "AudioCrop",
+    "inputs": {
+      "audio": [
+        "58",
+        0
+      ],
+      "start_time": "0:10",
+      "end_time": "0:23"
+    },
+    "_meta": {
+      "title": "AudioCrop"
+    }
+  },
+  "56": {
+    "class_type": "AudioEncoderEncode",
+    "inputs": {
+      "audio_encoder": [
+        "57",
+        0
+      ],
+      "audio": [
+        "182",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "AudioEncoderEncode"
+    }
+  },
+  "52": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "93": {
+    "class_type": "WanSoundImageToVideo",
+    "inputs": {
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "width": 640,
+      "height": 640,
+      "length": [
+        "104",
+        0
+      ],
+      "batch_size": 1,
+      "audio_encoder_output": [
+        "56",
+        0
+      ],
+      "ref_image": [
+        "52",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "WanSoundImageToVideo"
+    }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "54",
+        0
+      ],
+      "seed": 20,
+      "steps": [
+        "103",
+        0
+      ],
+      "cfg": [
+        "105",
+        0
+      ],
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "positive": [
+        "93",
+        0
+      ],
+      "negative": [
+        "93",
+        1
+      ],
+      "latent_image": [
+        "93",
+        2
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "79:76": {
+    "class_type": "WanSoundImageToVideoExtend",
+    "inputs": {
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "length": [
+        "104",
+        0
+      ],
+      "video_latent": [
+        "3",
+        0
+      ],
+      "audio_encoder_output": [
+        "56",
+        0
+      ],
+      "ref_image": [
+        "52",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "WanSoundImageToVideoExtend"
+    }
+  },
+  "79:77": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "54",
+        0
+      ],
+      "seed": 1,
+      "steps": [
+        "103",
+        0
+      ],
+      "cfg": [
+        "105",
+        0
+      ],
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "positive": [
+        "79:76",
+        0
+      ],
+      "negative": [
+        "79:76",
+        1
+      ],
+      "latent_image": [
+        "79:76",
+        2
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "79:78": {
+    "class_type": "LatentConcat",
+    "inputs": {
+      "samples1": [
+        "3",
+        0
+      ],
+      "samples2": [
+        "79:77",
+        0
+      ],
+      "dim": "t"
+    },
+    "_meta": {
+      "title": "LatentConcat"
+    }
+  },
+  "85:184": {
+    "class_type": "WanSoundImageToVideoExtend",
+    "inputs": {
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "length": [
+        "104",
+        0
+      ],
+      "video_latent": [
+        "79:78",
+        0
+      ],
+      "audio_encoder_output": [
+        "56",
+        0
+      ],
+      "ref_image": [
+        "52",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "WanSoundImageToVideoExtend"
+    }
+  },
+  "85:185": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "54",
+        0
+      ],
+      "seed": 250,
+      "steps": [
+        "103",
+        0
+      ],
+      "cfg": [
+        "105",
+        0
+      ],
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "positive": [
+        "85:184",
+        0
+      ],
+      "negative": [
+        "85:184",
+        1
+      ],
+      "latent_image": [
+        "85:184",
+        2
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "85:183": {
+    "class_type": "LatentConcat",
+    "inputs": {
+      "samples1": [
+        "79:78",
+        0
+      ],
+      "samples2": [
+        "85:185",
+        0
+      ],
+      "dim": "t"
+    },
+    "_meta": {
+      "title": "LatentConcat"
+    }
+  },
+  "94": {
+    "class_type": "LatentCut",
+    "inputs": {
+      "samples": [
+        "85:183",
+        0
+      ],
+      "dim": "t",
+      "index": 0,
+      "amount": 1
+    },
+    "_meta": {
+      "title": "LatentCut"
+    }
+  },
+  "95": {
+    "class_type": "LatentConcat",
+    "inputs": {
+      "samples1": [
+        "94",
+        0
+      ],
+      "samples2": [
+        "85:183",
+        0
+      ],
+      "dim": "t"
+    },
+    "_meta": {
+      "title": "LatentConcat"
+    }
+  },
+  "80": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "95",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "100": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 3
+    },
+    "_meta": {
+      "title": "Batch sizes"
+    }
+  },
+  "96": {
+    "class_type": "ImageFromBatch",
+    "inputs": {
+      "image": [
+        "80",
+        0
+      ],
+      "batch_index": [
+        "100",
+        0
+      ],
+      "length": 4096
+    },
+    "_meta": {
+      "title": "ImageFromBatch"
+    }
+  },
+  "82": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": [
+        "96",
+        0
+      ],
+      "fps": 16,
+      "audio": [
+        "182",
+        0
+      ],
+      "bit_depth": "auto",
+      "color_space": "sRGB",
+      "codec": "none"
+    },
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "113": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "82",
+        0
+      ],
+      "filename_prefix": "yingxu/result",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  }
+}

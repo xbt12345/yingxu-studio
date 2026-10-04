@@ -1,0 +1,198 @@
+{
+  "4": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "civitai/Prefect-Illustrious-XL-v4.safetensors"
+    },
+    "_meta": {
+      "title": "CheckpointLoaderSimple"
+    }
+  },
+  "34": {
+    "class_type": "Seed (rgthree)",
+    "inputs": {
+      "seed": -1
+    },
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "162": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "masterpiece, best quality, newest, absurdres, highres"
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "147": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "modare"
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "42": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 3,
+      "string_1": [
+        "162",
+        0
+      ],
+      "delimiter": ",",
+      "return_list": false,
+      "string_2": [
+        "147",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "JoinStringMulti"
+    }
+  },
+  "61": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "42",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": [
+        "61",
+        0
+      ],
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "7": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "4",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "28": {
+    "class_type": "CM_SDXLResolution",
+    "inputs": {
+      "resolution": "832x1216"
+    },
+    "_meta": {
+      "title": "CM_SDXLResolution"
+    }
+  },
+  "183": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 2
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "10": {
+    "class_type": "EmptyLatentImage",
+    "inputs": {
+      "width": [
+        "28",
+        0
+      ],
+      "height": [
+        "28",
+        1
+      ],
+      "batch_size": [
+        "183",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "EmptyLatentImage"
+    }
+  },
+  "3": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "4",
+        0
+      ],
+      "seed": [
+        "34",
+        0
+      ],
+      "steps": 30,
+      "cfg": 4.98,
+      "sampler_name": "euler_ancestral",
+      "scheduler": "normal",
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "7",
+        0
+      ],
+      "latent_image": [
+        "10",
+        0
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "170": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "110": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "170",
+        0
+      ],
+      "filename_prefix": "yingxu/result"
+    },
+    "_meta": {
+      "title": "SaveImage"
+    }
+  }
+}

@@ -7,13 +7,16 @@ from unittest.mock import patch
 from fastapi.testclient import TestClient
 import configuration
 import server
+import schema_adapters
 from adapters import build_graph, settings_for
 from scripts.check_setup import check_files
 
 
 class PortableContracts(unittest.TestCase):
     def test_shipped_files_and_template_hashes(self):
-        self.assertEqual(len(check_files()), len(server.WORKFLOWS + server.CATALOG_WORKFLOWS))
+        shipped = {entry['id'] for entry in check_files()}
+        ready = {entry['id'] for entry in schema_adapters.registry().values() if entry['validation'] == 'structural-verified'}
+        self.assertEqual(shipped, {entry['id'] for entry in server.WORKFLOWS + server.CATALOG_WORKFLOWS} | ready)
 
     def test_demo_never_advertises_remote_generation(self):
         with patch.object(server, 'BASE', ''), patch.object(server.requests, 'get') as remote:
@@ -35,7 +38,7 @@ class PortableContracts(unittest.TestCase):
             graph = json.loads(file.read_text('utf-8'))
             for node in graph.values():
                 for key, value in node.get('inputs', {}).items():
-                    if key in ('api_key', 'access_token', 'authorization', 'password', 'secret') and isinstance(value, str):
+                    if key.lower() in ('api_key', 'apikey', 'access_token', 'authorization', 'password', 'secret') and isinstance(value, str):
                         self.assertEqual(value, '', file.name)
 
     def test_all_shipped_graphs_build_without_owner_templates(self):
@@ -46,6 +49,26 @@ class PortableContracts(unittest.TestCase):
                               for kind, count, ext in [('image', entry['minImages'], 'png'), ('video', entry['minVideos'], 'mp4')]
                               for i in range(count)]
                     graph = build_graph(entry['id'], 'A quiet landscape', '', settings_for(entry, {}), assets, 'portable-check')
+                    self.assertTrue(graph)
+                    for node in graph.values():
+                        for value in node['inputs'].values():
+                            if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
+                                self.assertIn(value[0], graph)
+
+    def test_generic_templates_build_without_owner_files(self):
+        with patch.object(schema_adapters, 'ROOT', Path('/nonexistent-yingxu-source')), patch.object(configuration, 'ROOT', Path('/nonexistent-yingxu-source')):
+            for spec in schema_adapters.registry().values():
+                if spec['validation'] != 'structural-verified':
+                    continue
+                with self.subTest(workflow=spec['id']):
+                    assets = {slot['id']: {'kind': slot['kind'], 'remote': 'fixture.' + {'image': 'png', 'video': 'mp4', 'audio': 'wav'}[slot['kind']]} for slot in spec['media']}
+                    values = {field['id']: -1 for field in spec['controls'] if field['kind'] == 'seed'}
+                    recipe = spec.get('pointsRecipe')
+                    geometry = None
+                    if recipe:
+                        values.update({field['id']: '{"positive":[{"x":0.5,"y":0.5}],"negative":[]}' for field in spec['controls'] if field['kind'] == 'points'})
+                        geometry = {'width': 1280, 'height': 736, 'node': recipe['node'], 'negativeTarget': recipe['negativeTarget']}
+                    graph, _, _ = schema_adapters.build(spec, values, {}, assets, {}, 'portable-generic', geometry=geometry)
                     self.assertTrue(graph)
                     for node in graph.values():
                         for value in node['inputs'].values():

@@ -31,6 +31,188 @@ PROMPT_INPUTS_BY_ID = {
 }
 INTERNAL = {79:{'31','32','34'},34:{'1492','1522'}}
 
+# Reviewed against the compute card's object_info on 2026-10-04. These are
+# creation decisions on enabled output branches, not sampler/encoder controls.
+# The current graph supplies every default; this table supplies only verified
+# labels, allowed values and node constraints. Independent branches stay apart.
+REVIEW70_INPUTS = {
+ 7:[('13','strength_small_face','restoration','小脸修复强度',{'min':0,'max':1,'step':0.01}),
+    ('13','strength_large_face','restoration','大脸修复强度',{'min':0,'max':1,'step':0.01})],
+ 36:[(nid,key,kind,branch+' · '+label,extra) for nid,branch in [('17','文字生成'),('10','参考图编辑')]
+     for key,kind,label,extra in [
+      ('size','ratio','画面尺寸',{'options':[{'value':v,'label':'自动' if v=='auto' else v.replace('x','×')} for v in ['auto','1024x1024','1536x1024','1024x1536','2048x2048','2048x1152','3840x2160','2160x3840']]}),
+      ('n','count','生成数量',{'min':1,'max':10,'step':1}),
+      ('quality','choice','生成质量',{'options':[{'value':v,'label':label} for v,label in [('auto','自动'),('high','高'),('medium','中'),('low','低')]]})]],
+ 37:[('5','ratio','ratio','长视频 · 画面比例',{'options':['2:3','3:2','16:9','9:16','1:1']}),
+     ('6','ratio','ratio','标准视频 · 画面比例',{'options':['2:3','3:2','16:9','9:16','1:1']}),
+     ('6','resolution','choice','标准视频 · 输出清晰度',{'options':['480P','720P','1080P']})],
+ 38:[(nid,key,kind,branch+' · '+label,extra) for nid,branch in [('12','文字生成'),('5','参考图编辑')]
+     for key,kind,label,extra in [
+      ('aspect_ratio','ratio','画面比例',{'options':[{'value':v,'label':'自动' if v=='auto' else v} for v in ['auto','16:9','4:3','4:5','3:2','1:1','2:3','3:4','5:4','9:16','21:9','9:21']]}),
+      ('image_size','choice','输出规格',{'options':['1K','2K','4K']})]],
+ 131:[('158','upscale_by','upscale','放大倍率',{'min':0.05,'max':4,'step':0.05}),
+      ('158','denoise','restoration','细节重绘幅度',{'min':0,'max':1,'step':0.01})],
+ 124:[('44','middle_frame_ratio','strength','中间帧位置',{'min':0,'max':1,'step':0.01,'help':'0 开头，1 末尾'})],
+}
+for _idx,_node in [(24,'3744'),(25,'641'),(26,'471'),(27,'771'),(31,'62'),(116,'771')]:
+    REVIEW70_INPUTS[_idx]=[(_node,'face_strength','motion','面部动作参考强度',{'min':0,'max':10,'step':0.001,'help':'越大，面部动作跟随越强'})]
+REVIEW70_INPUTS[116].append(('771','pose_strength','motion','动作参考强度',{'min':0,'max':10,'step':0.001,'help':'越大，动作跟随越强'}))
+REVIEW70_INPUTS[89]=[('28','resolution','ratio','画面尺寸',{'options':[{'value':v,'label':v.replace('x','×')} for v in ['1024x1024','1152x896','896x1152','1216x832','832x1216','1344x768','768x1344','1536x640','640x1536']]})]
+REVIEW70_INPUTS[46]=[('5149',key,'outpaint',label,{'min':0,'max':16384,'step':1}) for key,label in [('left','向左扩展（像素）'),('right','向右扩展（像素）'),('top','向上扩展（像素）'),('bottom','向下扩展（像素）')]]
+REVIEW70_INPUTS[22]=[('197','object_indices','indices','动作与参考图处理对象',{'help':'留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。','type':'string'}),
+                    ('579','object_indices','indices','参考图保留对象',{'help':'留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。','type':'string'})]
+REVIEW70_INPUTS[23]=[('527','object_indices','indices','处理对象',{'help':'留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。','type':'string'})]
+
+# Source scalar widgets can feed the creative input through Set/Get, casting or
+# an explicit seconds-to-frames expression. Review the consuming node's contract
+# rather than exposing the converter or silently fixing the clip length.
+REVIEW70_LINKED_INPUTS={
+ 22:[('111','Number','segment','跳过开头帧数',{'min':0,'max':9007199254740991,'step':1,'constraintSources':[{'node':'112','input':'skip_first_frames'}]}),
+     ('610','Number','duration','处理时长（秒）',{'min':0,'max':48000,'step':1,'constraintSources':[{'node':'604','input':'a'}],'frameFormula':{'node':'604','expression':'a*b+1','fps':24,'fpsSource':'606:value'}})],
+ 23:[('563','Number','segment','跳过开头帧数',{'min':0,'max':9007199254740991,'step':1,'constraintSources':[{'node':'552','input':'skip_first_frames'}]}),
+     ('573','Number','duration','处理时长（秒）',{'min':0,'max':48000,'step':1,'constraintSources':[{'node':'556','input':'a'}],'frameFormula':{'node':'556','expression':'a*b+1','fps':24,'fpsSource':'572:value'}})],
+ 30:[('132','value','duration','处理时长（秒）',{'min':0,'max':999999,'step':1,'constraintSources':[{'node':'132','input':'value'}],'frameFormula':{'node':'190','expression':'a*b','fpsSource':'115:value'}})],
+ 39:[('130','value','resolution','输出宽度（像素）',{'min':16,'max':8192,'step':16,'constraintSources':[{'node':'129','input':'width'}]}),
+     ('133','value','resolution','输出高度（像素）',{'min':16,'max':8192,'step':16,'constraintSources':[{'node':'129','input':'height'}]}),
+     ('137','value','duration','生成帧数',{'min':1,'max':8192,'step':4,'constraintSources':[{'node':'129','input':'length'}]})],
+ 40:[('32','value','duration','生成帧数',{'min':1,'max':8192,'step':4,'constraintSources':[{'node':'33','input':'length'}]}),
+     ('16','value','duration','参考视频时长（秒）',{'min':0,'max':48000,'step':1,'constraintSources':[{'node':'15','input':'a'}],'frameFormula':{'node':'15','expression':'a*b+1','fps':16,'fpsSource':'13:value'}})],
+ 89:[('183','value','count','生成数量',{'min':1,'max':4096,'step':1,'constraintSources':[{'node':'10','input':'batch_size'}]})],
+ 124:[('9','value','duration','生成时长（秒）',{'min':0,'max':511,'step':1,'constraintSources':[{'node':'44','input':'length'}],'frameFormula':{'node':'10','expression':'a*16+1','fps':16}})],
+ 125:[('225','value','resolution','输出宽度（像素）',{'min':0,'max':16384,'step':1,'help':'0 自动保持比例','constraintSources':[{'node':'223','input':'resize_type.width'},{'node':'224','input':'resize_type.width'}]}),
+      ('226','value','resolution','输出高度（像素）',{'min':0,'max':16384,'step':1,'help':'0 自动保持比例','constraintSources':[{'node':'223','input':'resize_type.height'},{'node':'224','input':'resize_type.height'}]})],
+ 126:[('48','value','duration','生成帧数',{'min':1,'max':10000,'step':4,'constraintSources':[{'node':'28','input':'length'},{'node':'34','input':'num_frames'}]})],
+}
+for _idx,_nid,_math,_fps_source in [(24,'3743','3748','3732:value'),(25,'654','645','631:value'),(26,'484','475','461:value'),(27,'784','775','761:value'),(31,'319','323','318:value'),(116,'784','775','761:value')]:
+    REVIEW70_LINKED_INPUTS[_idx]=[(_nid,'value','duration','处理时长（秒）',{'min':0,'max':48000,'step':1,
+        'constraintSources':[{'node':_math,'input':'a'}],'frameFormula':{'node':_math,'expression':'a*b+1','fps':16,'fpsSource':_fps_source}})]
+for _idx,_nid,_target in [(43,'369','496'),(47,'220','sub0/83'),(48,'369','496'),(49,'404','453')]:
+    REVIEW70_LINKED_INPUTS[_idx]=[(_nid,'value','resolution','输出最长边（像素）',{'min':0,'max':16384,'step':1,
+        'constraintSources':[{'node':_target,'input':'resize_type.longer_size'}],'targets':[{'node':_nid,'input':'value'}]})]
+
+
+def add_review70_controls(workflow, graph, controls):
+    """Add only source-present, unlinked fields from the individually reviewed list."""
+    from build_workflow_interfaces import widget_bindings
+    idx=int(workflow['id'].split('-')[-1]) if workflow['id'].startswith('local-card-') else -1
+    for nid,key,kind,label,extra in REVIEW70_INPUTS.get(idx,[])+REVIEW70_LINKED_INPUTS.get(idx,[]):
+        bindings=widget_bindings(graph.nodes.get(nid,{}))
+        if key not in bindings or not graph.editable(nid,key):continue
+        if any(c['id']==nid+':'+key or any(t=={'node':nid,'input':key} for t in c.get('targets',[])) for c in controls):continue
+        current=bindings[key][0]
+        control={'id':nid+':'+key,'nodeId':nid,'key':key,'label':label,
+                         'node':graph.nodes[nid].get('title')or graph.nodes[nid]['type'],
+                         'value':current,'type':'number' if isinstance(current,(int,float)) or idx in REVIEW70_LINKED_INPUTS and 'min' in extra else 'text',
+                         'kind':kind,'targets':[{'node':n,'input':k} for n,k in graph.targets(nid,key)],
+                         'help':'越大，重绘改动越多' if kind=='restoration' else '',**extra}
+        if workflow['category'] in ['视频修复与扩展','数字人与对口型']:
+            control['uiGroup']='output'
+        controls.append(control)
+    if idx==51 and graph.nodes.get('1095',{}).get('type')=='PointsEditor' and graph.editable('1095','coordinates') and not any(c['id']=='1095:points' for c in controls):
+        # The UI stores normalized point lists; the adapter converts them to
+        # the actual scaled first frame before writing the PointsEditor inputs.
+        controls.append({'id':'1095:points','nodeId':'1095','key':'points','kind':'points','type':'text',
+                         'value':'{"positive":[],"negative":[]}','label':'选择跟踪主体',
+                         'help':'点选主体，红点排除干扰','mediaSlotId':'1084',
+                         'targets':[{'node':'1095','input':'coordinates'}],
+                         'previewRecipe':{'longSideControlId':'1105:value','longSide':widget_bindings(graph.nodes['1105'])['value'][0],
+                                          'multiple':32,'sourceMultiple':8,'fit':'crop','frameRate':widget_bindings(graph.nodes['1084'])['force_rate'][0],
+                                          'skipControlId':'1084:skip_first_frames','skipFrames':widget_bindings(graph.nodes['1084'])['skip_first_frames'][0]}})
+    if idx==75:
+        # This source appends a UI-only empty preview string after five named
+        # camera widgets. The generic conservative parser rejects that extra
+        # entry, but the card's actual API inputs confirm the first positions.
+        camera_fields=[('horizontal_angle','水平视角',0,360,1),('vertical_angle','垂直视角',-30,60,1),('zoom','镜头距离',0,10,0.1)]
+        for order,nid in enumerate(('127','129','130','131','132','133'),1):
+            node=graph.nodes.get(nid,{})
+            values=node.get('widgets_values',[])
+            names=[inp['widget']['name'] for inp in node.get('inputs',[]) if inp.get('widget')]
+            if node.get('type')!='QwenMultiangleCameraNode' or names[:3]!=[f[0] for f in camera_fields] or len(values)!=len(names)+1 or values[-1]!='':continue
+            for position,(key,label,minimum,maximum,step) in enumerate(camera_fields):
+                if not graph.editable(nid,key) or any(c['id']==nid+':'+key for c in controls):continue
+                controls.append({'id':nid+':'+key,'nodeId':nid,'key':key,'kind':'camera','type':'number',
+                                 'label':f'视角 {order} · {label}','node':node.get('title')or node['type'],
+                                 'value':values[position],'min':minimum,'max':maximum,'step':step,
+                                 'targets':[{'node':nid,'input':key}],'help':''})
+    return apply_review70_defaults(workflow,controls)
+
+
+def apply_review70_defaults(workflow, controls):
+    """Record the one source default rejected by the current card node contract."""
+    if workflow['id']=='local-card-72':
+        field=next((c for c in controls if c['id']=='119:widget_1' and c['key']=='vertical_angle'),None)
+        if field:
+            field.update(value=0,min=-30,max=60,step=1,sourceDefault=90,
+                         defaultAdjustment={'from':90,'to':0,'reason':'源图90°超出当前节点-30°至60°范围，采用节点默认0°',
+                                            'source':'QwenMultiangleCameraNode object_info 2026-10-04'})
+    return controls
+
+
+REVIEW70_API_NODES = {
+ 36:{'10':('参考图编辑 API','GPT Image'), '17':('文字生成 API','GPT Image')},
+ 37:{'5':('长视频 API','Grok Video'), '6':('标准视频 API','Grok Video')},
+ 38:{'12':('文字生成 API','Nano Banana'), '5':('参考图编辑 API','Nano Banana')},
+}
+REVIEW70_API_MODELS = {
+ 'Comfly_gpt_image_2_official':['gpt-image-2','gpt-image-2-all','gpt-image-2-2K','gpt-image-2-4K'],
+ 'ComflyGrok3VideoApi30S':['grok-video-3'],
+ 'ComflyGrok3VideoApi':['grok-video-3'],
+ 'Comfly_nano_banana2_edit':['nano-banana-2','nano-banana-pro','nano-banana-pro-2k','nano-banana-pro-4k'],
+}
+
+
+def add_review70_api_profiles(workflow, graph, profiles):
+    """Fixed-provider nodes accept a personal key without inventing a Base URL."""
+    from build_workflow_interfaces import widget_bindings
+    idx=int(workflow['id'].split('-')[-1]) if workflow['id'].startswith('local-card-') else -1
+    for nid,(label,provider) in REVIEW70_API_NODES.get(idx,{}).items():
+        node=graph.nodes.get(nid,{})
+        if nid not in graph.reachable or node.get('mode',0) in [2,4]:continue
+        bindings=widget_bindings(node)
+        key=next((name for name in ('api_key','apikey') if name in bindings),None)
+        if not key or 'model' not in bindings or any(p['id']==nid for p in profiles):continue
+        # Never copy bindings[key][0]: keys remain solely on the card / server,
+        # or in the frontend's existing transient key store for a custom run.
+        profiles.append({'id':nid,'label':label,'provider':provider,'keyOnly':True,
+                         'baseUrl':'','model':str(bindings['model'][0]),
+                         'modelOptions':REVIEW70_API_MODELS[node['type']],
+                         'bindings':{'model':{'node':nid,'input':'model'},'apiKey':{'node':nid,'input':key}},
+                         'help':'服务地址由节点固定'})
+    return profiles
+
+
+REVIEW70_TEXT_LABELS = {
+ 22:{'75:text':'跟踪主体描述'},23:{'518:text':'跟踪主体描述'},
+ 36:{'18:value':'文字生成描述','7:value':'参考图编辑描述'},
+ 37:{'7:value':'长视频描述','8:value':'标准视频描述'},
+ 38:{'7:value':'参考图编辑描述','11:value':'文字生成描述'},
+}
+REVIEW70_PRESERVED_TEXTS={32:{'31:role'},33:{'29:role'},34:{'1488:text','1518:text'}}
+
+
+def apply_review70_labels(workflow, controls, texts, media):
+    """Name independent prompts/media by their proved execution branches."""
+    idx=int(workflow['id'].split('-')[-1]) if workflow['id'].startswith('local-card-') else -1
+    for text in texts:
+        if text['id'] in REVIEW70_TEXT_LABELS.get(idx,{}):
+            text['label']=REVIEW70_TEXT_LABELS[idx][text['id']]
+        if text['id'] in REVIEW70_PRESERVED_TEXTS.get(idx,set()):
+            text['preserveWhenEmpty']=True
+    if idx==37:
+        for control in controls:
+            if control['id']=='5:duration':control['label']='长视频 · 生成时长（秒）'
+            elif control['id']=='6:duration':control['label']='标准视频 · 生成时长（秒）'
+        for slot in media:
+            if slot['id'] in ['13','14','15','16']:
+                slot['label']=('长视频' if slot['id'] in ['13','14'] else '标准视频')+'参考图 '+('1' if slot['id'] in ['13','15'] else '2')
+    if idx==36:
+        for slot in media:
+            if slot['id']=='2':slot['label']='编辑参考图'
+    for slot in media:
+        if slot['kind']=='video' and slot['label']=='身体参考图':
+            slot['label']='动作参考视频' if workflow['category']=='动作迁移与舞蹈' else '原视频'
+    return controls,texts,media
+
 
 def refresh_curated_controls(workflow, reviewed, derived):
     """Carry source-checked control corrections into an unchanged curated form."""
@@ -55,7 +237,20 @@ def refresh_curated_controls(workflow, reviewed, derived):
             if source:
                 for attr in ('label','options','help'):
                     if attr in source:field[attr]=source[attr]
+    additions={nid+':'+key for nid,key,*_ in REVIEW70_INPUTS.get(idx,[])+REVIEW70_LINKED_INPUTS.get(idx,[])}
+    if idx==51:additions.add('1095:points')
+    if idx==75:additions.update(nid+':'+key for nid in ('127','129','130','131','132','133') for key in ('horizontal_angle','vertical_angle','zoom'))
+    current.extend(field for field in derived['controls'] if field['id'] in additions and not any(c['id']==field['id'] for c in current))
+    api_additions=REVIEW70_API_NODES.get(idx,{})
+    reviewed.setdefault('apiProfiles',[]).extend(profile for profile in derived.get('apiProfiles',[]) if profile['id'] in api_additions and not any(p['id']==profile['id'] for p in reviewed['apiProfiles']))
+    for field in current:
+        if field['kind']=='restoration' and 'denoise' in field.get('key',''):
+            # KSampler.INPUT_TYPES uses hundredths; defaults such as .17 must
+            # stay directly submitable rather than being rounded to .05 steps.
+            field['step']=0.01
     reviewed['controls']=current
+    apply_review70_defaults(workflow,reviewed['controls'])
+    apply_review70_labels(workflow,reviewed['controls'],reviewed.get('texts',[]),reviewed.get('media',[]))
     return reviewed
 
 
@@ -207,7 +402,7 @@ def customize(w,graph,controls,texts,media):
             c['options']=entries
         if c['type']=='number' and c['kind']not in ['seed','color','camera','outpaint']:
             c['min']=0;c['step']=1 if isinstance(c['value'],int) else 'any'
-            if c['kind']=='restoration':c.update(min=0,max=1,step=0.05)
+            if c['kind']=='restoration':c.update(min=0,max=1,step=0.01)
             if c['kind']in ['resolution','count','upscale']:c['min']=0.01 if isinstance(c['value'],float) else 1
         if c['kind']!='seed':continue
         typ=graph.nodes[c['nodeId']]['type']
@@ -476,6 +671,9 @@ def customize(w,graph,controls,texts,media):
                 elif linked is None or src and graph.nodes.get(src,{}).get('mode',0) in [2,4]:
                     media.append({'id':f'{nid}:ref_image_{ordinal}','kind':'image','label':f'可选参考图 {ordinal+1}','optional':True,'sourceNodeId':src,'target':{'node':nid,'input':port['name']}})
             notes.append(f'此图有 {len(ports)} 个模型参考图端口；按实际端口提供可选入口，不设置额外的网页总数上限。')
+    controls=add_review70_controls(w,graph,controls)
+    apis=add_review70_api_profiles(w,graph,apis)
+    controls,texts,media=apply_review70_labels(w,controls,texts,media)
     return controls,texts,media,{'apiProfiles':apis,'annotation':annotation,'notes':notes,'presentation':{'kind':w['category'] if focused else 'generic','branches':branches},
        'referencePolicy':{'mode':'graph-ports','imageSlots':sum(m['kind']=='image' for m in media),'help':'按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。'},
        'auditMethod':'active-output-path + concrete-input-binding','execution':'demo'}

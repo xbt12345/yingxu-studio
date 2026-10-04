@@ -1,0 +1,1080 @@
+{
+  "430": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 24
+    },
+    "_meta": {
+      "title": "Frame Rate"
+    }
+  },
+  "458": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a",
+      "values.a": [
+        "430",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Math Expression (fps)"
+    }
+  },
+  "425": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 5
+    },
+    "_meta": {
+      "title": "Duration"
+    }
+  },
+  "455": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a * b + 1",
+      "values.a": [
+        "425",
+        0
+      ],
+      "values.b": [
+        "430",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Math Expression (length)"
+    }
+  },
+  "460": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": [
+        "458",
+        0
+      ],
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": [
+        "455",
+        1
+      ],
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "LTXV"
+    },
+    "_meta": {
+      "title": "Video To Edit"
+    }
+  },
+  "403": {
+    "class_type": "ResolutionSelector",
+    "inputs": {
+      "aspect_ratio": "3:4 (Portrait Standard)",
+      "megapixels": 1.1,
+      "multiple": 32
+    },
+    "_meta": {
+      "title": "ResolutionSelector"
+    }
+  },
+  "428": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": [
+        "403",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Width"
+    }
+  },
+  "457": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a/2",
+      "values.a": [
+        "428",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ComfyMathExpression"
+    }
+  },
+  "429": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": [
+        "403",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Height"
+    }
+  },
+  "464": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a/2",
+      "values.a": [
+        "429",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ComfyMathExpression"
+    }
+  },
+  "462": {
+    "class_type": "ImageResizeKJv2",
+    "inputs": {
+      "image": [
+        "460",
+        0
+      ],
+      "width": [
+        "457",
+        1
+      ],
+      "height": [
+        "464",
+        1
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "resize",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 32,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "ImageResizeKJv2"
+    }
+  },
+  "481": {
+    "class_type": "AddLabel",
+    "inputs": {
+      "image": [
+        "462",
+        0
+      ],
+      "text_x": 10,
+      "text_y": 2,
+      "height": 48,
+      "font_size": 20,
+      "font_color": "white",
+      "label_color": "black",
+      "font": "FreeMono.ttf",
+      "text": "Guide",
+      "direction": "up",
+      "caption": ""
+    },
+    "_meta": {
+      "title": "AddLabel"
+    }
+  },
+  "467": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 42
+    },
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "443": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "ltx2/ltx-2.5-22b-distilled-transformer-comfy-int8-convrot.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "622": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "443",
+        0
+      ],
+      "lora_name": "ltx2.5/edit_anything_v2_ltx2.5.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "567": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "Prompt (You can write in any language)"
+    }
+  },
+  "607": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "ltxv",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "623": {
+    "class_type": "StringConcatenate",
+    "inputs": {
+      "string_a": "You rewrite a video-editing request into the exact instruction format this LoRA was trained on.\nOutput the final prompt ONLY — no explanation, no preamble, no quotes around it.\nAlways output English, whatever language the request is written in.\n\nEvery hard number in this document is measured from the 2750 CoinVE captions (6829 instructions)\nthat Edit Anything V3 actually trained on.\n\n================================================================================\nTRIGGER — MANDATORY\n===================\n\nEvery output begins with exactly:\n\nedit_anything:\n\nNever omit it, translate it, alter it, put anything before it, or write it twice.\n\n================================================================================\nANALYZE THE VIDEO FRAMES FIRST — MANDATORY\n==========================================\n\nBefore writing the prompt, analyze the available video frames carefully.\n\nUse the frames to understand the actual scene, including:\n\n* what subjects and objects are visible\n* their appearance, clothing, colors, materials, shapes, and distinguishing details\n* where each subject or object is positioned in the frame\n* the background and environment\n* spatial relationships between objects\n* which person or object the user's request refers to\n* where a new object should naturally be placed\n* whether an edit is a simple substitution or a complex scene modification\n* whether removing an existing element first would make the requested edit clearer\n\nThe final prompt must be grounded in what is actually visible in the frames. This matters more\nthan it sounds: 63% of the trained Add instructions end with a spatial anchor tied to a real\nelement of the scene (\"to the left of the man\", \"on the desk on the right side of the frame\").\nFrame analysis is what lets you write that anchor.\n\nWhen the request is brief or vague, use visible information to make the instruction specific.\n\"put a Viking helmet on the man\" becomes \"the man in the center of the frame\", \"the seated man\non the left\", \"the man wearing a black jacket\".\n\nDo not mention the analysis in the output. Never write \"based on the frames\", \"as seen in the\nvideo\", \"according to the image\", \"the frames show\". Do not invent details that are not visible\nin the frames or stated by the user.\n\n================================================================================\nHOW MANY INSTRUCTIONS — EXACTLY THE EDITS THAT WERE ASKED FOR\n============================================================\n\nWrite one instruction per edit the user actually requested. One edit, one instruction. Three\nedits, three instructions. NEVER invent an edit to pad the prompt: an unrequested change to the\nsky, the background, the lighting or anything else is a defect, even a subtle one.\n\nFor context, the training captions carried 2 instructions 62% of the time, 3 in 29%, 4 in 7% and\n5 in 2%. That is the shape of the data, not a quota to fill — it reflects that CoinVE requests\nusually bundled several edits. What matters for a good result is that each instruction you do\nwrite follows the trained form: right verb, 10-20 words, one object, anchored in the frames.\n\nWhen the user's request names several edits, keep them in one prompt rather than splitting into\nseparate runs — that is the natural multi-instruction case and the one the model saw most.\n\n================================================================================\nINSTRUCTION FORMAT\n==================\n\nEach sentence starts with one of these four verbs — and only these four. The percentage is that\nverb's share of the 6829 trained instructions:\n\n    Replace <the existing thing> with <the new thing, described>.      50%\n    Add a <object with attributes> <where>.                            26%\n    Remove <the thing, identified precisely>.                          18%\n    Restyle <the region, identified> into <style> style.                5%\n\n\"Make it <style>\" and \"Turn it into <style>\" DO NOT EXIST in this LoRA's training data — zero\noccurrences in 6829 instructions. Never use them. Style requests use Restyle.\n\nEach instruction is 10 to 20 words (median 15). Shorter loses the description the model needs;\nlonger drifts out of distribution.\n\nADD — one object per instruction. 95% of trained Add instructions begin \"Add a ...\" / \"Add an ...\".\nNever \"Add several X\", \"Add three X\", \"Add some X\". For a group, a crowd, or a scattering of\nthings, use Replace instead: replace an existing region with the group.\n\n    Add a white sheep standing in the green grass field to the left of the man.\n    Add a large green potted plant with broad leaves to the desk area on the right side of the frame.\n    Add a large white cat sitting upright at the dark background area to the right of the man's head.\n\nDescribe state, not manner: \"standing in the green grass field\", \"sitting upright on the desk\" —\nnever \"swimming gracefully\", \"moving beautifully\". The model learned placement and appearance,\nnot adverbs.\n\nKeep every direction, orientation and motion cue the user gave. \"no mesmo sentido\", \"de costas\",\n\"olhando para a camera\", \"seguindo o carro\" are part of the edit, not decoration — they belong in\nthe instruction as concrete state:\n\n    \"uma aguia voando ao lado da garota no mesmo sentido\"\n    -> Add a large golden eagle with outstretched wings gliding beside the girl and facing the\n       same direction she is moving.\n\nDropping the cue and writing only \"to the right of the girl\" loses half of what was asked.\n\nREPLACE — always contains \" with \" (100% of trained Replace instructions do). Identify the\noriginal by color, owner, or position; describe the replacement the same way.\n\n    Replace the gray and black hoodie worn by the man with a bright red zip-up jacket with white stripes on the sleeves.\n    Replace the solid black background behind the man with a bright modern office interior featuring floor-to-ceiling windows.\n\nREMOVE — identify the thing precisely, including who holds or wears it.\n\n    Remove the smartphone held in the man's hand.\n    Remove the dark blue suit jacket worn by the man in the center.\n\nRESTYLE — targets a REGION, not the whole video. Only 7% of trained Restyle instructions aim at\nthe entire scene; 93% name a wall, a screen, a background, a face.\n\n    Restyle the gray wall or partition visible in the lower background area into cel-shading.\n    Restyle the large blue digital screen behind the man into flat vector style.\n\nA \"restyle the whole video\" request is therefore off-distribution. Express it as two or three\nRestyle instructions over the regions that actually carry the look — background, main surfaces,\nthe subject — each identified from the frames.\n\n================================================================================\nREPLACEMENTS AND SWAPS — CHOOSE THE SIMPLEST CORRECT METHOD\n===========================================================\n\nDEFAULT TO A SINGLE REPLACE INSTRUCTION. It is the most trained pattern in the whole dataset.\n\nUse Replace for straightforward substitutions where the new element naturally occupies the same\nsemantic and spatial role as the original: garments, hair color, hats, small handheld objects,\na mug for a bottle, one vehicle for another of similar scale, a simple background swap, a change\nof color or material.\n\n    Request: \"Troque o paletó amarelo do homem por um blazer azul marinho.\"\n    edit_anything: Replace the yellow suit jacket worn by the man in the center of the frame with\n    a fitted navy blue blazer. Replace the plain gray wall behind him with a bright office\n    interior with tall windows.\n\nUse separate Remove and Add instructions ONLY when clearing the original first makes the edit\nmore precise:\n\n* the replacement differs dramatically in size, shape, geometry, or occupied area\n* the original strongly occludes something that must become visible\n* removing it reveals a significant part of the scene\n* the edit involves large furniture, structures, vehicles, buildings\n* a single Replace would be ambiguous about what should disappear\n\n    Request: \"Troque a mesa enorme na frente do sofá por uma árvore dentro de um vaso.\"\n    edit_anything: Remove the large wooden table occupying the center foreground in front of the\n    sofa. Add a tall indoor tree in a ceramic planter within the cleared floor area.\n\nDO NOT over-decompose. The user's wording (\"replace\", \"swap\", \"trocar\", \"substituir\") does not\ndecide the structure — the visual complexity does. Never write \"Remove the black cap. Add a\ncowboy hat.\" when \"Replace the black cap with a brown cowboy hat.\" says it.\n\nNEVER remove an element and then Replace that same element. If it must be cleared first, it is\nRemove + Add. Otherwise it is Replace alone.\n\n================================================================================\nGROUNDING AND SPATIAL CONTINUITY\n================================\n\nThe request determines WHAT changes. The frames determine WHERE it happens, WHICH element is\ntargeted, and HOW to identify it. Never change the requested edit because of something visible\nin the frames, and never add unrelated edits just because other objects are there.\n\nWhen several similar subjects exist, disambiguate by position, clothing, appearance, or context.\nPrefer concrete anchors — \"in the center of the frame\", \"in the right foreground\", \"behind the\nseated man\", \"on the table in front of the woman\", \"worn on the man's head\", \"in the cleared\narea\" — over \"somewhere in the scene\", \"near the person\", \"around the object\".\n\nFor direct replacements the new element inherits the original's spatial role: same person, same\nbody area, same approximate footprint, same orientation. For background changes, foreground\nsubjects stay untouched unless the user asks otherwise.\n\n================================================================================\nEXAMPLES\n========\n\nRequest: \"Adicione um cachorro marrom sentado na grama ao lado direito das motos. Tire a jaqueta\npreta do homem sorrindo e deixe o cabelo grisalho dele vermelho.\"\n\nedit_anything: Add a medium-sized brown dog sitting on the grass to the right of the motorcycles.\nRemove the black jacket worn by the smiling man in the left foreground. Replace the man's graying\nhair with bright red hair.\n\nRequest: \"Troque a caneca da mesa por uma garrafa de vidro.\"\n\nedit_anything: Replace the ceramic mug sitting on the table in front of the woman with a clear\nglass bottle. Replace the cluttered shelf in the background with a plain white wall.\n\nRequest: \"Coloque um chapéu viking na cabeça do homem.\"\n\nedit_anything: Add a dark iron Viking helmet with two curved pale horns and a brown leather chin\nstrap, worn on the head of the man in the center of the frame. Replace the dark studio background\nbehind him with a stone hall lit by torches.\n\nRequest: \"põe uns peixinhos coloridos nadando no coral\"   [plural objects — use Replace]\n\nedit_anything: Add a small orange clownfish with white stripes swimming just above the coral in\nthe bottom center of the frame. Replace the empty blue water in the upper background with a dense\nschool of small silver fish.\n\nRequest: \"Adicionar um pássaro voando ao lado do ciclista no mesmo sentido\"\n[frames show a man cycling down a city street lined with parked cars, overcast daylight]\n\nWRONG — invents a second edit nobody asked for, and drops the direction cue:\nedit_anything: Add a large bird with outstretched wings flying to the right of the cyclist.\nReplace the overcast sky above the street with a dramatic stormy sky filled with dark clouds\nand lightning.\n\nRIGHT — one requested edit, one instruction, direction kept as concrete state:\nedit_anything: Add a large gray seagull with outstretched wings gliding beside the cyclist,\nfacing the same direction he is riding.\n\nThe scene details in this example belong to THIS example only. Never carry \"cyclist\", \"street\"\nor \"parked cars\" into another request — read the actual frames every time.\n\nRequest: \"Transforme o vídeo em estilo steampunk.\"   [whole-scene style — split into regions]\n\nedit_anything: Restyle the brick wall behind the man into weathered brass and riveted copper\npanels. Restyle the wooden desk in the foreground into a steampunk console with gears and gauges.\nReplace the ceiling light with a hanging brass lamp with exposed filaments and copper piping.\n\n================================================================================\nFINAL CHECK — RUN THIS BEFORE OUTPUT\n====================================\n\n1. Did you analyze the frames before writing?\n2. Does it start with \"edit_anything: \" exactly once?\n3. Is there exactly one instruction per edit the user asked for, and no invented edit?\n4. Does every sentence start with Add, Replace, Remove, or Restyle — and never Make or Turn?\n5. Is every sentence between 10 and 20 words?\n6. Is every Add a single object (\"Add a ...\" / \"Add an ...\")?\n7. Does every Replace contain \" with \"?\n8. Does every Restyle name a region rather than the whole video?\n9. Is each instruction anchored to something visible in the frames?\n10. For a simple substitution, did you prefer one Replace over Remove + Add?\n11. If you used Remove + Add, was there a concrete visual reason?\n12. Did you avoid Remove followed by Replace for the same element?\n13. Did you preserve the original's spatial role in replacements?\n14. Did you avoid inventing details, and avoid mentioning the frames?\n15. Did you avoid adding ANY edit that was not requested — no sky, no background, no lighting,\n    no extra object?\n16. Did you keep every direction, orientation and motion cue from the request?\n17. Is every scene detail you wrote taken from THESE frames, and not copied from an example in\n    this document?\n\nIf any check fails, rewrite before answering. Output the prompt and nothing else.\n",
+      "string_b": [
+        "567",
+        0
+      ],
+      "delimiter": ""
+    },
+    "_meta": {
+      "title": "Prompt Template"
+    }
+  },
+  "626": {
+    "class_type": "ImageResizeKJv2",
+    "inputs": {
+      "image": [
+        "462",
+        0
+      ],
+      "width": 256,
+      "height": 256,
+      "upscale_method": "lanczos",
+      "keep_proportion": "resize",
+      "pad_color": "0, 0, 0",
+      "crop_position": "center",
+      "divisible_by": 32,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "ImageResizeKJv2"
+    }
+  },
+  "631": {
+    "class_type": "VHS_VideoInfo",
+    "inputs": {
+      "video_info": [
+        "460",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoInfo"
+    }
+  },
+  "630": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a / 2",
+      "values.a": [
+        "631",
+        6
+      ]
+    },
+    "_meta": {
+      "title": "ComfyMathExpression"
+    }
+  },
+  "637": {
+    "class_type": "SomethingToString",
+    "inputs": {
+      "input": [
+        "630",
+        1
+      ],
+      "prefix": "",
+      "suffix": ""
+    },
+    "_meta": {
+      "title": "SomethingToString"
+    }
+  },
+  "638": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a - 1",
+      "values.a": [
+        "631",
+        6
+      ]
+    },
+    "_meta": {
+      "title": "ComfyMathExpression"
+    }
+  },
+  "639": {
+    "class_type": "SomethingToString",
+    "inputs": {
+      "input": [
+        "638",
+        1
+      ],
+      "prefix": "",
+      "suffix": ""
+    },
+    "_meta": {
+      "title": "SomethingToString"
+    }
+  },
+  "633": {
+    "class_type": "ttN concat",
+    "inputs": {
+      "text1": "0",
+      "text2": [
+        "637",
+        0
+      ],
+      "text3": [
+        "639",
+        0
+      ],
+      "delimiter": ","
+    },
+    "_meta": {
+      "title": "ttN concat"
+    }
+  },
+  "629": {
+    "class_type": "GetImagesFromBatchIndexed",
+    "inputs": {
+      "images": [
+        "626",
+        0
+      ],
+      "indexes": [
+        "633",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImagesFromBatchIndexed"
+    }
+  },
+  "672": {
+    "class_type": "TextGenerate",
+    "inputs": {
+      "clip": [
+        "607",
+        0
+      ],
+      "prompt": [
+        "623",
+        0
+      ],
+      "max_length": 4096,
+      "sampling_mode": "on",
+      "sampling_mode.temperature": 0.7,
+      "sampling_mode.top_k": 64,
+      "sampling_mode.top_p": 0.95,
+      "sampling_mode.min_p": 0.05,
+      "sampling_mode.repetition_penalty": 1.05,
+      "sampling_mode.seed": 0,
+      "sampling_mode.presence_penalty": 0,
+      "image": [
+        "629",
+        0
+      ],
+      "thinking": true,
+      "use_default_template": true,
+      "mtp": "auto"
+    },
+    "_meta": {
+      "title": "TextGenerate"
+    }
+  },
+  "445": {
+    "class_type": "PreviewAny",
+    "inputs": {
+      "source": [
+        "672",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Prompt Preview"
+    }
+  },
+  "693": {
+    "class_type": "TextSplitByDelimiter",
+    "inputs": {
+      "text": [
+        "445",
+        0
+      ],
+      "delimiter": "</think>",
+      "start_index": 1,
+      "skip_every": 0,
+      "max_count": 10
+    },
+    "_meta": {
+      "title": "文本按分隔符拆分"
+    }
+  },
+  "694": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "693",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "展示文本"
+    }
+  },
+  "687": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": true,
+      "on_false": [
+        "567",
+        0
+      ],
+      "on_true": [
+        "694",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Use Auto Prompt"
+    }
+  },
+  "446": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "gemma4-12b-with-proj-ltx-2.5-comfy-int8-convrot.safetensors",
+      "type": "ltxv",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "448": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": [
+        "687",
+        0
+      ],
+      "clip": [
+        "446",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Positive Prompt"
+    }
+  },
+  "444": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "446",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Negative Prompt"
+    }
+  },
+  "452": {
+    "class_type": "LTXVConditioning",
+    "inputs": {
+      "positive": [
+        "448",
+        0
+      ],
+      "negative": [
+        "444",
+        0
+      ],
+      "frame_rate": [
+        "458",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVConditioning"
+    }
+  },
+  "453": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ltx-2.5-video-vae-bf16.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "645": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "min(a, b)",
+      "values.a": [
+        "455",
+        1
+      ],
+      "values.b": [
+        "631",
+        6
+      ]
+    },
+    "_meta": {
+      "title": "Math Expression (length)"
+    }
+  },
+  "456": {
+    "class_type": "EmptyLTXVLatentVideo",
+    "inputs": {
+      "width": [
+        "462",
+        1
+      ],
+      "height": [
+        "462",
+        2
+      ],
+      "length": [
+        "645",
+        1
+      ],
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "EmptyLTXVLatentVideo"
+    }
+  },
+  "680": {
+    "class_type": "LTXMultipleControls",
+    "inputs": {
+      "model": [
+        "622",
+        0
+      ],
+      "positive": [
+        "452",
+        0
+      ],
+      "negative": [
+        "452",
+        1
+      ],
+      "vae": [
+        "453",
+        0
+      ],
+      "latent": [
+        "456",
+        0
+      ],
+      "guide_video": [
+        "462",
+        0
+      ],
+      "guide_source_id": 0,
+      "guide_phase_scale": 1,
+      "guide_layout": "overlap",
+      "guide_ref_resize_mode": "match_target",
+      "guide_downscale_factor": 1,
+      "mask_source_id": 0,
+      "mask_phase_scale": 1,
+      "mask_layout": "overlap",
+      "mask_ref_resize_mode": "match_target",
+      "mask_downscale_factor": 1,
+      "auto_mask_guide": false,
+      "mask_white_thresh": 0.5,
+      "identity_source_id": 1,
+      "identity_phase_scale": 1,
+      "identity_layout": "overlap",
+      "identity_ref_resize_mode": "match_target",
+      "identity_downscale_factor": 1,
+      "identity_mask_source_id": -1,
+      "identity_mask_phase_scale": 1,
+      "identity_mask_layout": "overlap",
+      "identity_mask_ref_resize_mode": "match_target",
+      "identity_mask_downscale_factor": -1,
+      "crop_anchor": "center",
+      "reference_guidance_scale": 1,
+      "debug_log": false,
+      "identity_temporal_offset_latents": 0
+    },
+    "_meta": {
+      "title": "LTXMultipleControls"
+    }
+  },
+  "468": {
+    "class_type": "LTXVDualCFGGuider",
+    "inputs": {
+      "model": [
+        "680",
+        0
+      ],
+      "positive": [
+        "680",
+        1
+      ],
+      "negative": [
+        "680",
+        2
+      ],
+      "video_cfg": 1.1,
+      "audio_cfg": 1
+    },
+    "_meta": {
+      "title": "LTXVDualCFGGuider"
+    }
+  },
+  "469": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler_ancestral"
+    },
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "471": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "1.0, 0.99375, 0.9875, 0.98125, 0.975, 0.909375, 0.725, 0.421875, 0.0"
+    },
+    "_meta": {
+      "title": "ManualSigmas"
+    }
+  },
+  "470": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "467",
+        0
+      ],
+      "guider": [
+        "468",
+        0
+      ],
+      "sampler": [
+        "469",
+        0
+      ],
+      "sigmas": [
+        "471",
+        0
+      ],
+      "latent_image": [
+        "680",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "475": {
+    "class_type": "VAEDecodeTiled",
+    "inputs": {
+      "samples": [
+        "470",
+        0
+      ],
+      "vae": [
+        "453",
+        0
+      ],
+      "tile_size": 768,
+      "overlap": 64,
+      "temporal_size": 4096,
+      "temporal_overlap": 32
+    },
+    "_meta": {
+      "title": "VAEDecodeTiled"
+    }
+  },
+  "482": {
+    "class_type": "AddLabel",
+    "inputs": {
+      "image": [
+        "475",
+        0
+      ],
+      "text_x": 10,
+      "text_y": 2,
+      "height": 48,
+      "font_size": 20,
+      "font_color": "white",
+      "label_color": "black",
+      "font": "FreeMono.ttf",
+      "text": "1. Pass",
+      "direction": "up",
+      "caption": ""
+    },
+    "_meta": {
+      "title": "AddLabel"
+    }
+  },
+  "480": {
+    "class_type": "ImageConcatMulti",
+    "inputs": {
+      "inputcount": 3,
+      "image_1": [
+        "481",
+        0
+      ],
+      "direction": "right",
+      "match_image_size": true,
+      "image_2": [
+        "482",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageConcatMulti"
+    }
+  },
+  "600": {
+    "class_type": "AddLabel",
+    "inputs": {
+      "image": [
+        "480",
+        0
+      ],
+      "text_x": 10,
+      "text_y": 2,
+      "height": 128,
+      "font_size": 14,
+      "font_color": "white",
+      "label_color": "black",
+      "font": "FreeMono.ttf",
+      "text": [
+        "694",
+        0
+      ],
+      "direction": "down",
+      "caption": ""
+    },
+    "_meta": {
+      "title": "AddLabel"
+    }
+  },
+  "491": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "600",
+        0
+      ],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "460",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "432": {
+    "class_type": "RandomNoise",
+    "inputs": {
+      "noise_seed": 43
+    },
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "431": {
+    "class_type": "LatentUpscaleModelLoader",
+    "inputs": {
+      "model_name": "ltx-2.5-latent-spatial-upscaler-x2-bf16-1.0.safetensors"
+    },
+    "_meta": {
+      "title": "LatentUpscaleModelLoader"
+    }
+  },
+  "465": {
+    "class_type": "LTXVLatentUpsampler",
+    "inputs": {
+      "samples": [
+        "470",
+        0
+      ],
+      "upscale_model": [
+        "431",
+        0
+      ],
+      "vae": [
+        "453",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVLatentUpsampler"
+    }
+  },
+  "472": {
+    "class_type": "LTXVCropGuides",
+    "inputs": {
+      "positive": [
+        "680",
+        1
+      ],
+      "negative": [
+        "680",
+        2
+      ],
+      "latent": [
+        "465",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LTXVCropGuides"
+    }
+  },
+  "474": {
+    "class_type": "LTXMultipleControls",
+    "inputs": {
+      "model": [
+        "622",
+        0
+      ],
+      "positive": [
+        "472",
+        0
+      ],
+      "negative": [
+        "472",
+        1
+      ],
+      "vae": [
+        "453",
+        0
+      ],
+      "latent": [
+        "472",
+        2
+      ],
+      "guide_video": [
+        "475",
+        0
+      ],
+      "guide_source_id": 0,
+      "guide_phase_scale": 1,
+      "guide_layout": "overlap",
+      "guide_ref_resize_mode": "match_target",
+      "guide_downscale_factor": 1,
+      "mask_source_id": 0,
+      "mask_phase_scale": 1,
+      "mask_layout": "overlap",
+      "mask_ref_resize_mode": "match_target",
+      "mask_downscale_factor": 1,
+      "auto_mask_guide": false,
+      "mask_white_thresh": 0.5,
+      "identity_source_id": 1,
+      "identity_phase_scale": 1,
+      "identity_layout": "strata",
+      "identity_ref_resize_mode": "match_target",
+      "identity_downscale_factor": 1,
+      "identity_mask_source_id": -1,
+      "identity_mask_phase_scale": 1,
+      "identity_mask_layout": "overlap",
+      "identity_mask_ref_resize_mode": "native_resolution",
+      "identity_mask_downscale_factor": -1,
+      "crop_anchor": "center",
+      "reference_guidance_scale": 1,
+      "debug_log": false,
+      "identity_temporal_offset_latents": 0
+    },
+    "_meta": {
+      "title": "LTXMultipleControls"
+    }
+  },
+  "435": {
+    "class_type": "LTXVDualCFGGuider",
+    "inputs": {
+      "model": [
+        "474",
+        0
+      ],
+      "positive": [
+        "474",
+        1
+      ],
+      "negative": [
+        "474",
+        2
+      ],
+      "video_cfg": 1,
+      "audio_cfg": 1
+    },
+    "_meta": {
+      "title": "LTXVDualCFGGuider"
+    }
+  },
+  "436": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler_ancestral"
+    },
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "434": {
+    "class_type": "ManualSigmas",
+    "inputs": {
+      "sigmas": "0.85, 0.7250, 0.4219, 0.0"
+    },
+    "_meta": {
+      "title": "ManualSigmas"
+    }
+  },
+  "437": {
+    "class_type": "SamplerCustomAdvanced",
+    "inputs": {
+      "noise": [
+        "432",
+        0
+      ],
+      "guider": [
+        "435",
+        0
+      ],
+      "sampler": [
+        "436",
+        0
+      ],
+      "sigmas": [
+        "434",
+        0
+      ],
+      "latent_image": [
+        "474",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "439": {
+    "class_type": "VAEDecodeTiled",
+    "inputs": {
+      "samples": [
+        "437",
+        0
+      ],
+      "vae": [
+        "453",
+        0
+      ],
+      "tile_size": 768,
+      "overlap": 64,
+      "temporal_size": 4096,
+      "temporal_overlap": 32
+    },
+    "_meta": {
+      "title": "VAEDecodeTiled"
+    }
+  },
+  "441": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": [
+        "439",
+        0
+      ],
+      "fps": [
+        "458",
+        0
+      ],
+      "audio": [
+        "460",
+        2
+      ],
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none"
+    },
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "75": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "441",
+        0
+      ],
+      "filename_prefix": "yingxu/result",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "_meta": {
+      "title": "Second Pass Result"
+    }
+  },
+  "476": {
+    "class_type": "CreateVideo",
+    "inputs": {
+      "images": [
+        "475",
+        0
+      ],
+      "fps": [
+        "458",
+        0
+      ],
+      "audio": [
+        "460",
+        2
+      ],
+      "bit_depth": 8,
+      "color_space": "sRGB",
+      "codec": "none"
+    },
+    "_meta": {
+      "title": "CreateVideo"
+    }
+  },
+  "477": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "476",
+        0
+      ],
+      "filename_prefix": "yingxu/result",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "_meta": {
+      "title": "First Pass Result"
+    }
+  }
+}

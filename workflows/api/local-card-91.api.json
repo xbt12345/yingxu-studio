@@ -1,0 +1,366 @@
+{
+  "43": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "31": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "43",
+        0
+      ],
+      "lora_name": "Wan22-Lightning/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank128_bf16.safetensors",
+      "strength_model": 1.0000000000000002
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "57": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "31",
+        0
+      ],
+      "lora_name": "Wan22-Lightning/Wan2.1_T2V_14B_FusionX_LoRA.safetensors",
+      "strength_model": 0.4
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "52": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "57",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "32": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "52",
+        0
+      ],
+      "shift": 8.000000000000002
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "30": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "33": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "30",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "34": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "30",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "21": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "RealESRGAN_x2plus__通用真人照片2x.pth"
+    },
+    "_meta": {
+      "title": "UpscaleModelLoader"
+    }
+  },
+  "65": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "51": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1280,
+      "background_color": "#000000",
+      "image": [
+        "65",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "22": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "21",
+        0
+      ],
+      "image": [
+        "51",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageUpscaleWithModel"
+    }
+  },
+  "23": {
+    "class_type": "easy cleanGpuUsed",
+    "inputs": {
+      "anything": [
+        "22",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy cleanGpuUsed"
+    }
+  },
+  "24": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": [
+        "23",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "megapixels": 3,
+      "resolution_steps": 1
+    },
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "25": {
+    "class_type": "TTP_Tile_image_size",
+    "inputs": {
+      "image": [
+        "24",
+        0
+      ],
+      "width_factor": 2,
+      "height_factor": 2,
+      "overlap_rate": 0.05
+    },
+    "_meta": {
+      "title": "TTP_Tile_image_size"
+    }
+  },
+  "20": {
+    "class_type": "TTP_Image_Tile_Batch",
+    "inputs": {
+      "image": [
+        "24",
+        0
+      ],
+      "tile_width": [
+        "25",
+        0
+      ],
+      "tile_height": [
+        "25",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "TTP_Image_Tile_Batch"
+    }
+  },
+  "42": {
+    "class_type": "easy imageBatchToImageList",
+    "inputs": {
+      "image": [
+        "20",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageBatchToImageList"
+    }
+  },
+  "44": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "41": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "42",
+        0
+      ],
+      "vae": [
+        "44",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEEncode"
+    }
+  },
+  "38": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "32",
+        0
+      ],
+      "seed": 547451245111441,
+      "steps": 10,
+      "cfg": 1,
+      "sampler_name": "res_2m",
+      "scheduler": "kl_optimal",
+      "positive": [
+        "33",
+        0
+      ],
+      "negative": [
+        "34",
+        0
+      ],
+      "latent_image": [
+        "41",
+        0
+      ],
+      "denoise": 0.35
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "37": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "38",
+        0
+      ],
+      "vae": [
+        "44",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "36": {
+    "class_type": "ImageListToImageBatch",
+    "inputs": {
+      "images": [
+        "37",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageListToImageBatch"
+    }
+  },
+  "40": {
+    "class_type": "easy cleanGpuUsed",
+    "inputs": {
+      "anything": [
+        "36",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy cleanGpuUsed"
+    }
+  },
+  "28": {
+    "class_type": "TTP_Image_Assy",
+    "inputs": {
+      "tiles": [
+        "40",
+        0
+      ],
+      "positions": [
+        "20",
+        1
+      ],
+      "original_size": [
+        "20",
+        2
+      ],
+      "grid_size": [
+        "20",
+        3
+      ],
+      "padding": 128
+    },
+    "_meta": {
+      "title": "TTP_Image_Assy"
+    }
+  },
+  "63": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "28",
+        0
+      ],
+      "filename_prefix": "yingxu/result"
+    },
+    "_meta": {
+      "title": "SaveImage"
+    }
+  }
+}

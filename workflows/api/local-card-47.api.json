@@ -1,0 +1,238 @@
+{
+  "218": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 24
+    },
+    "_meta": {
+      "title": "FPS"
+    }
+  },
+  "227": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 4
+    },
+    "_meta": {
+      "title": "Duration (Seconds)"
+    }
+  },
+  "212:60": {
+    "class_type": "SimpleCalculatorKJ",
+    "inputs": {
+      "expression": "((a * b) // 8) * 8 + 1",
+      "variables.a": [
+        "227",
+        0
+      ],
+      "variables.b": [
+        "218",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Total Frames"
+    }
+  },
+  "215": {
+    "class_type": "VHS_LoadVideo",
+    "inputs": {
+      "video": "",
+      "force_rate": [
+        "218",
+        0
+      ],
+      "custom_width": 0,
+      "custom_height": 0,
+      "frame_load_cap": [
+        "212:60",
+        1
+      ],
+      "skip_first_frames": 0,
+      "select_every_nth": 1,
+      "format": "LTXV"
+    },
+    "_meta": {
+      "title": "Body Reference"
+    }
+  },
+  "220": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 1280
+    },
+    "_meta": {
+      "title": "Resolution (Longer dimension)"
+    }
+  },
+  "212:83": {
+    "class_type": "ResizeImageMaskNode",
+    "inputs": {
+      "input": [
+        "215",
+        0
+      ],
+      "resize_type": "scale longer dimension",
+      "resize_type.longer_size": [
+        "220",
+        0
+      ],
+      "scale_method": "lanczos"
+    },
+    "_meta": {
+      "title": "ResizeImageMaskNode"
+    }
+  },
+  "212:138": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 1
+    },
+    "_meta": {
+      "title": "Downscale Video Factor"
+    }
+  },
+  "212:89": {
+    "class_type": "ImageScaleBy",
+    "inputs": {
+      "image": [
+        "212:83",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "scale_by": [
+        "212:138",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageScaleBy"
+    }
+  },
+  "212:81": {
+    "class_type": "LTXVPreprocess",
+    "inputs": {
+      "image": [
+        "212:89",
+        0
+      ],
+      "img_compression": 0
+    },
+    "_meta": {
+      "title": "LTXVPreprocess"
+    }
+  },
+  "212:202": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "ltx2/ltx-2.3-22b-dev_transformer_only_fp8_scaled.safetensors",
+      "weight_dtype": "fp8_e4m3fn"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "212:15": {
+    "class_type": "VAELoaderKJ",
+    "inputs": {
+      "vae_name": "LTX23_video_vae_bf16.safetensors",
+      "device": "main_device",
+      "weight_dtype": "bf16"
+    },
+    "_meta": {
+      "title": "VAELoaderKJ"
+    }
+  },
+  "212:40": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "212:202",
+        0
+      ],
+      "vae": [
+        "212:15",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "212:151": {
+    "class_type": "ImageConcanate",
+    "inputs": {
+      "image1": [
+        "212:81",
+        0
+      ],
+      "image2": [
+        "212:40",
+        0
+      ],
+      "direction": "right",
+      "match_image_size": true
+    },
+    "_meta": {
+      "title": "ImageConcanate"
+    }
+  },
+  "210": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "212:151",
+        0
+      ],
+      "frame_rate": [
+        "218",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "Video Combine Comparison"
+    }
+  },
+  "212:204": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "212:40",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "获取图像尺寸数量"
+    }
+  },
+  "211": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "212:204",
+        0
+      ],
+      "frame_rate": [
+        "218",
+        0
+      ],
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "215",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "Video Combine Comparison"
+    }
+  }
+}

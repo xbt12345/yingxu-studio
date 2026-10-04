@@ -1,0 +1,63 @@
+{
+  "21": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "54": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "total_pixel(kilo pixel)",
+      "scale_to_length": 1024,
+      "background_color": "#000000",
+      "image": [
+        "21",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "29": {
+    "class_type": "RH_LLMAPI_NODE",
+    "inputs": {
+      "api_baseurl": "https://api.apilio.ai/v1",
+      "api_key": "",
+      "model": "gemini-3.8-flash-low",
+      "role": "描述图像\n",
+      "prompt": "",
+      "temperature": 0.6,
+      "seed": 815,
+      "ref_image": [
+        "54",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "RH_LLMAPI_NODE"
+    }
+  },
+  "18": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "29",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  }
+}

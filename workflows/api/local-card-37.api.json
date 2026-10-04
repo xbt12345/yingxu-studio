@@ -1,0 +1,157 @@
+{
+  "8": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "3": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "15": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "16": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "6": {
+    "class_type": "ComflyGrok3VideoApi",
+    "inputs": {
+      "prompt": [
+        "8",
+        0
+      ],
+      "model": "grok-video-3",
+      "ratio": "1:1",
+      "duration": "15",
+      "resolution": "1080P",
+      "api_key": [
+        "3",
+        0
+      ],
+      "image1": [
+        "15",
+        0
+      ],
+      "image2": [
+        "16",
+        0
+      ],
+      "seed": 0,
+      "skip_error": false
+    },
+    "_meta": {
+      "title": "ComflyGrok3VideoApi"
+    }
+  },
+  "10": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "6",
+        0
+      ],
+      "filename_prefix": "yingxu/result",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  },
+  "7": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "13": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "14": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "5": {
+    "class_type": "ComflyGrok3VideoApi30S",
+    "inputs": {
+      "prompt": [
+        "7",
+        0
+      ],
+      "model": "grok-video-3",
+      "ratio": "1:1",
+      "duration": "15",
+      "resolution": "720P",
+      "api_key": [
+        "3",
+        0
+      ],
+      "image1": [
+        "13",
+        0
+      ],
+      "image2": [
+        "14",
+        0
+      ],
+      "seed": 0,
+      "skip_error": false
+    },
+    "_meta": {
+      "title": "ComflyGrok3VideoApi30S"
+    }
+  },
+  "9": {
+    "class_type": "SaveVideo",
+    "inputs": {
+      "video": [
+        "5",
+        0
+      ],
+      "filename_prefix": "yingxu/result",
+      "format": "auto",
+      "format.codec": "auto",
+      "codec": "auto"
+    },
+    "_meta": {
+      "title": "SaveVideo"
+    }
+  }
+}

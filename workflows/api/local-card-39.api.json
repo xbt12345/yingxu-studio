@@ -1,0 +1,364 @@
+{
+  "12": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "bernini/Wan22_Bernini_LOW_mxfp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "14": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "12",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "29": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "14",
+        0
+      ],
+      "lora_name": "Bernini/Bernini-R_LightX2V_low_noise.safetensors",
+      "strength_model": 1.0000000000000002
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "122": {
+    "class_type": "Seed (rgthree)",
+    "inputs": {
+      "seed": 413325108999631
+    },
+    "_meta": {
+      "title": "Seed (rgthree)"
+    }
+  },
+  "9": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "7": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "130": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 1280
+    },
+    "_meta": {
+      "title": "PrimitiveInt"
+    }
+  },
+  "133": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 768
+    },
+    "_meta": {
+      "title": "PrimitiveInt"
+    }
+  },
+  "137": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 81
+    },
+    "_meta": {
+      "title": "PrimitiveInt"
+    }
+  },
+  "31": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "135": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "136": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "129": {
+    "class_type": "BerniniStudio",
+    "inputs": {
+      "clip": [
+        "9",
+        0
+      ],
+      "vae": [
+        "7",
+        0
+      ],
+      "width": [
+        "130",
+        0
+      ],
+      "height": [
+        "133",
+        0
+      ],
+      "length": [
+        "137",
+        0
+      ],
+      "batch_size": 1,
+      "task_type": "r2v",
+      "prompt": "",
+      "negative_prompt": "",
+      "use_default_neg": true,
+      "image0": [
+        "31",
+        0
+      ],
+      "image1": [
+        "135",
+        0
+      ],
+      "image2": [
+        "136",
+        0
+      ],
+      "ref_max_size": 1280,
+      "auto_enhance": false,
+      "unload_ollama": false,
+      "ollama_url": "http://127.0.0.1:11434",
+      "ollama_model": "",
+      "slot_images": "Ollama",
+      "augment_strength": 0,
+      "augment_decay": 0,
+      "augment_seed": 0,
+      "api_format": "Ollama",
+      "send_ref_images": true
+    },
+    "_meta": {
+      "title": "BerniniStudio"
+    }
+  },
+  "27": {
+    "class_type": "KSamplerSelect",
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "18": {
+    "class_type": "BasicScheduler",
+    "inputs": {
+      "model": [
+        "12",
+        0
+      ],
+      "scheduler": "simple",
+      "steps": 4,
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "BasicScheduler"
+    }
+  },
+  "17": {
+    "class_type": "SplitSigmas",
+    "inputs": {
+      "sigmas": [
+        "18",
+        0
+      ],
+      "step": 2
+    },
+    "_meta": {
+      "title": "SplitSigmas"
+    }
+  },
+  "5": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "bernini/Wan22_Bernini_HIGH_mxfp8.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "13": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "11": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "13",
+        0
+      ],
+      "lora_name": "Bernini/Bernini-R_LightX2V_high_noise.safetensors",
+      "strength_model": 1
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "19": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "add_noise": true,
+      "noise_seed": [
+        "122",
+        0
+      ],
+      "cfg": 1.2,
+      "positive": [
+        "129",
+        0
+      ],
+      "negative": [
+        "129",
+        1
+      ],
+      "sampler": [
+        "27",
+        0
+      ],
+      "sigmas": [
+        "17",
+        0
+      ],
+      "latent_image": [
+        "129",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "15": {
+    "class_type": "SamplerCustom",
+    "inputs": {
+      "model": [
+        "29",
+        0
+      ],
+      "add_noise": false,
+      "noise_seed": [
+        "122",
+        0
+      ],
+      "cfg": 1,
+      "positive": [
+        "129",
+        0
+      ],
+      "negative": [
+        "129",
+        1
+      ],
+      "sampler": [
+        "27",
+        0
+      ],
+      "sigmas": [
+        "17",
+        1
+      ],
+      "latent_image": [
+        "19",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "SamplerCustom"
+    }
+  },
+  "16": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "15",
+        0
+      ],
+      "vae": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "128": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "16",
+        0
+      ],
+      "frame_rate": 8,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  }
+}

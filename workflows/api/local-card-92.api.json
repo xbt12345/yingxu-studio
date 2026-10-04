@@ -1,0 +1,490 @@
+{
+  "68": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "wan2.2_t2v_low_noise_14B_fp8_scaled.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "69": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "68",
+        0
+      ],
+      "lora_name": "Wan22-Lightning/lightx2v_T2V_14B_cfg_step_distill_v2_lora_rank256_bf16.safetensors",
+      "strength_model": 1.0000000000000002
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "70": {
+    "class_type": "LoraLoaderModelOnly",
+    "inputs": {
+      "model": [
+        "69",
+        0
+      ],
+      "lora_name": "Wan22_lightx2v/Wan_2_2_I2V_A14B_LOW_lightx2v_4step_lora_260412_rank_256_fp16.safetensors",
+      "strength_model": 0.4
+    },
+    "_meta": {
+      "title": "LoraLoaderModelOnly"
+    }
+  },
+  "71": {
+    "class_type": "PathchSageAttentionKJ",
+    "inputs": {
+      "model": [
+        "70",
+        0
+      ],
+      "sage_attention": "auto",
+      "allow_compile": false
+    },
+    "_meta": {
+      "title": "PathchSageAttentionKJ"
+    }
+  },
+  "52": {
+    "class_type": "ModelSamplingSD3",
+    "inputs": {
+      "model": [
+        "71",
+        0
+      ],
+      "shift": 8.000000000000002
+    },
+    "_meta": {
+      "title": "ModelSamplingSD3"
+    }
+  },
+  "72": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+      "type": "wan",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "64": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "72",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "51": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "72",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "75": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "RealESRGAN_x2plus__通用真人照片2x.pth"
+    },
+    "_meta": {
+      "title": "UpscaleModelLoader"
+    }
+  },
+  "40": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "9": {
+    "class_type": "UltralyticsDetectorProvider",
+    "inputs": {
+      "model_name": "bbox/yolo11x-train28-best.pt"
+    },
+    "_meta": {
+      "title": "UltralyticsDetectorProvider"
+    }
+  },
+  "34": {
+    "class_type": "GetImageRangeFromBatch",
+    "inputs": {
+      "start_index": 0,
+      "num_frames": 1,
+      "images": [
+        "40",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageRangeFromBatch"
+    }
+  },
+  "36": {
+    "class_type": "PreviewBridge",
+    "inputs": {
+      "images": [
+        "34",
+        0
+      ],
+      "image": "$36-0",
+      "block": false,
+      "restore_mask": "never"
+    },
+    "_meta": {
+      "title": "PreviewBridge"
+    }
+  },
+  "7": {
+    "class_type": "LayerMask: LoadSegmentAnythingModels",
+    "inputs": {
+      "sam_model": "sam_vit_h (2.56GB)",
+      "grounding_dino_model": "GroundingDINO_SwinT_OGC (694MB)"
+    },
+    "_meta": {
+      "title": "LayerMask: LoadSegmentAnythingModels"
+    }
+  },
+  "22": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "26": {
+    "class_type": "LayerMask: SegmentAnythingUltra V3",
+    "inputs": {
+      "image": [
+        "40",
+        0
+      ],
+      "sam_models": [
+        "7",
+        0
+      ],
+      "threshold": 0.3,
+      "detail_method": "VITMatte",
+      "detail_erode": 6,
+      "detail_dilate": 6,
+      "black_point": 0.15,
+      "white_point": 0.99,
+      "process_detail": true,
+      "prompt": [
+        "22",
+        0
+      ],
+      "device": "cuda",
+      "max_megapixels": 43
+    },
+    "_meta": {
+      "title": "LayerMask: SegmentAnythingUltra V3"
+    }
+  },
+  "47": {
+    "class_type": "easy anythingIndexSwitch",
+    "inputs": {
+      "index": 2,
+      "value1": [
+        "36",
+        1
+      ],
+      "value2": [
+        "26",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "easy anythingIndexSwitch"
+    }
+  },
+  "46": {
+    "class_type": "LayerUtility: LaMa",
+    "inputs": {
+      "image": [
+        "40",
+        0
+      ],
+      "mask": [
+        "47",
+        0
+      ],
+      "lama_model": "lama",
+      "device": "cuda",
+      "invert_mask": false,
+      "mask_grow": 13,
+      "mask_blur": 7
+    },
+    "_meta": {
+      "title": "LayerUtility: LaMa"
+    }
+  },
+  "66": {
+    "class_type": "LayerUtility: ImageScaleByAspectRatio V2",
+    "inputs": {
+      "aspect_ratio": "original",
+      "proportional_width": 1,
+      "proportional_height": 1,
+      "fit": "letterbox",
+      "method": "lanczos",
+      "round_to_multiple": "8",
+      "scale_to_side": "longest",
+      "scale_to_length": 1280,
+      "background_color": "#000000",
+      "image": [
+        "46",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "74": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "75",
+        0
+      ],
+      "image": [
+        "66",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageUpscaleWithModel"
+    }
+  },
+  "53": {
+    "class_type": "easy cleanGpuUsed",
+    "inputs": {
+      "anything": [
+        "74",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy cleanGpuUsed"
+    }
+  },
+  "79": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": [
+        "53",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "megapixels": 3,
+      "resolution_steps": 1
+    },
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "76": {
+    "class_type": "TTP_Tile_image_size",
+    "inputs": {
+      "image": [
+        "79",
+        0
+      ],
+      "width_factor": 2,
+      "height_factor": 2,
+      "overlap_rate": 0.05
+    },
+    "_meta": {
+      "title": "TTP_Tile_image_size"
+    }
+  },
+  "78": {
+    "class_type": "TTP_Image_Tile_Batch",
+    "inputs": {
+      "image": [
+        "79",
+        0
+      ],
+      "tile_width": [
+        "76",
+        0
+      ],
+      "tile_height": [
+        "76",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "TTP_Image_Tile_Batch"
+    }
+  },
+  "56": {
+    "class_type": "easy imageBatchToImageList",
+    "inputs": {
+      "image": [
+        "78",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy imageBatchToImageList"
+    }
+  },
+  "54": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "wan_2.1_vae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "58": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "56",
+        0
+      ],
+      "vae": [
+        "54",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEEncode"
+    }
+  },
+  "82": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "52",
+        0
+      ],
+      "seed": 1109036676329067,
+      "steps": 10,
+      "cfg": 1,
+      "sampler_name": "res_2m",
+      "scheduler": "kl_optimal",
+      "positive": [
+        "64",
+        0
+      ],
+      "negative": [
+        "51",
+        0
+      ],
+      "latent_image": [
+        "58",
+        0
+      ],
+      "denoise": 0.2
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "59": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "82",
+        0
+      ],
+      "vae": [
+        "54",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "61": {
+    "class_type": "ImageListToImageBatch",
+    "inputs": {
+      "images": [
+        "59",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageListToImageBatch"
+    }
+  },
+  "50": {
+    "class_type": "easy cleanGpuUsed",
+    "inputs": {
+      "anything": [
+        "61",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "easy cleanGpuUsed"
+    }
+  },
+  "77": {
+    "class_type": "TTP_Image_Assy",
+    "inputs": {
+      "tiles": [
+        "50",
+        0
+      ],
+      "positions": [
+        "78",
+        1
+      ],
+      "original_size": [
+        "78",
+        2
+      ],
+      "grid_size": [
+        "78",
+        3
+      ],
+      "padding": 128
+    },
+    "_meta": {
+      "title": "TTP_Image_Assy"
+    }
+  },
+  "73": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "77",
+        0
+      ],
+      "filename_prefix": "yingxu/result"
+    },
+    "_meta": {
+      "title": "SaveImage"
+    }
+  }
+}

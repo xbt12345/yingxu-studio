@@ -1,0 +1,219 @@
+{
+  "16": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "z_image_turbo_bf16.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "UNETLoader"
+    }
+  },
+  "11": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "16",
+        0
+      ],
+      "shift": 3,
+      "sampling": "flow"
+    },
+    "_meta": {
+      "title": "ModelSamplingAuraFlow"
+    }
+  },
+  "96": {
+    "class_type": "ModelPatchLoader",
+    "inputs": {
+      "name": "Z-Image-Turbo-Fun-Controlnet-Union-2.1-2601-8steps.safetensors"
+    },
+    "_meta": {
+      "title": "ModelPatchLoader"
+    }
+  },
+  "17": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "ae.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "134": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "136": {
+    "class_type": "ZImageFunControlnet",
+    "inputs": {
+      "model": [
+        "11",
+        0
+      ],
+      "model_patch": [
+        "96",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ],
+      "strength": 1,
+      "inpaint_image": [
+        "134",
+        0
+      ],
+      "mask": [
+        "134",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "ZImageFunControlnet"
+    }
+  },
+  "137": {
+    "class_type": "DifferentialDiffusion",
+    "inputs": {
+      "model": [
+        "136",
+        0
+      ],
+      "strength": 1
+    },
+    "_meta": {
+      "title": "DifferentialDiffusion"
+    }
+  },
+  "18": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_3_4b.safetensors",
+      "type": "lumina2",
+      "device": "default"
+    },
+    "_meta": {
+      "title": "CLIPLoader"
+    }
+  },
+  "6": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "text": "",
+      "clip": [
+        "18",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "CLIPTextEncode"
+    }
+  },
+  "111": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "6",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ConditioningZeroOut"
+    }
+  },
+  "135": {
+    "class_type": "GetImageSize",
+    "inputs": {
+      "image": [
+        "134",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSize"
+    }
+  },
+  "13": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "width": [
+        "135",
+        0
+      ],
+      "height": [
+        "135",
+        1
+      ],
+      "batch_size": 1
+    },
+    "_meta": {
+      "title": "EmptySD3LatentImage"
+    }
+  },
+  "139": {
+    "class_type": "KSampler",
+    "inputs": {
+      "model": [
+        "137",
+        0
+      ],
+      "seed": 239843452509999,
+      "steps": 8,
+      "cfg": 1,
+      "sampler_name": "res_2s",
+      "scheduler": "beta57",
+      "positive": [
+        "6",
+        0
+      ],
+      "negative": [
+        "111",
+        0
+      ],
+      "latent_image": [
+        "13",
+        0
+      ],
+      "denoise": 1
+    },
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "140": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "139",
+        0
+      ],
+      "vae": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VAEDecode"
+    }
+  },
+  "174": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "140",
+        0
+      ],
+      "filename_prefix": "yingxu/result"
+    },
+    "_meta": {
+      "title": "SaveImage"
+    }
+  }
+}
