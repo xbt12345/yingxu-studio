@@ -168,16 +168,234 @@
       "title": "VHS_VideoCombine"
     }
   },
+  "3688": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "3737": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "LoadImage"
+    }
+  },
+  "3697": {
+    "class_type": "ImageResizeKJv2",
+    "inputs": {
+      "image": [
+        "3737",
+        0
+      ],
+      "width": [
+        "3727",
+        3
+      ],
+      "height": [
+        "3727",
+        4
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "top",
+      "divisible_by": 16,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "ImageResizeKJv2"
+    }
+  },
+  "3689": {
+    "class_type": "ImageResizeKJv2",
+    "inputs": {
+      "image": [
+        "3688",
+        0
+      ],
+      "width": [
+        "3697",
+        1
+      ],
+      "height": [
+        "3697",
+        2
+      ],
+      "upscale_method": "lanczos",
+      "keep_proportion": "crop",
+      "pad_color": "0, 0, 0",
+      "crop_position": "top",
+      "divisible_by": 16,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "ImageResizeKJv2"
+    }
+  },
+  "3687": {
+    "class_type": "RepeatImageBatch",
+    "inputs": {
+      "image": [
+        "3689",
+        0
+      ],
+      "amount": [
+        "3751",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "RepeatImageBatch"
+    }
+  },
   "3686": {
     "class_type": "Any Switch (rgthree)",
-    "inputs": {},
+    "inputs": {
+      "any_01": [
+        "3687",
+        0
+      ],
+      "any_02": [
+        "3727",
+        0
+      ]
+    },
     "_meta": {
       "title": "Any Switch (rgthree)"
     }
   },
+  "3729": {
+    "class_type": "SeCModelLoader",
+    "inputs": {
+      "model_file": "SeC-4B (sharded)",
+      "device": "auto",
+      "use_flash_attn": true,
+      "allow_mask_overlap": true
+    },
+    "_meta": {
+      "title": "SeCModelLoader"
+    }
+  },
+  "3730": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 0
+    },
+    "_meta": {
+      "title": "Annotation Frame"
+    }
+  },
+  "3728": {
+    "class_type": "ImageFromBatch",
+    "inputs": {
+      "image": [
+        "3727",
+        0
+      ],
+      "batch_index": [
+        "3730",
+        0
+      ],
+      "length": 1
+    },
+    "_meta": {
+      "title": "ImageFromBatch"
+    }
+  },
+  "3719": {
+    "class_type": "LayerMask: LoadSegmentAnythingModels",
+    "inputs": {
+      "sam_model": "sam_vit_h (2.56GB)",
+      "grounding_dino_model": "GroundingDINO_SwinT_OGC (694MB)"
+    },
+    "_meta": {
+      "title": "LayerMask: LoadSegmentAnythingModels"
+    }
+  },
+  "3724": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "3720": {
+    "class_type": "LayerMask: SegmentAnythingUltra V3",
+    "inputs": {
+      "image": [
+        "3728",
+        0
+      ],
+      "sam_models": [
+        "3719",
+        0
+      ],
+      "threshold": 0.3,
+      "detail_method": "VITMatte",
+      "detail_erode": 6,
+      "detail_dilate": 6,
+      "black_point": 0.15,
+      "white_point": 0.99,
+      "process_detail": true,
+      "prompt": [
+        "3724",
+        0
+      ],
+      "device": "cuda",
+      "max_megapixels": 43
+    },
+    "_meta": {
+      "title": "LayerMask: SegmentAnythingUltra V3"
+    }
+  },
+  "3764": {
+    "class_type": "SeCVideoSegmentation",
+    "inputs": {
+      "model": [
+        "3729",
+        0
+      ],
+      "frames": [
+        "3727",
+        0
+      ],
+      "positive_points": "",
+      "negative_points": "",
+      "input_mask": [
+        "3720",
+        1
+      ],
+      "tracking_direction": "bidirectional",
+      "annotation_frame_idx": [
+        "3730",
+        0
+      ],
+      "object_id": 1,
+      "max_frames_to_track": -1,
+      "mllm_memory_size": 12,
+      "offload_video_to_cpu": false,
+      "auto_unload_model": true
+    },
+    "_meta": {
+      "title": "SeCVideoSegmentation"
+    }
+  },
   "3644": {
     "class_type": "Any Switch (rgthree)",
-    "inputs": {},
+    "inputs": {
+      "any_02": [
+        "3764",
+        0
+      ]
+    },
     "_meta": {
       "title": "Any Switch (rgthree)"
     }
@@ -417,41 +635,6 @@
       "title": "CLIPVisionLoader"
     }
   },
-  "3737": {
-    "class_type": "LoadImage",
-    "inputs": {
-      "image": ""
-    },
-    "_meta": {
-      "title": "LoadImage"
-    }
-  },
-  "3697": {
-    "class_type": "ImageResizeKJv2",
-    "inputs": {
-      "image": [
-        "3737",
-        0
-      ],
-      "width": [
-        "3727",
-        3
-      ],
-      "height": [
-        "3727",
-        4
-      ],
-      "upscale_method": "lanczos",
-      "keep_proportion": "crop",
-      "pad_color": "0, 0, 0",
-      "crop_position": "top",
-      "divisible_by": 16,
-      "device": "cpu"
-    },
-    "_meta": {
-      "title": "ImageResizeKJv2"
-    }
-  },
   "3654": {
     "class_type": "WanVideoClipVisionEncode",
     "inputs": {
@@ -501,7 +684,12 @@
   },
   "3671": {
     "class_type": "Any Switch (rgthree)",
-    "inputs": {},
+    "inputs": {
+      "any_02": [
+        "3706",
+        1
+      ]
+    },
     "_meta": {
       "title": "Any Switch (rgthree)"
     }
@@ -711,6 +899,14 @@
       "image_2": [
         "3706",
         1
+      ],
+      "image_3": [
+        "3709",
+        0
+      ],
+      "image_4": [
+        "3727",
+        0
       ]
     },
     "_meta": {

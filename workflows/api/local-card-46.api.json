@@ -172,12 +172,26 @@
       "bottom": 0,
       "extra_padding": 0,
       "pad_mode": "color",
-      "color": "0, 0, 0",
-      "target_width": 512,
-      "target_height": 512
+      "color": "0, 0, 0"
     },
     "_meta": {
-      "title": "ImagePadKJ"
+      "title": "ImagePadKJ",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-outpaint-source-padding-target_width",
+          "node": "5149",
+          "input": "target_width",
+          "from": 512,
+          "to": "omitted optional socket"
+        },
+        {
+          "id": "review73-outpaint-source-padding-target_height",
+          "node": "5149",
+          "input": "target_height",
+          "from": 512,
+          "to": "omitted optional socket"
+        }
+      ]
     }
   },
   "5167:5146": {

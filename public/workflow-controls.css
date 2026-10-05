@@ -63,6 +63,9 @@
 .wf-select-menu [role=option].is-active,.wf-select-menu [role=option]:hover{background:#b99bd421}
 .wf-select-menu [aria-selected=true]{color:#f3e7ff;background:#b99bd414}
 .wf-select-menu [aria-selected=true]::after{content:'✓';position:absolute;right:11px;color:#d1b1ed}
+.wf-select-menu [aria-disabled=true]{opacity:.55;cursor:not-allowed}
+.wf-select-menu [aria-disabled=true]:hover{background:transparent}
+.wf-select-menu [role=option] small{display:block;margin-top:3px;font-size:11px;color:#c1b8c8}
 .camera-visuals{display:grid;grid-template-columns:minmax(0,1fr) 104px;gap:16px;align-items:center}
 .camera-framing{margin:0;min-width:0}
 .production .catalog-camera-guide .camera-framing svg{display:block;width:100%;height:auto;overflow:hidden;border-radius:12px;background:radial-gradient(ellipse at 50% 25%,#3b3048,#17131d);border:1px solid #ffffff19;box-sizing:border-box}

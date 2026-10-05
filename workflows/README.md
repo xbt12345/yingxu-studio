@@ -1,6 +1,6 @@
 # 真实生成接入
 
-仓库附带 132 份 API 格式工作流，文件位于 `api/`。完整文件名、模型名、自定义节点类型和模板哈希见 [manifest.json](manifest.json)。包括原 34 份适配器和新增 98 份通用执行合同；指定卡的完整 137 项状态与输入见 [逐图审查](../docs/card-workflow-parameter-audit.md)。3 个缺节点的工作流保留目录与阻碍提示，空文件不猜测执行内容。结构通过不等于模型生成验收通过。
+当前 [manifest.json](manifest.json) 注册 129 份 API 格式工作流，文件位于 `api/`：指定卡 127 个 ready 工作流与 2 个外部命名模板，包含原 34 份适配器和 95 份通用执行合同。指定卡另有 6 个 blocked（3 个缺节点、1 个源图断链、2 个控件版本不兼容）、1 个空文件与 3 个同图别名，均保留状态且不猜测执行内容。目录中未注册的旧模板不计入 ready，也不能直接绕过执行合同提交。完整文件名、模型名、自定义节点类型和模板哈希见 manifest，137 项状态与输入见 [逐图审查](../docs/card-workflow-parameter-audit.md)。151 个界面配置不等于全部实测；ready 和结构通过不等于模型生成验收通过。
 
 逐图依赖与官方节点迁移依据见 [依赖审查](../docs/card-workflow-dependency-audit.md)。设置 `CHENYU_CARD_URL` 后，可以依次运行 `python scripts/sync_card_workflows.py`、`python scripts/compile_card_workflows.py`、`python scripts/audit_compiled_contracts.py`，复核同一批已审查源图。下载内容留在忽略的 `private/` 中；源文件变化时编译会阻止发布，必须先更新和审查界面绑定，不能以旧参数套用新图。这不是任意工作流自动导入功能。
 

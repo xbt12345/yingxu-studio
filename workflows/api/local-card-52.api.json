@@ -75,7 +75,7 @@
       "tau": 1.3,
       "start_percent": 0.2,
       "end_percent": 0.9,
-      "min_tokens": "",
+      "min_tokens": 12288,
       "int8_qk": true,
       "sink_conditioning": "exact_kv_and_rows",
       "morton": false,
@@ -179,62 +179,22 @@
       "title": "CLIPLoader"
     }
   },
-  "161": {
-    "class_type": "Any Switch (rgthree)",
-    "inputs": {},
-    "_meta": {
-      "title": "Any Switch (rgthree)"
-    }
-  },
-  "71": {
-    "class_type": "ResolutionSelector",
+  "187": {
+    "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "aspect_ratio": "9:16 (Portrait Widescreen)",
-      "megapixels": 0.5,
-      "multiple": 32
+      "value": "Full-Reference Mode Rewrite Output Format Guide\nQwen3.8-Max Multimodal Profile for MiniMax H3-Base-Ref2VA\nUse this instruction to transform the source video_prompt, target_duration, and platform-supplied referenced assets into a low-ambiguity prompt for local H3-Base-Ref2VA.\n\nThe goal is a minimally sufficient audiovisual program, not a long reference report. H3 must know: what each asset uniquely defines, what changes, how the main action unfolds, how the camera reveals it, what each voice does, and what remains continuous across cuts.\n\nPlatform and Output Contract\nQwen3.8-Max can inspect the character, scene, prop, image, video, and audio assets associated with valid @asset-name tokens. Inspect each asset in its native modality before writing and associate every observation with the correct token. If an asset is unavailable or unreadable, use only facts explicitly present in video_prompt; never invent its contents.\n\nUse local H3-Base-Ref2VA by default. The final video is always 9:16; input assets may use any aspect ratio. Recompose references for vertical shots rather than describing a crop.\n\nWrite the natural-language content of all six sections in Simplified Chinese. Preserve dialogue, lyrics, and visible text verbatim in their original language. Keep section names, task types, relationship markers, <Subject N> / <Picture N> / <Video N> / <Audio N>, [Shot N], At MM:SS.mmm, (Sx), language tags, XML-like tags, and valid @asset-name tokens unchanged.\n\nPerform observation, comparison, timing, conflict resolution, and self-review silently. Output only the six required sections.\n\nFirst-Principles Selection Rule\nKeep a detail only if it does at least one of the following:\n\nIdentifies the asset;\nDistinguishes it from another subject;\nEnables an interaction, action, prop handling, blocking, framing, or readable text;\nMaintains continuity across time, occlusion, or cuts.\nDelete details that serve none of these functions. Do not delete necessary details merely to shorten the prompt.\n\nInternal Compilation — Do Not Output\n1. Observe and assign responsibilities\nInspect each asset and assign only the dimensions it actually controls:\n\ncharacter identity, clothing, or persistent state;\nscene topology, fixed anchors, or lighting;\nprop design, text, state, or interaction;\nperformance/motion trajectory;\nvisual style;\ncamera/editing;\nvoice identity, dialogue delivery, ambience, effects, or music.\nA character sheet's close-up, half-body, and front/side/back views form one identity unit. Ignore white sheet backgrounds, repeated views, labels, dividers, and layout. Do not transfer a clothing model, motion actor, style-reference person, or source-video background into the target identity unless explicitly requested. Do not enable a reference video's audio merely because it contains sound.\n\n2. Build minimal source signatures\nCharacter: retain a self-chosen number of high-discrimination face/hair anchors—usually 3–7, fewer when sufficient—plus useful body type/proportion, complete default clothing needed for continuity, and persistent injury/cast/dirt/wetness/aging/damage. Choose distinctive relations such as 长窄脸、颧骨突出、灰黑头发向后梳, not generic checklists such as 五官清晰、肤色自然、保持一致. Temporary emotion, gaze, pose, and one-shot performance belong in the Shot.\n\nScene: retain the type, spatial skeleton (enclosure, depth, entrances, openings, major zones), dominant fixed materials/colors, 2–4 distinctive fixed anchors, action routes/zones, and source-supported light direction. Distinguish fixed architecture from movable furnishings; an “emptied” target removes movable items but keeps fixed structure unless the source says otherwise.\n\nProp: retain category/function, silhouette, dominant material/color, 2–4 recognition structures/marks, required legible text/Logo/stamp, initial placement/state, held side/hand, and scripted state change. Exclude display backgrounds, capture shadows, packaging, stands, and unrelated objects. Use [unclear] for unreadable text; never guess.\n\nAudio: if stable and clearly audible, retain only 3–5 voice identity cues such as pitch range, vocal weight, texture, articulation/accent, baseline pace, or cadence. Separately derive 2–4 target-line cues such as starting breath/pause, rate change, loudness, stressed words, phrase breaks, escalation/restraint, or line-ending contour. Do not claim uncertain timbre, accent, age, pitch, or recording quality. Voice-reference audio does not import source wording, noise, ambience, music, or other speakers unless explicitly requested.\n\nMotion/style/camera: keep these dimensions separate. Motion uses start state, ordered path/contact, speed/rhythm, and end state. Style uses medium, palette, lighting behavior, and texture without importing depicted people/objects. Camera uses framing, viewpoint, movement, cuts, and rhythm without importing source subjects or scenes.\n\n3. Resolve source and target\nFor each item, silently separate:\n\nLOCK: source traits that must remain;\nCHANGE: explicit target modifications;\nFLEX: temporary performance or natural variation.\nUse this priority:\n\nverbatim user content and explicit changes\n> correct asset role and identity\n> physical/temporal continuity\n> distinctive anchors\n> decorative description\nMerge multiple assets into one identity only when visibly compatible or explicitly complementary. Never average conflicting faces, clothing, body types, voices, or scenes.\n\n4. Compile action, camera, and time\nFor each main beat, plan silently:\n\naction: start state → initiating action → path/body mechanics/object trajectory → contact or causal turn → consequence → end state\ncamera: start framing/placement → movement type/direction/amplitude/speed → what it follows or reveals → ending framing/focal subject\ntime: dialogue + action + reaction + camera + synchronized sound + final hold\nUse only the mechanics relevant to the action; do not choreograph every finger. The camera must keep the main action, speaking face, hand–prop contact, required text, and end pose readable. Use one dominant attention event per time range.\n\nMaintain continuity of character position/orientation/eyeline/left-right hand/clothing/injury/prop possession, prop state and placement, fixed scene structure, lighting, motion direction, and unfinished audio across cuts.\n\n5. Compress and challenge the draft\nRemove generic preservation checklists, repeated global exclusions, synonyms, mood labels without visible consequences, ordinary details unrelated to generation, and full identity restatements after first appearance. Keep necessary functional repetition across definitions, retention analysis, and first visible Shot.\n\nForbidden filler unless immediately followed by concrete observed evidence:\n\n面部特征、发型、体型、肤色与默认服装均以 @... 为准\n保留 @... 的可识别特征\n不改变默认身份与服装\n目标视频中为……状态 / 活跃于 [Shot ...]\n以参考素材为准 / 保持一致\n不引入其他角色身份、服装或音频来源\n不复制原音频中的环境声、噪声、音乐或他人声音\nApply the deletion test: if removing a sentence does not change identity, disambiguation, interaction, composition, timing, audio performance, or continuity, remove it.\n\n1. Overall Structure\nOutput exactly these six sections in this order:\n\nSection\tFunction\nsubject_definitions\tBind references and define minimal source signatures plus persistent target changes\nsummary\tState the target event, Shot progression, and material reference relationships\nretention_analysis\tState preserve/change/transfer/copy relations without duplicating definitions\ndetailed_description\tGive the executable visual, action, camera, dialogue, synchronized-sound, and continuity timeline\noverall_soundscape\tSummarize persistent or recurring ambience, Foley, and non-verbal sound\nnon_diegetic_music\tDescribe audience-only score, or N/A\nNo extra headings, analysis notes, evidence reports, warnings, or placeholders may appear in the output.\n\n2. Reference Labels and Definitions (subject_definitions)\nLabel\tMeaning\n<Subject N>\tVisible target content: character, animal, scene, prop, clothing, effect, motion, or style\n<Picture N>\tConcrete first frame, keyframe, last frame, storyboard, or composition anchor\n<Video N>\tDirectly edited/continued video or whole-video camera, cut, rhythm, or motion source\n<Audio N>\tExplicitly enabled audio asset or video audio track that is copied or referenced\nLabels retain one meaning across all six sections. Keep valid @asset-name tokens. Create standalone Picture/Video entries only when the file itself has a frame-level or whole-video role.\n\n2.1 Subject definitions\nUse compact, individualized prose. Do not write an anatomical questionnaire.\n\n<Subject 1> 是 @角色素材 中的年轻男性，身材瘦高、肩线平直；脸型偏长、下颌收紧，浓黑平眉、狭长深色眼睛、高直鼻梁，黑色短碎发凌乱。他穿深炭灰做旧长袖衬衫，尖领敞开、左胸单贴袋、袖口卷至肘下，搭配深色直筒长裤和黑色系带鞋；右前臂新增白色石膏并在全片保持同一侧与同一包覆范围。\n<Subject 2> 是 @场景素材 中由红砖房与开裂灰泥房围合的院落，深红旧瓦围绕宽阔的开裂水泥地；右侧木门上方悬挂深色木匾，院墙间横拉晾衣绳。人物从右侧门进入，中央空地承担对话与打斗。\n<Subject 3> 是 @道具素材 中的旧纸质文件，纸张泛黄并有横纵折痕，正文位于细黑矩形边框内，右下有红色圆形印章；不可辨正文不补写。目标镜头中纸面沾血并平放在人物右手旁。\nIf a scene/prop/image/video asset is available, observe it and replace the example facts with its own distinctive evidence. If it is unavailable, bind the token and write only explicit target state and interaction.\n\nDo not include white asset-sheet backgrounds, repeated multi-view bodies, view labels, dividers, stands, or unrelated display objects.\n\n2.2 <Picture N> and <Video N>\nCreate standalone <Picture N> only for an actual first frame, keyframe, last frame, storyboard, or composition anchor. Use <Video N> only for direct editing, continuation, or whole-video camera/cut/rhythm structure. Visible content extracted from a video still uses <Subject N>.\n\n2.3 <Audio N>\nBind the audio to the target speaker and combine stable source cues with current-line delivery:\n\n<Audio 1> 是 @角色音频 提供的 <Subject 1> (S1) 声音参考：中低音区、声线偏厚略干、吐字直接、基础语速偏快；[Shot 1] 台词在急促吸气后起句，重读“走错了”和“啥也没有”，句末疑问上扬。\nUse only cues clearly audible in the asset. Different audio assets remain separate even when mapped to one (Sx). An audio token beside a character/action but not explicitly bound to dialogue does not control that dialogue.\n\n3. summary\nWrite one short Simplified-Chinese paragraph with the fixed task-type prefix, core target event, major Shot progression, material reference relationships, and supplied no-subtitle/no-music constraints. Use applicable types without repetition:\n\nreference generation, keyframe completion, video editing, video continuation, audio reuse, audio reference.\n\nDo not list every Subject, emotion, or Audio assignment.\n\n4. retention_analysis\nUse one compact line per independently tracked label:\n\nlabel + appearance/scope + marker + retained core + actual target delta\nVisual markers: fully_preserved, partially_preserved, attribute_transfer, weak_reference.\n\nAudio markers: fully_copy, partially_copy, reference, weak_reference.\n\nGood:\n\n<Subject 1> (出现在 [Shot 1]、[Shot 2]): fully_preserved - 保留瘦高体态、棱角脸、凌乱短发和深炭灰服装；新增右前臂白色石膏并保持连续。\n<Subject 4> (出现在全部 Shot): partially_preserved - 保留堂屋固定建筑骨架与入口关系，移除可移动家具并改为夜间空屋。\n<Audio 1> ([Shot 1] 角色台词): reference - 保留可辨声音身份，并按当前台词执行急促起句、关键词重读和疑问上扬。\nDo not copy the full definitions or write (Sx) in this section. If copied audio is modified by adding/removing any layer, use partially_copy, not fully_copy.\n\n5. detailed_description\nThis is the primary H3 generation instruction and must contain the highest concentration of executable information.\n\n5.1 Shot construction\nFor each Shot, write in playback order:\n\nopening shot size, subject positions, depth, orientation, and critical 9:16 visibility;\nstarting state and spatial relationships;\ninitiating action, ordered mechanics/trajectory, contact or causal turn, consequence, and stable end state;\ncamera type, direction, amplitude, speed, tracked/revealed content, and ending frame;\ndialogue, non-verbal voice, Foley, diegetic music, and exact reference activation point;\ncontinuity handoff to the next Shot.\nAt first clear appearance, use only visible high-value anchors needed to recognize and distinguish the subject. Later Shots repeat 1–3 anchors only when angle, occlusion, wardrobe, multi-person framing, or visual similarity creates drift risk.\n\n5.2 Action quality\nUse literal verbs and physical relations. The following example shows structure only; never copy its subject or mechanics into an unrelated request:\n\n对方抬右拳砸向他上身；他向左侧身避开拳路，左手抓腕、右手压住肘臂，顺势转身下压，使对方失去平衡、背朝上落地，再将手臂折到背后锁住。\nSpecify limb/side, direction, contact point, trajectory, weight transfer, order, and end state only when they affect readability or continuity. Translate abstract emotion into 2–3 observable performance cues rather than a catalogue of pallor, sweat, trembling, gasping, tears, swallowing, and shadows.\n\n5.3 Camera quality\nA camera instruction should state:\n\nstarting framing and placement → movement type/direction/amplitude/speed → what it follows or reveals → ending framing/focal subject\nExample structure:\n\n镜头从人物左侧半身中景开始，随其转头向右小幅快速横摇，越过肩部后落到另一人物胸部以上近景；结束时眼睛、嘴部和抬起的手位于竖屏中央。\nUse 手持, 航拍, 长焦压缩, 极速推镜, 环绕, or strong motion blur only when supplied or necessary. Do not let camera movement hide the main action, speaking face, hand–prop contact, required text, or end pose.\n\n5.4 9:16 composition\nKeep the speaking face and relevant gesture visible together when possible. For hand–prop contact, show both hand and contact point. For fights, preserve attack path, avoidance, contact, and landing space. Use depth, staggered blocking, shot-size changes, or a cut instead of squeezing equal-priority subjects into one plane.\n\n5.5 Timing and cuts\n[Shot 1] has no timestamp. When total duration is known, later cuts use strictly increasing [Shot N] At MM:SS.mmm, timestamps before the target end.\n\nAllocate time by actual dialogue, action complexity, reaction, camera movement, synchronized sound, and final hold—not equal division. Do not add filler or force impossible dialogue into a short Shot. If dialogue and required actions cannot fit naturally, report the conflict without deleting, paraphrasing, or unnaturally accelerating content. Do not force false precision such as ending a line at 00:14.800 without a feasible beat plan.\n\nFor dialogue crossing a cut, use <scenetrans> at both connection points and state that the voice continues without restart. Use <cutoff> only for intentionally truncated speech.\n\n5.6 Speakers, dialogue, and visible text\nAssign (S1), (S2), and later IDs by actual first vocal event, then keep them stable. Non-speaking characters receive no ID. Use <Subject N> (Sx) when a referenced character speaks.\n\nWrite dialogue and lyrics as <d>[Language] verbatim content</d>; use [Chinese] for Chinese. Do not translate, paraphrase, shorten, or add dialogue. Preserve required visible text exactly; use [unclear] for unreadable spans.\n\n5.7 Sound layers\nKeep separate: dialogue/voice-over, non-verbal human sounds, synchronized Foley/effects, persistent ambience, diegetic music, and non-diegetic music. Use reference audio only for its assigned layers. Include only source-supported or physically necessary sounds; do not add generic room tone, wind, insects, footsteps, cloth movement, breathing, or swallowing merely because plausible.\n\n6. overall_soundscape and non_diegetic_music\noverall_soundscape uses one concise paragraph for persistent or recurring sound. Exact synchronized events remain in their Shot; do not duplicate a sound unless one description gives its event timing and the other its persistence.\n\nnon_diegetic_music describes audience-only score through instrumentation, tempo, rhythm, and dynamics. Write N/A when absent.\n\n7. Output Template\nsubject_definitions:\n<Subject 1> 是……\n<Audio 1> 是……\n\nsummary:\n[reference generation + audio reference] ……\n\nretention_analysis:\n<Subject 1> (出现在 [Shot 1]): fully_preserved - ……\n<Audio 1> ([Shot 1] 角色台词): reference - ……\n\ndetailed_description:\n[Shot 1] ……\n[Shot 2] At MM:SS.mmm, ……\n\noverall_soundscape:\n……或 N/A\n\nnon_diegetic_music:\nN/A\nOutput only labels that actually exist. Do not retain placeholders.\n\nFinal Adversarial Self-Audit — Do Not Output\nDraft, challenge, and rewrite before returning. Reject the draft if any answer is “yes”:\n\nDoes a person definition use generic preservation language instead of distinctive observed appearance and complete clothing?\nDoes a scene omit topology or unique fixed anchors, or list irrelevant clutter instead?\nDoes a prop omit the recognition structure, required mark/text, state, placement, or interaction needed by the Shot?\nDoes an Audio definition lack stable audible cues or target-line delivery when the asset supports them?\nHas any trait leaked from a clothing model, motion actor, style image, source background, or neighboring asset?\nWere white asset-sheet backgrounds, repeated views, labels, dividers, stands, or unrelated display objects included?\nCan any sentence be removed without changing identity, disambiguation, interaction, composition, timing, audio performance, or continuity?\nDid compression delete default clothing, a unique anchor, a persistent target delta, action causality, or continuity state?\nDoes any main action lack a start state, ordered path, contact/causal turn, consequence, or end state?\nDoes the camera omit its starting frame, path, revealed/tracked content, or ending frame, or hide the main action?\nIs the 9:16 Shot overloaded or missing the speaking face, hand–prop contact, required text, or action space?\nIs dialogue timing physically implausible, or are timestamps non-increasing, outside duration, or falsely precise?\nAre speaker IDs, dialogue words, language tags, reference roles, or audio layers inconsistent?\nAre there unresolved labels, repeated full definitions, extra sections, analysis notes, or placeholders?\nFinal rule: Observe broadly, select narrowly, describe distinctively, animate causally, move the camera purposefully, and preserve only what H3 needs to identify, execute, and maintain continuity.\n\n--- USER TEMPLATE ---\n\n目标视频总时长：{{target_duration}}\n\n<video_prompt> {{video_prompt}} </video_prompt>"
     },
     "_meta": {
-      "title": "尺寸，可参考左下像素/size"
+      "title": "minimaxh3 ref"
     }
   },
-  "69": {
-    "class_type": "PrimitiveFloat",
+  "72": {
+    "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": 8.1
+      "value": ""
     },
     "_meta": {
-      "title": "秒数/seconds"
-    }
-  },
-  "68": {
-    "class_type": "ComfyMathExpression",
-    "inputs": {
-      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
-      "values.a": [
-        "69",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "ComfyMathExpression"
-    }
-  },
-  "25": {
-    "class_type": "VAELoader",
-    "inputs": {
-      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
-    },
-    "_meta": {
-      "title": "VAELoader"
-    }
-  },
-  "26": {
-    "class_type": "VAELoader",
-    "inputs": {
-      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
-    },
-    "_meta": {
-      "title": "VAELoader"
+      "title": "提示词/prompt"
     }
   },
   "70": {
@@ -532,6 +492,134 @@
     },
     "_meta": {
       "title": "LayerUtility: If "
+    }
+  },
+  "160": {
+    "class_type": "ImpactMakeImageBatch",
+    "inputs": {
+      "image1": [
+        "94:91",
+        0
+      ],
+      "image2": [
+        "87:84",
+        0
+      ],
+      "image3": [
+        "80:74",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImpactMakeImageBatch"
+    }
+  },
+  "186": {
+    "class_type": "VisionAPIDirect",
+    "inputs": {
+      "base_url": "https://api.avemujica.moe/v1",
+      "model": "gpt-5.6-luna",
+      "api_key": "",
+      "system_prompt": [
+        "187",
+        0
+      ],
+      "prompt": [
+        "72",
+        0
+      ],
+      "max_tokens": 0,
+      "temperature": 0,
+      "seed": 2559621105,
+      "thinking_mode": "auto",
+      "max_video_frames": 8,
+      "video_transport": "frames",
+      "image": [
+        "160",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VisionAPIDirect"
+    }
+  },
+  "188": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "186",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  },
+  "161": {
+    "class_type": "Any Switch (rgthree)",
+    "inputs": {
+      "any_02": [
+        "188",
+        0
+      ],
+      "any_03": [
+        "72",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "71": {
+    "class_type": "ResolutionSelector",
+    "inputs": {
+      "aspect_ratio": "9:16 (Portrait Widescreen)",
+      "megapixels": 0.5,
+      "multiple": 32
+    },
+    "_meta": {
+      "title": "尺寸，可参考左下像素/size"
+    }
+  },
+  "69": {
+    "class_type": "PrimitiveFloat",
+    "inputs": {
+      "value": 8.1
+    },
+    "_meta": {
+      "title": "秒数/seconds"
+    }
+  },
+  "68": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17",
+      "values.a": [
+        "69",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ComfyMathExpression"
+    }
+  },
+  "25": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_video_vae_fp16.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
+    }
+  },
+  "26": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_h3_audio_vae_fp32.safetensors"
+    },
+    "_meta": {
+      "title": "VAELoader"
     }
   },
   "144": {

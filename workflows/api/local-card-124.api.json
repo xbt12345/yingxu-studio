@@ -96,10 +96,19 @@
         "42",
         0
       ],
-      "enable_fp16_accumulation": true
+      "enable_fp16_accumulation": false
     },
     "_meta": {
-      "title": "ModelPatchTorchSettings"
+      "title": "ModelPatchTorchSettings",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-gguf-fused-linear-compatibility",
+          "node": "43",
+          "input": "enable_fp16_accumulation",
+          "from": true,
+          "to": false
+        }
+      ]
     }
   },
   "4": {
@@ -414,10 +423,19 @@
         "40",
         0
       ],
-      "enable_fp16_accumulation": true
+      "enable_fp16_accumulation": false
     },
     "_meta": {
-      "title": "ModelPatchTorchSettings"
+      "title": "ModelPatchTorchSettings",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-gguf-fused-linear-compatibility",
+          "node": "41",
+          "input": "enable_fp16_accumulation",
+          "from": true,
+          "to": false
+        }
+      ]
     }
   },
   "3": {
@@ -459,11 +477,20 @@
         2
       ],
       "start_at_step": 0,
-      "end_at_step": 0,
+      "end_at_step": 3,
       "return_with_leftover_noise": "enable"
     },
     "_meta": {
-      "title": "KSamplerAdvanced"
+      "title": "KSamplerAdvanced",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-firstlast-continuous-noise-schedule",
+          "node": "64",
+          "input": "end_at_step",
+          "from": 0,
+          "to": 3
+        }
+      ]
     }
   },
   "61": {

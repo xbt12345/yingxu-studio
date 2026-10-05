@@ -1,7 +1,61 @@
 """User controls derived from each graph's concrete bindings, not category templates."""
 import re
+import copy
+import math
 from collections import defaultdict
 from urllib.parse import urlsplit, urlunsplit
+
+# Original graph identity, native source socket and the reviewed registered
+# numeric contract. The compiler independently checks these against object_info.
+DERIVED_NATIVE_LIMITS={
+ 5:('4c37ca0b7de7de9754bb40eaa749f567df99a5a2eafada1f2a72971aea7e7c9f','378','value','INTConstant',-18446744073709551615,18446744073709551615),
+ 7:('280644c0b578269a554f37f74b15e631b3efd0cf71c6b7197129d8629f801ee4','45','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 45:('e9c061de44e449dcb59e76cd5f5cdb5ac39e488b3ae1a078f26e1449db6bc169','34','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 98:('f17d75d4d430df62b7a0c7e786292b7ff03b09dc386a9f28be131e49de12f421','15','duration_seconds','AudioCropProcessUTK',0,1e17),
+ 118:('a66e533d5c4c2f2e3605dd3b26e32f1c63730a91c4837eed333091f40f14f1ec','13','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 119:('110d7f6bab4e5a2a4d1880c6ece2db2ca92b3e3c10f301c8ce1dafe73de14f7f','507','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 120:('b8ab76162041b1893180996f3badbdc26eaa82be7fa63b913de4a7ebef2b65e2','18','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 121:('9f7c6e6b8bfe7cf14ea33a3b763f02b0415ca155d8c5b531a8deaa40b3fa5882','15','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 122:('0036eac90c054211b9507171597c8486415ca4b2504d4cbf33c373e36e269f91','25','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+ 123:('5c46f4ef6b61dfa42edead5da785672bc87253f4b20315f83fd2505f1d0dfdf1','18','frame_load_cap','VHS_LoadVideo',0,9007199254740991),
+}
+
+
+def frame_seconds_maximum(maximum,fps):
+    """A representable UI limit whose round(seconds * fps) stays in range."""
+    if (isinstance(maximum,bool) or not isinstance(maximum,(int,float)) or not math.isfinite(maximum)
+            or isinstance(fps,bool) or not isinstance(fps,(int,float)) or not math.isfinite(fps) or fps<=0):
+        raise ValueError('秒数转换的原生范围或帧率无效。')
+    value=maximum/fps
+    if not math.isfinite(value):raise ValueError('秒数转换的范围无法表示。')
+    while round(value*fps)>maximum:value=math.nextafter(value,-math.inf)
+    return value
+
+
+def reviewed_derived_unit_bounds(workflow,controls,*,graph,source_hash):
+    idx=int(workflow['id'].rsplit('-',1)[-1]) if workflow['id'].startswith('local-card-') else -1
+    contract=DERIVED_NATIVE_LIMITS.get(idx)
+    if not contract:return controls
+    expected,nid,key,typ,minimum,maximum=contract
+    if source_hash!=expected or graph.nodes.get(nid,{}).get('type')!=typ:
+        raise ValueError('秒数转换的原始来源已改变，需要重新审查。')
+    field=next((c for c in controls if(c.get('derived')or{}).get('targetId')==nid+':'+key),None)
+    if field is None:raise ValueError('秒数转换的原生输入绑定缺失。')
+    operation=field['derived'].get('operation')
+    if operation!=('audio-end' if idx==98 else 'frames'):
+        raise ValueError('秒数转换的类型已改变。')
+    field['derived']['nativeBounds']={'min':minimum,'max':maximum}
+    if operation=='frames':
+        fps=field['derived'].get('fps')
+        if isinstance(fps,bool)or not isinstance(fps,(int,float))or fps!=24:
+            raise ValueError('秒数转换的已审查帧率已改变。')
+        field['min']=max(0,minimum/fps)
+        field['max']=frame_seconds_maximum(maximum,fps)
+    else:
+        # The endpoint is start + duration. A duration ceiling is not an
+        # endpoint ceiling; validate the subtraction against nativeBounds.
+        field.pop('max',None)
+    return controls
 
 # Names carry the explanation; hints remain only for non-obvious behavior.
 HELP = {
@@ -50,7 +104,8 @@ REVIEW70_INPUTS = {
      for key,kind,label,extra in [
       ('aspect_ratio','ratio','画面比例',{'options':[{'value':v,'label':'自动' if v=='auto' else v} for v in ['auto','16:9','4:3','4:5','3:2','1:1','2:3','3:4','5:4','9:16','21:9','9:21']]}),
       ('image_size','choice','输出规格',{'options':['1K','2K','4K']})]],
- 131:[('158','upscale_by','upscale','放大倍率',{'min':0.05,'max':4,'step':0.05}),
+ 131:[('136','strength','strength','参考约束强度',{'min':-10,'max':10,'step':0.01,'help':'调整对原图的依赖'}),
+      ('158','upscale_by','upscale','放大倍率',{'min':0.05,'max':4,'step':0.05}),
       ('158','denoise','restoration','细节重绘幅度',{'min':0,'max':1,'step':0.01})],
  124:[('44','middle_frame_ratio','strength','中间帧位置',{'min':0,'max':1,'step':0.01,'help':'0 开头，1 末尾'})],
 }
@@ -59,9 +114,19 @@ for _idx,_node in [(24,'3744'),(25,'641'),(26,'471'),(27,'771'),(31,'62'),(116,'
 REVIEW70_INPUTS[116].append(('771','pose_strength','motion','动作参考强度',{'min':0,'max':10,'step':0.001,'help':'越大，动作跟随越强'}))
 REVIEW70_INPUTS[89]=[('28','resolution','ratio','画面尺寸',{'options':[{'value':v,'label':v.replace('x','×')} for v in ['1024x1024','1152x896','896x1152','1216x832','832x1216','1344x768','768x1344','1536x640','640x1536']]})]
 REVIEW70_INPUTS[46]=[('5149',key,'outpaint',label,{'min':0,'max':16384,'step':1}) for key,label in [('left','向左扩展（像素）'),('right','向右扩展（像素）'),('top','向上扩展（像素）'),('bottom','向下扩展（像素）')]]
+REVIEW70_INPUTS[57]=[('56','switch','toggle','使用尾帧',{'type':'checkbox','help':'开启后才会使用尾帧图片'})]
 REVIEW70_INPUTS[22]=[('197','object_indices','indices','动作与参考图处理对象',{'help':'留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。','type':'string'}),
                     ('579','object_indices','indices','参考图保留对象',{'help':'留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。','type':'string'})]
 REVIEW70_INPUTS[23]=[('527','object_indices','indices','处理对象',{'help':'留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。','type':'string'})]
+REVIEW70_INPUTS[97]=[('23',key,'choice',label,{'options':[{'value':'enable','label':'启用'},{'value':'disable','label':'忽略'}]})
+    for key,label in [('detect_hand','手部姿态'),('detect_body','身体姿态'),('detect_face','面部姿态')]]
+REVIEW70_INPUTS[97].append(('18','megapixels','resolution','输出总像素',{'min':0.01,'max':16,'step':0.01,'unit':'MP','help':'越大，生成成本越高'}))
+REVIEW70_INPUTS[86]=[('88','strength','strength','参考约束强度',{'min':-10,'max':10,'step':0.01,'help':'调整参考图约束'})]
+REVIEW70_INPUTS[125]=[(nid,'strength','strength',label,{'min':0,'max':10,'step':0.01}) for nid,label in [('216','首帧参考强度'),('214','尾帧参考强度')]]
+REVIEW70_INPUTS[126]=[('28','strength','strength','参考素材强度',{'min':0,'max':1000,'step':0.01,'help':'调整首尾帧约束'})]
+for _idx,_nid in [(43,'455'),(48,'455'),(49,'440'),(51,'1065')]:
+    REVIEW70_INPUTS.setdefault(_idx,[]).append((_nid,'num_guides.strength_1','strength',
+        '初次重绘参考强度' if _idx==51 else '原视频参考强度',{'min':0,'max':10,'step':0.01}))
 
 # Source scalar widgets can feed the creative input through Set/Get, casting or
 # an explicit seconds-to-frames expression. Review the consuming node's contract
@@ -91,6 +156,43 @@ for _idx,_nid,_target in [(43,'369','496'),(47,'220','sub0/83'),(48,'369','496')
         'constraintSources':[{'node':_target,'input':'resize_type.longer_size'}],'targets':[{'node':_nid,'input':'value'}]})]
 
 
+def reviewed_default_api_models(workflow, profiles, *, source_hash, graph=None, derived=None):
+    """Display the same reviewed owner default that the execution repair uses.
+
+    Saved user API choices are request state, never rewritten by this builder.
+    """
+    # Direct invocation sets sys.path to scripts/. Load only the reviewed
+    # local data module; never import the server or create a database ticket.
+    import importlib.util
+    from pathlib import Path
+    module_spec=importlib.util.spec_from_file_location('yingxu_owner_model_defaults',Path(__file__).resolve().parents[1]/'reviewed_repairs.py')
+    repair_module=importlib.util.module_from_spec(module_spec)
+    module_spec.loader.exec_module(repair_module)
+    SOURCE_HASHES,OWNER_DEFAULT_MODELS=repair_module.SOURCE_HASHES,repair_module.OWNER_DEFAULT_MODELS
+    wid=workflow.get('id')
+    models=OWNER_DEFAULT_MODELS
+    if wid not in models:return profiles
+    if source_hash!=SOURCE_HASHES[wid]:raise ValueError('默认 API 模型来源变化，需要重新审查。')
+    nid,old,new=models[wid]
+    candidates=[p for p in profiles if p['id']==nid]
+    if len(candidates)!=1:raise ValueError('默认 API 模型配置节点未匹配。')
+    profile=candidates[0]
+    if profile.get('bindings',{}).get('model')!={'node':nid,'input':'model'}:
+        raise ValueError('默认 API 模型配置绑定未匹配。')
+    if graph is not None:
+        from build_workflow_interfaces import widget_bindings
+        actual=graph.nodes.get(nid,{})
+        if actual.get('type')!='RH_LLMAPI_NODE' or widget_bindings(actual).get('model',(None,))[0]!=old:
+            raise ValueError('默认 API 模型源节点未匹配。')
+    else:
+        proof=next((p for p in (derived or {}).get('apiProfiles',[]) if p['id']==nid),{})
+        if (derived or {}).get('sourceHash')!=source_hash or proof.get('reviewedOwnerDefaultModel')!=new:
+            raise ValueError('默认 API 模型配置缺少同源证明。')
+    if profile.get('model') not in (old,new):raise ValueError('默认 API 模型有未经审查的变更。')
+    profile.update(model=new,reviewedOwnerDefaultModel=new)
+    return profiles
+
+
 def add_review70_controls(workflow, graph, controls):
     """Add only source-present, unlinked fields from the individually reviewed list."""
     from build_workflow_interfaces import widget_bindings
@@ -117,6 +219,7 @@ def add_review70_controls(workflow, graph, controls):
                          'targets':[{'node':'1095','input':'coordinates'}],
                          'previewRecipe':{'longSideControlId':'1105:value','longSide':widget_bindings(graph.nodes['1105'])['value'][0],
                                           'multiple':32,'sourceMultiple':8,'fit':'crop','frameRate':widget_bindings(graph.nodes['1084'])['force_rate'][0],
+                                          'postScale':widget_bindings(graph.nodes['1058'])['scale_by'][0],
                                           'skipControlId':'1084:skip_first_frames','skipFrames':widget_bindings(graph.nodes['1084'])['skip_first_frames'][0]}})
     if idx==75:
         # This source appends a UI-only empty preview string after five named
@@ -193,6 +296,18 @@ REVIEW70_PRESERVED_TEXTS={32:{'31:role'},33:{'29:role'},34:{'1488:text','1518:te
 def apply_review70_labels(workflow, controls, texts, media):
     """Name independent prompts/media by their proved execution branches."""
     idx=int(workflow['id'].split('-')[-1]) if workflow['id'].startswith('local-card-') else -1
+    if idx==131:
+        for field in controls:
+            if field['id']=='136:strength':field['help']='调整对原图的依赖'
+    if idx==57:
+        for slot in media:
+            if slot['id']=='24':slot['label']='尾帧（需启用）'
+    if idx==50:
+        for control in controls:
+            if control['id']=='403:aspect_ratio':
+                control.update(label='处理范围比例',help='保留原片比例，设缩放范围')
+            elif control['id']=='403:megapixels':
+                control.update(label='处理像素预算',help='按原片比例，像素可能少')
     for text in texts:
         if text['id'] in REVIEW70_TEXT_LABELS.get(idx,{}):
             text['label']=REVIEW70_TEXT_LABELS[idx][text['id']]
@@ -219,10 +334,22 @@ def refresh_curated_controls(workflow, reviewed, derived):
     idx=int(workflow['id'].split('-')[-1]) if workflow['id'].startswith('local-card-') else -1
     current=reviewed['controls']
     fresh={field['key']:field for field in derived['controls']}
+    fresh_units={field['id']:field for field in derived['controls']
+                 if(field.get('derived')or{}).get('operation')in ('frames','audio-end')}
     if idx==19:
         current=[fresh['size']]+[field for field in current if field['kind']=='seed']
     for field in current:
         key=field['key']
+        unit=fresh_units.get(field['id'])
+        if unit:
+            before={k:v for k,v in field.get('derived',{}).items()if k!='nativeBounds'}
+            after={k:v for k,v in unit['derived'].items()if k!='nativeBounds'}
+            if before!=after or 'nativeBounds'not in unit['derived']:
+                raise ValueError('已审核的秒数转换绑定已经改变。')
+            field['derived']=copy.deepcopy(unit['derived'])
+            for attr in ('min','max'):
+                if attr in unit:field[attr]=unit[attr]
+                else:field.pop(attr,None)
         if idx in (9,10) and key=='resolution':
             field['options']=[{'value':str(item['value'] if isinstance(item,dict) else item),
                                'label':str(item['value'] if isinstance(item,dict) else item).replace('x','×')}
@@ -241,17 +368,184 @@ def refresh_curated_controls(workflow, reviewed, derived):
     if idx==51:additions.add('1095:points')
     if idx==75:additions.update(nid+':'+key for nid in ('127','129','130','131','132','133') for key in ('horizontal_angle','vertical_angle','zoom'))
     current.extend(field for field in derived['controls'] if field['id'] in additions and not any(c['id']==field['id'] for c in current))
+    if idx==135:
+        current=directory_image_order_control(current)
+    if idx==93:
+        current=description_language_control(current)
+    if idx==122 and derived.get('sourceHash')=='0036eac90c054211b9507171597c8486415ca4b2504d4cbf33c373e36e269f91':
+        current=seedvr2_short_edge_control(current)
+    if idx==30:
+        current,reviewed['texts']=dance_ratio_protocol_form(
+            current,reviewed.get('texts',[]),source_hash=derived.get('sourceHash'))
     api_additions=REVIEW70_API_NODES.get(idx,{})
     reviewed.setdefault('apiProfiles',[]).extend(profile for profile in derived.get('apiProfiles',[]) if profile['id'] in api_additions and not any(p['id']==profile['id'] for p in reviewed['apiProfiles']))
+    reviewed['apiProfiles']=reviewed_default_api_models(workflow,reviewed['apiProfiles'],
+        source_hash=derived.get('sourceHash'),derived=derived)
     for field in current:
         if field['kind']=='restoration' and 'denoise' in field.get('key',''):
             # KSampler.INPUT_TYPES uses hundredths; defaults such as .17 must
             # stay directly submitable rather than being rounded to .05 steps.
             field['step']=0.01
+    # Only the verified fresh annotation crosses into an unchanged curated form.
+    fresh_by_id={field['id']:field for field in derived['controls']}
+    guidance_source=H3_DURATION_SOURCES.get(idx)
+    if guidance_source and derived.get('sourceHash')==guidance_source[0]:
+        for field in current:
+            source=fresh_by_id.get(field['id'],{})
+            if field['id']==guidance_source[1] and source.get('effectiveDuration')==H3_DURATION_RECIPE:
+                field.update(effectiveDuration=dict(H3_DURATION_RECIPE),help=source['help'])
+    if idx==60 and derived.get('sourceHash')==H3_REPAIR_DURATION_HASH:
+        for field in current:
+            source=fresh_by_id.get(field['id'],{})
+            if field['id']=='366:value' and source.get('help')=='依选段及原片长度补齐':
+                field['help']=source['help']
+    requested_source=H3_REQUESTED_DURATION_SOURCES.get(idx)
+    if requested_source and derived.get('sourceHash')==requested_source[0]:
+        for field in current:
+            source=fresh_by_id.get(field['id'],{})
+            if field['id']==requested_source[1] and source.get('help')==H3_REQUESTED_DURATION_HELP:
+                field['help']=source['help']
     reviewed['controls']=current
     apply_review70_defaults(workflow,reviewed['controls'])
     apply_review70_labels(workflow,reviewed['controls'],reviewed.get('texts',[]),reviewed.get('media',[]))
+    reviewed['media']=reviewed_media_roles(workflow,reviewed.get('media',[]),source_hash=derived.get('sourceHash'))
+    from portrait_size_contract import reviewed_portrait_size_controls
+    reviewed['controls']=reviewed_portrait_size_controls(workflow,reviewed['controls'],
+        source_hash=derived.get('sourceHash'),derived=derived)
+    from camera72_contract import reviewed_camera72_controls
+    reviewed['controls']=reviewed_camera72_controls(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    from review74_parameter_contracts import reviewed_independent_seeds,reviewed_batch_count,reviewed_color_supplement,reviewed_camera14_size,reviewed_final_enhancement_size,reviewed_refinement_reference,reviewed_inactive_middle_position,reviewed_multiview_output_size
+    reviewed['controls']=reviewed_independent_seeds(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    reviewed['controls']=reviewed_batch_count(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'))
+    reviewed['controls']=reviewed_camera14_size(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    reviewed['controls']=reviewed_final_enhancement_size(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    reviewed['controls']=reviewed_refinement_reference(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    reviewed['controls']=reviewed_inactive_middle_position(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    reviewed['controls']=reviewed_multiview_output_size(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    from review75_generation_sizes import reviewed_generation_sizes
+    reviewed['controls']=reviewed_generation_sizes(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    reviewed['texts']=reviewed_color_supplement(workflow,reviewed.get('texts',[]),source_hash=derived.get('sourceHash'),derived=derived)
+    from reviewed_stage_seeds import reviewed_stage_seeds
+    reviewed['controls']=reviewed_stage_seeds(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    from reviewed_native_seed_limits import reviewed_native_seed_limits
+    reviewed['controls']=reviewed_native_seed_limits(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    # Curated layouts keep their field order, while these graph-proved display
+    # corrections must survive an unchanged sourceHash.
+    fresh_texts={field['id']:field for field in derived.get('texts',[])}
+    for field in reviewed.get('texts',[]):
+        source=fresh_texts.get(field['id'],{})
+        if source.get('label')in ('分割目标','姿势检测目标'):
+            field.update(label=source['label'],help=source.get('help',''))
+        if source.get('preserveWhenEmpty')is True:field['preserveWhenEmpty']=True
+    if idx in (24,124):
+        fresh_media={field['id']:field for field in derived.get('media',[])}
+        for field in reviewed.get('media',[]):
+            source=fresh_media.get(field['id'],{})
+            if source.get('label')in ('背景图','角色参考图','首帧','尾帧'):field['label']=source['label']
     return reviewed
+
+
+def dance_ratio_protocol_form(controls,texts,*,graph=None,source_hash=None):
+    """Keep the reviewed orientation-ratio constants out of creative text UI."""
+    expected_hash='1d4bb89d8e5531a50b800e5d1228ac9a230091b4df1ab7bf49e9e4062fc115c0'
+    if source_hash is not None and source_hash!=expected_hash:
+        raise ValueError('姿势迁移比例来源已改变，需要重新审查。')
+    if graph is not None:
+        from build_workflow_interfaces import widget_bindings
+        nodes=graph if isinstance(graph,dict)else graph.nodes
+        def kind(nid):
+            entry=nodes.get(nid,{})
+            return entry.get('class_type',entry.get('type'))
+        def value(nid,key):
+            entry=nodes.get(nid,{})
+            if isinstance(graph,dict):return entry.get('inputs',{}).get(key)
+            return widget_bindings(entry).get(key,(None,None))[0]
+        def links(nid):
+            if isinstance(graph,dict):
+                return {(dst,key,val[1])for dst,node in graph.items()
+                        for key,val in node.get('inputs',{}).items()
+                        if isinstance(val,list)and len(val)==2 and str(val[0])==nid}
+            return {(dst,nodes[dst]['inputs'][slot]['name'],output)
+                    for dst,slot,output in graph.out.get(nid,[])}
+        if not (kind('156')==kind('157')=='CR Text'
+                and value('156','text')=='16:9' and value('157','text')=='9:16'
+                and kind('160')=='LazySwitch1way'
+                and kind('161')=='LayerUtility: ImageScaleByAspectRatio V2'
+                and value('161','scale_to_side')=='shortest'
+                and links('156')=={('160','ON_TRUE',0)}
+                and links('157')=={('160','ON_FALSE',0)}
+                and links('160')=={('161','aspect_ratio',0)}
+                and ('160','boolean',0) in links('158')):
+            raise ValueError('姿势迁移比例协议连线已改变，不能隐藏未知文本输入。')
+    for field in texts:
+        if field['id'] in ('156:text','157:text'):
+            nid=field['id'].split(':',1)[0]
+            if field.get('key')!='text' or field.get('targets') not in (None,[{'node':nid,'input':'text'}]):
+                raise ValueError('姿势迁移比例文本绑定已改变，需要重新审查。')
+    for field in controls:
+        if field['id']=='159:widget_0':
+            if field.get('targets') != [{'node':'161','input':'scale_to_length'}]:
+                raise ValueError('姿势迁移输出边长绑定已改变，需要重新审查。')
+            field.update(label='输出短边（像素）')
+    return controls,[field for field in texts if field['id'] not in ('156:text','157:text')]
+
+
+def directory_image_order_control(controls):
+    """Expose the exact Inspire sorting socket; do not hide an execution default."""
+    options=[{'value':value,'label':label} for value,label in (
+        ('None','原目录顺序'),('Alphabetical (ASC)','文件名升序'),
+        ('Alphabetical (DESC)','文件名降序'),('Numerical (ASC)','数字升序'),
+        ('Numerical (DESC)','数字降序'),('Datetime (ASC)','修改时间升序'),
+        ('Datetime (DESC)','修改时间降序'))]
+    field=next((field for field in controls if field['id']=='12:sort_method'),None)
+    if field is None:
+        controls.append({'id':'12:sort_method','key':'sort_method','nodeId':'12',
+                         'node':'LoadImageListFromDir //Inspire','label':'图片排列顺序',
+                         'type':'text','kind':'choice','value':'Alphabetical (ASC)',
+                         'options':options,'targets':[{'node':'12','input':'sort_method'}],
+                         'help':'连续帧按001命名','uiGroup':'read'})
+    else:
+        field.update(label='图片排列顺序',options=options,
+                     help='连续帧按001命名',uiGroup='read')
+    return controls
+
+
+def description_language_control(controls):
+    """Explicit routing using the translator's real source-language socket."""
+    options=[{'value':value,'label':label}for value,label in (
+        ('auto','自动翻译'),('english','英文直接使用'),
+        ('chinese (simplified)','简体中文翻译'))]
+    field=next((field for field in controls if field['id']=='76:from_translate'),None)
+    if field is None:
+        controls.append({'id':'76:from_translate','key':'from_translate','nodeId':'76',
+                         'node':'DeepTranslatorTextNode','label':'描述语言',
+                         'type':'text','kind':'choice','value':'auto','options':options,
+                         'targets':[{'node':'76','input':'from_translate'}],
+                         'help':'英文直接使用，不翻译'})
+    else:
+        field.update(label='描述语言',options=options,help='英文直接使用，不翻译')
+    return controls
+
+
+def verified_description_language_options(field, actual_choices):
+    """Keep only the three reviewed, registered values when compiling 93."""
+    options=description_language_control([])[0]['options']
+    if (field.get('id')!='76:from_translate' or
+            field.get('targets')!=[{'node':'76','input':'from_translate'}] or
+            [item.get('value')for item in field.get('options',[])]!=[item['value']for item in options] or
+            any(item['value']not in actual_choices for item in options)):
+        raise ValueError('描述语言选项与实际翻译节点不一致，需重新审查。')
+    return options
+
+
+def seedvr2_short_edge_control(controls):
+    """Match the registered SeedVR2 resolution range on its reviewed UI binding."""
+    field=next((field for field in controls if field['id']=='34:value'),None)
+    if field is None:return controls
+    if field.get('type')!='number' or field.get('targets')!=[{'node':'10','input':'resolution'}]:
+        raise ValueError('输出短边绑定已变化，需重新审查。')
+    field.update(min=16,max=16384,step=2,integer=True)
+    return controls
 
 
 def downstream(graph,nid):
@@ -268,13 +562,185 @@ def downstream(graph,nid):
     return result
 
 
+def label_first_last_frames(graph,media):
+    """Follow IMAGE data through the reviewed resize nodes, not size wires."""
+    for item in media:
+        if item.get('kind')!='image':continue
+        pending,seen,roles=[item['id']],set(),set()
+        while pending:
+            src=pending.pop()
+            if src in seen:continue
+            seen.add(src)
+            for dst,slot,output in graph.out[src]:
+                node=graph.nodes.get(dst,{})
+                inputs=node.get('inputs',[])
+                if output!=0 or slot>=len(inputs) or dst not in graph.reachable:continue
+                key=inputs[slot].get('name')
+                if node.get('type')in ('WanFirstLastFrameToVideo','WanFirstMiddleLastFrameToVideo') and key in ('start_image','end_image'):
+                    roles.add(key)
+                elif node.get('type')=='ImageResizeKJv2' and key=='image':pending.append(dst)
+        if roles=={'start_image'}:item['label']='首帧'
+        elif roles=={'end_image'}:item['label']='尾帧'
+    return media
+
+
+def preserves_system_instruction(graph,nid,key):
+    """Only a proved reachable multiline constant feeding system_prompt."""
+    nodes=graph if isinstance(graph,dict)else graph.nodes
+    source=nodes.get(nid,{})
+    if key!='value' or source.get('class_type',source.get('type'))!='PrimitiveStringMultiline':return False
+    if isinstance(graph,dict):
+        return any(node.get('class_type')=='VisionAPIDirect' and node.get('inputs',{}).get('system_prompt')==[nid,0]
+                   for node in graph.values())
+    for dst,slot,output in graph.out[nid]:
+        node=nodes.get(dst,{})
+        inputs=node.get('inputs',[])
+        if dst in graph.reachable and output==0 and node.get('type')=='VisionAPIDirect' and slot<len(inputs) and inputs[slot].get('name')=='system_prompt':return True
+    return False
+
+
+def reviewed_text_purpose(graph,nid,key):
+    """Name detection text only when it reaches the proved detector input."""
+    nodes=graph if isinstance(graph,dict)else graph.nodes
+    node=nodes.get(nid,{})
+    typ=node.get('class_type',node.get('type'))
+    if not isinstance(graph,dict)and nid not in graph.reachable:return {}
+    if typ=='SDPoseOODProcessor'and key=='prompt':
+        return {'label':'姿势检测目标','help':'用简短词描述目标'}
+    if typ!='PrimitiveStringMultiline'or key!='value':return {}
+    if isinstance(graph,dict):
+        consumers=[(other.get('class_type'),name)for other in graph.values()
+                   for name,value in other.get('inputs',{}).items()if value==[nid,0]]
+    else:
+        consumers=[]
+        for dst,slot,output in graph.out[nid]:
+            other=nodes.get(dst,{});inputs=other.get('inputs',[])
+            if dst in graph.reachable and output==0 and slot<len(inputs):consumers.append((other.get('type'),inputs[slot].get('name')))
+    if consumers and all(typ in ('LayerMask: SegmentAnythingUltra','LayerMask: SegmentAnythingUltra V2','LayerMask: SegmentAnythingUltra V3')and name=='prompt'for typ,name in consumers):
+        return {'label':'分割目标','help':'用简短词描述目标'}
+    return {}
+
+
+def label_animate_reference_slots(graph,media):
+    """Follow actual IMAGE ports; ignore resize geometry and mask branches."""
+    for item in media:
+        if item.get('kind')!='image'or graph.nodes.get(item['id'],{}).get('type')!='LoadImage':continue
+        pending,seen,roles=[item['id']],set(),set()
+        while pending:
+            src=pending.pop()
+            if src in seen:continue
+            seen.add(src)
+            for dst,slot,output in graph.out[src]:
+                node=graph.nodes.get(dst,{});inputs=node.get('inputs',[])
+                if output!=0 or dst not in graph.reachable or slot>=len(inputs):continue
+                typ=node.get('type');key=inputs[slot].get('name')
+                if typ=='WanVideoAnimateEmbeds'and key in ('ref_images','bg_images'):roles.add(key)
+                elif ((typ in ('ImageResizeKJv2','RepeatImageBatch','DrawMaskOnImage')and key=='image')or
+                      typ=='Any Switch (rgthree)'and key.startswith('any_')):pending.append(dst)
+        if roles=={'bg_images'}:item['label']='背景图'
+        elif roles=={'ref_images'}:item['label']='角色参考图'
+    return media
+
+
 def safe_endpoint(value):
     try:
         u=urlsplit(str(value));return urlunsplit((u.scheme,u.hostname+((':'+str(u.port)) if u.port else '') if u.hostname else '',u.path,'','')) if u.scheme in ['http','https'] else ''
     except ValueError:return ''
 
 
-def customize(w,graph,controls,texts,media):
+H3_DURATION_SOURCES={
+ 4:('204e1f8d6eccd1995721ee8f1281a57edd0ee3b86af2edef33ba64bd2afa3549','69:value','69','68','144','53'),
+ 52:('5be77a076e8ec3988556a8259499661c6fca728e4a809c093cb6994b3f59ed1b','69:value','69','68','144','53'),
+ 54:('47fe1f8301a17197c7b06a089ac61c97e22310651a496bd69df50c1500c41446','121:value','142','141','140','139'),
+ 56:('0502f0dc461bd07cfc6047bcaa00eaccd4fb061b7e5d5111b0c5179402107f2c','132:value','sub0/111','sub0/107','sub0/104','sub0/91'),
+ 57:('ebd2ee400475fdf6158c1fb52f1cd5d7842e32284d7a1143432d1b816782f0a5','8:value','29','28','18','53'),
+ 65:('25809c9610340136a70db167c36b74101365808cd7ed38bef50a821951be9fdc','144:value','168','167','166','165'),
+ 71:('7537b76022fd8d9701c122f092bf5ea0becbedc35d0f7bdec6706b7041c7a824','16:value','32','19','13','15'),
+}
+H3_DURATION_RECIPE={'kind':'h3-frame-grid','fps':24,'minFrames':5,'stepFrames':17,'rounding':'python-round'}
+H3_DURATION_HELP='模型会补齐到支持的长度'
+H3_REPAIR_DURATION_HASH='6efa2411b5e5f4211054ea8b51e4b2e53adc053a57c55c7c7d866f485caecb48'
+H3_REQUESTED_DURATION_SOURCES={
+ 55:('13d646fa7dd7669d9b1ac2792ba1029889284bce7bd35d15b8172a2cf9a589f1','105:value_1','sub0/111','sub0/107','sub0/104','sub0/91'),
+ 58:('cd02a64bdf7ef7e28d91aad6731b7eea7e115a84504b4ad03dc0d2f742de0053','14:value','31','21','18','9'),
+ 63:('0455d4a25ad67f328b077c8f031c0b71f5e8d90f185af5e219f813072f2caf05','7:value','27','14','28','26'),
+ 64:('2aee949e9b20edabc0971eb08d106eb27cee0e11a45d7383afb1e00333530bdc','133:value','133','132','131','130'),
+}
+H3_REQUESTED_DURATION_HELP='至少5帧，时长按帧取整'
+
+
+def reviewed_h3_duration_guidance(workflow,graph,controls,*,source_hash=None):
+    """Annotate only source-pinned, reachable H3 duration/FPS chains."""
+    from build_workflow_interfaces import widget_bindings
+    idx=int(workflow['id'].split('-')[-1]) if workflow['id'].startswith('local-card-') else -1
+    def kind(nid):return graph.nodes.get(nid,{}).get('type')
+    def value(nid,key):return widget_bindings(graph.nodes.get(nid,{})).get(key,(None,None))[0]
+    def edge(src,dst,key,output=0):
+        return any(target==dst and out==output and slot<len(graph.nodes[dst].get('inputs',[])) and
+                   graph.nodes[dst]['inputs'][slot]['name']==key for target,slot,out in graph.out.get(src,[]))
+    def fixed_fps(nid):
+        return kind(nid)=='CreateVideo' and value(nid,'fps')==24 and not any(
+            graph.nodes[nid]['inputs'][slot]['name']=='fps' for _,slot,_ in graph.ins.get(nid,[]))
+    if idx in H3_REQUESTED_DURATION_SOURCES:
+        expected,control_id,relay,math,consumer,save=H3_REQUESTED_DURATION_SOURCES[idx]
+        expression='max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17'
+        if not(source_hash==expected and kind(relay)=='PrimitiveFloat' and kind(math)=='ComfyMathExpression' and
+               value(math,'expression')==expression and edge(relay,math,'values.a') and
+               kind(consumer)=='MiniMaxH3ImageToVideo' and edge(math,consumer,'length',1) and
+               all(nid in graph.reachable for nid in (relay,math,consumer,save)) and fixed_fps(save)):
+            return controls
+        expected_targets=([{'node':relay,'input':'value'}] if idx!=64 else [{'node':math,'input':'values.a'}])
+        for field in controls:
+            if field['id']==control_id and field.get('kind')=='duration' and field.get('targets')==expected_targets:
+                field['help']=H3_REQUESTED_DURATION_HELP
+    elif idx in H3_DURATION_SOURCES:
+        expected,control_id,relay,math,consumer,save=H3_DURATION_SOURCES[idx]
+        if source_hash!=expected:return controls
+        source=control_id.split(':')[0]
+        source_path=(edge(source,'135','value_1') and edge('135',relay,'value',5)) if idx==56 else (
+            source==relay or edge(source,relay,'value'))
+        expression='max(5, round(a * 24)) + (5 - (max(5, round(a * 24)) % 17)) % 17'
+        if not(source_path and kind(relay)=='PrimitiveFloat' and kind(math)=='ComfyMathExpression' and
+               value(math,'expression')==expression and edge(relay,math,'values.a') and
+               kind(consumer)==('MiniMaxH3ReferenceToVideo'if idx in(4,52)else 'MiniMaxH3ImageToVideo') and edge(math,consumer,'length',1) and
+               all(nid in graph.reachable for nid in (source,relay,math,consumer,save)) and fixed_fps(save)):
+            return controls
+        expected_targets=([{'node':'135','input':'value_1'}]if idx==56 else
+                          [{'node':'182','input':'float_'},{'node':'68','input':'values.a'}]if idx in(4,52)else
+                          [{'node':relay,'input':'value'}])
+        for field in controls:
+            if field['id']==control_id and field.get('targets')==expected_targets and field.get('kind')=='duration':
+                field.update(effectiveDuration=dict(H3_DURATION_RECIPE),help=H3_DURATION_HELP)
+    elif idx==60 and source_hash==H3_REPAIR_DURATION_HASH:
+        if not(kind('365')=='Evaluate Integers' and value('365','python_expression')=='a*b+1' and
+               edge('366','365','a') and value('164','value')==24 and edge('164','365','b') and
+               kind('359')=='VHS_LoadVideo' and value('359','force_rate')==24 and edge('365','359','frame_load_cap') and
+               kind('353')=='VHS_VideoInfo' and edge('359','353','video_info',3) and
+               kind('289')=='EmptyMiniMaxH3LatentAV' and edge('353','289','length',6) and
+               all(nid in graph.reachable for nid in ('366','365','359','353','289'))):return controls
+        for field in controls:
+            if field['id']=='366:value' and field.get('targets')==[{'node':'365','input':'a'}]:
+                field['help']='依选段及原片长度补齐'
+    return controls
+
+
+def reviewed_media_roles(workflow,media,*,source_hash=None):
+    roles={
+      'local-card-112':('4df1a3d0a0b345d345a1092e7d2aafc158051da9612f6979bd7ca2540c269ffe',{'76':'待去遮挡原图','205':'颜色参考图'}),
+      'local-card-97':('9384c460c9af79dbc32de960beda895bd8492cc7d11ba11d9cd60ffea27e3c26',{'7':'人物原图','24':'姿势参考图'}),
+      'local-card-113':('8b39490de70ada82241859f38ac197521f0876b695a6886077ce6cd2d139f90a',{'76':'线稿原图','81':'颜色参考图'})}
+    contract=roles.get(workflow.get('id'))
+    if not contract:return media
+    expected,labels=contract
+    if source_hash!=expected or len(media)!=len(labels) or {m['id'] for m in media}!=set(labels) or any(m['kind']!='image' for m in media):
+        raise ValueError('已审素材角色或来源已改变。')
+    result=copy.deepcopy(media)
+    for field in result:
+        field['label']=labels[field['id']]
+    return sorted(result,key=lambda field:list(labels).index(field['id']))
+
+
+def customize(w,graph,controls,texts,media,*,source_hash=None):
     from build_workflow_interfaces import widget_bindings
     idx=int(w['id'].split('-')[-1]) if w['id'].startswith('local-card-') else -1
     prompt_input=PROMPT_INPUTS.get(idx) or PROMPT_INPUTS_BY_ID.get(w['id'])
@@ -529,12 +995,21 @@ def customize(w,graph,controls,texts,media):
         start=widget_bindings(graph.nodes['15'])['offset_seconds'][0]
         c.update(id='15:audio_end_seconds',key='audio_end_seconds',kind='segment',label='音频片段终点（秒）',
             value=start+c['value'],derived={'operation':'audio-end','startId':'15:offset_seconds','targetId':'15:duration_seconds'})
+    controls=reviewed_derived_unit_bounds(w,controls,graph=graph,source_hash=source_hash)
     if idx==101:
         for c in controls:
             if c['id']=='365:value':c['label']='两路音频终点（分:秒）'
+    if idx==93 and graph.nodes.get('76',{}).get('type')=='DeepTranslatorTextNode':
+        controls=description_language_control(controls)
+    if (idx==122 and graph.nodes.get('34',{}).get('type')=='ImpactInt' and
+            graph.nodes.get('10',{}).get('type')=='SeedVR2VideoUpscaler' and
+            graph.targets('34','value')==[('10','resolution')]):
+        controls=seedvr2_short_edge_control(controls)
     if idx==135:
         for c in controls:
             if c['key']=='start_index':c['label']='跳过开头图片数'
+        if graph.nodes.get('12',{}).get('type')=='LoadImageListFromDir //Inspire':
+            controls=directory_image_order_control(controls)
     if idx==136:
         # LoadVideoBatchFrame.INPUT_TYPES in the node's upstream implementation
         # defines these exact three mode values. Keep their raw values in the
@@ -636,6 +1111,24 @@ def customize(w,graph,controls,texts,media):
             if m['id']=='25':m['label']='修改参考图'
         media.sort(key=lambda m:m['id']!='36')
         annotation={'mode':'mask','optional':True,'slots':['36'],'help':'可选；涂抹区域作为修改位置参考'}
+    if idx in (15,86,131):
+        annotation={**annotation,'editor':'reference-region','required':True}
+        if idx in (86,131):annotation['help']='选中区域用于局部重绘，未选区域保留原图。'
+    if idx==133:
+        annotation=None
+        for m in media:
+            if m['kind']=='image':m['label']='原图'
+    if idx==124:
+        media=label_first_last_frames(graph,media)
+    if idx==24:
+        media=label_animate_reference_slots(graph,media)
+    if idx==92:
+        # PreviewBridge's browser paint/upload path is not wired into this website.
+        annotation=None
+        for c in controls:
+            if c['id']=='47:index':
+                for option in c.get('options',[]):
+                    if isinstance(option,dict) and option.get('value')==1:option.update(disabled=True,reason='网站尚不支持手工掩膜桥接，请使用自动分割。')
     if idx==11:
         dimensions=['1024x1024','1152x896','896x1152','1216x832','832x1216','1344x768','768x1344','1536x640','640x1536']
         controls=[dict(id='162:resolution',key='resolution',label='画面尺寸',node='CM_SDXLResolution',nodeId='162',value='1344x768',type='text',kind='ratio',options=[{'value':v,'label':v.replace('x','×')} for v in dimensions],targets=[{'node':'162','input':'resolution'}],help='')]+[c for c in controls if c['kind']=='seed']
@@ -671,9 +1164,37 @@ def customize(w,graph,controls,texts,media):
                 elif linked is None or src and graph.nodes.get(src,{}).get('mode',0) in [2,4]:
                     media.append({'id':f'{nid}:ref_image_{ordinal}','kind':'image','label':f'可选参考图 {ordinal+1}','optional':True,'sourceNodeId':src,'target':{'node':nid,'input':port['name']}})
             notes.append(f'此图有 {len(ports)} 个模型参考图端口；按实际端口提供可选入口，不设置额外的网页总数上限。')
+    if idx==30:
+        controls,texts=dance_ratio_protocol_form(controls,texts,graph=graph)
     controls=add_review70_controls(w,graph,controls)
     apis=add_review70_api_profiles(w,graph,apis)
+    apis=reviewed_default_api_models(w,apis,source_hash=source_hash,graph=graph)
     controls,texts,media=apply_review70_labels(w,controls,texts,media)
+    media=reviewed_media_roles(w,media,source_hash=source_hash)
+    controls=reviewed_h3_duration_guidance(w,graph,controls,source_hash=source_hash)
+    from portrait_size_contract import reviewed_portrait_size_controls
+    controls=reviewed_portrait_size_controls(w,controls,graph=graph,source_hash=source_hash)
+    from camera72_contract import reviewed_camera72_controls
+    controls=reviewed_camera72_controls(w,controls,graph=graph,source_hash=source_hash)
+    from review74_parameter_contracts import reviewed_independent_seeds,reviewed_batch_count,reviewed_color_supplement,reviewed_camera14_size,reviewed_final_enhancement_size,reviewed_refinement_reference,reviewed_inactive_middle_position,reviewed_multiview_output_size
+    controls=reviewed_independent_seeds(w,controls,graph=graph,source_hash=source_hash)
+    controls=reviewed_batch_count(w,controls,source_hash=source_hash)
+    controls=reviewed_camera14_size(w,controls,graph=graph,source_hash=source_hash)
+    controls=reviewed_final_enhancement_size(w,controls,graph=graph,source_hash=source_hash)
+    controls=reviewed_refinement_reference(w,controls,graph=graph,source_hash=source_hash)
+    controls=reviewed_inactive_middle_position(w,controls,graph=graph,source_hash=source_hash)
+    controls=reviewed_multiview_output_size(w,controls,graph=graph,source_hash=source_hash)
+    from review75_generation_sizes import reviewed_generation_sizes
+    controls=reviewed_generation_sizes(w,controls,graph=graph,source_hash=source_hash)
+    texts=reviewed_color_supplement(w,texts,graph=graph,source_hash=source_hash)
+    from reviewed_stage_seeds import reviewed_stage_seeds
+    controls=reviewed_stage_seeds(w,controls,graph=graph,source_hash=source_hash)
+    from reviewed_native_seed_limits import reviewed_native_seed_limits
+    controls=reviewed_native_seed_limits(w,controls,graph=graph,source_hash=source_hash)
+    for text in texts:
+        nid,key=text['id'].rsplit(':',1)
+        if preserves_system_instruction(graph,nid,key):text['preserveWhenEmpty']=True
+        text.update(reviewed_text_purpose(graph,nid,key))
     return controls,texts,media,{'apiProfiles':apis,'annotation':annotation,'notes':notes,'presentation':{'kind':w['category'] if focused else 'generic','branches':branches},
        'referencePolicy':{'mode':'graph-ports','imageSlots':sum(m['kind']=='image' for m in media),'help':'按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。'},
        'auditMethod':'active-output-path + concrete-input-binding','execution':'demo'}

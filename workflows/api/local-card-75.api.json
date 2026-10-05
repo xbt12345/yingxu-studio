@@ -294,7 +294,7 @@
         0
       ],
       "prompt": [
-        "129",
+        "yingxu_review73_view_prompt_62",
         0
       ],
       "vae": [
@@ -307,7 +307,22 @@
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEditPlus"
+      "title": "TextEncodeQwenImageEditPlus",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-all-views-receive-user-description",
+          "node": "62",
+          "input": "prompt",
+          "from": [
+            "129",
+            0
+          ],
+          "to": [
+            "yingxu_review73_view_prompt_62",
+            0
+          ]
+        }
+      ]
     }
   },
   "57": {
@@ -407,7 +422,7 @@
         0
       ],
       "prompt": [
-        "130",
+        "yingxu_review73_view_prompt_95",
         0
       ],
       "vae": [
@@ -420,7 +435,22 @@
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEditPlus"
+      "title": "TextEncodeQwenImageEditPlus",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-all-views-receive-user-description",
+          "node": "95",
+          "input": "prompt",
+          "from": [
+            "130",
+            0
+          ],
+          "to": [
+            "yingxu_review73_view_prompt_95",
+            0
+          ]
+        }
+      ]
     }
   },
   "87": {
@@ -520,7 +550,7 @@
         0
       ],
       "prompt": [
-        "133",
+        "yingxu_review73_view_prompt_105",
         0
       ],
       "vae": [
@@ -533,7 +563,22 @@
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEditPlus"
+      "title": "TextEncodeQwenImageEditPlus",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-all-views-receive-user-description",
+          "node": "105",
+          "input": "prompt",
+          "from": [
+            "133",
+            0
+          ],
+          "to": [
+            "yingxu_review73_view_prompt_105",
+            0
+          ]
+        }
+      ]
     }
   },
   "97": {
@@ -633,7 +678,7 @@
         0
       ],
       "prompt": [
-        "131",
+        "yingxu_review73_view_prompt_115",
         0
       ],
       "vae": [
@@ -646,7 +691,22 @@
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEditPlus"
+      "title": "TextEncodeQwenImageEditPlus",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-all-views-receive-user-description",
+          "node": "115",
+          "input": "prompt",
+          "from": [
+            "131",
+            0
+          ],
+          "to": [
+            "yingxu_review73_view_prompt_115",
+            0
+          ]
+        }
+      ]
     }
   },
   "107": {
@@ -746,7 +806,7 @@
         0
       ],
       "prompt": [
-        "132",
+        "yingxu_review73_view_prompt_125",
         0
       ],
       "vae": [
@@ -759,7 +819,22 @@
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEditPlus"
+      "title": "TextEncodeQwenImageEditPlus",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-all-views-receive-user-description",
+          "node": "125",
+          "input": "prompt",
+          "from": [
+            "132",
+            0
+          ],
+          "to": [
+            "yingxu_review73_view_prompt_125",
+            0
+          ]
+        }
+      ]
     }
   },
   "117": {
@@ -832,6 +907,101 @@
     },
     "_meta": {
       "title": "SaveImage"
+    }
+  },
+  "yingxu_review73_view_prompt_62": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 2,
+      "string_1": [
+        "129",
+        0
+      ],
+      "string_2": [
+        "135",
+        0
+      ],
+      "delimiter": " ",
+      "return_list": false
+    },
+    "_meta": {
+      "title": "视角补充描述"
+    }
+  },
+  "yingxu_review73_view_prompt_95": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 2,
+      "string_1": [
+        "130",
+        0
+      ],
+      "string_2": [
+        "135",
+        0
+      ],
+      "delimiter": " ",
+      "return_list": false
+    },
+    "_meta": {
+      "title": "视角补充描述"
+    }
+  },
+  "yingxu_review73_view_prompt_105": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 2,
+      "string_1": [
+        "133",
+        0
+      ],
+      "string_2": [
+        "135",
+        0
+      ],
+      "delimiter": " ",
+      "return_list": false
+    },
+    "_meta": {
+      "title": "视角补充描述"
+    }
+  },
+  "yingxu_review73_view_prompt_115": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 2,
+      "string_1": [
+        "131",
+        0
+      ],
+      "string_2": [
+        "135",
+        0
+      ],
+      "delimiter": " ",
+      "return_list": false
+    },
+    "_meta": {
+      "title": "视角补充描述"
+    }
+  },
+  "yingxu_review73_view_prompt_125": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 2,
+      "string_1": [
+        "132",
+        0
+      ],
+      "string_2": [
+        "135",
+        0
+      ],
+      "delimiter": " ",
+      "return_list": false
+    },
+    "_meta": {
+      "title": "视角补充描述"
     }
   }
 }

@@ -83,7 +83,7 @@
   "156": {
     "class_type": "CR Text",
     "inputs": {
-      "text": ""
+      "text": "16:9"
     },
     "_meta": {
       "title": "CR Text"
@@ -92,7 +92,7 @@
   "157": {
     "class_type": "CR Text",
     "inputs": {
-      "text": ""
+      "text": "9:16"
     },
     "_meta": {
       "title": "CR Text"

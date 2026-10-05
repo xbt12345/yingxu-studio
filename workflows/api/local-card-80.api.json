@@ -145,6 +145,15 @@
       "title": "CR Text Replace"
     }
   },
+  "90": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": ""
+    },
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
   "83": {
     "class_type": "JoinStringMulti",
     "inputs": {
@@ -157,6 +166,10 @@
       "return_list": false,
       "string_2": [
         "86",
+        0
+      ],
+      "string_3": [
+        "90",
         0
       ]
     },
@@ -199,9 +212,9 @@
     "inputs": {
       "api_baseurl": "https://api.apilio.ai/v1",
       "api_key": "",
-      "model": "grok-4-fast-reasoning",
+      "model": "grok-4.6",
       "role": [
-        "83",
+        "yingxu_review74_80_protocol_role",
         0
       ],
       "prompt": "",
@@ -213,14 +226,36 @@
       ]
     },
     "_meta": {
-      "title": "RH_LLMAPI_NODE"
+      "title": "RH_LLMAPI_NODE",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-unavailable-owner-grok-alias",
+          "node": "146",
+          "input": "model",
+          "from": "grok-4-fast-reasoning",
+          "to": "grok-4.6"
+        }
+      ],
+      "yingxu_anime_batch_protocol": {
+        "id": "review74-anime-batch-response-protocol",
+        "source_hash": "83d4166f18f6215116e365394b1d4a3393fcd069d8afd8b6c29ca0e1247c5a41",
+        "count": 3,
+        "original_role": [
+          "83",
+          0
+        ],
+        "original_split_text": [
+          "146",
+          0
+        ]
+      }
     }
   },
   "87": {
     "class_type": "TextSplitByDelimiter",
     "inputs": {
       "text": [
-        "146",
+        "yingxu_review74_80_protocol_prompt",
         0
       ],
       "delimiter": "|",
@@ -378,6 +413,63 @@
     },
     "_meta": {
       "title": "SaveImage"
+    }
+  },
+  "yingxu_review74_80_protocol_format": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": "以下仅规定机器读取的回复格式，不改变用户的创作目标、风格或参考要求。只返回恰好 3 条非空、可直接用于图像生成的提示词。相邻提示词之间只使用一个 ASCII 竖线 |，不要以换行代替分隔符；整个回复恰好包含 2 个竖线。每条提示词内部不得使用竖线。不要编号、解释、Markdown、代码块、标题或 Next Scene: 前缀。不要在开头或结尾添加分隔符，也不要返回空段。"
+    }
+  },
+  "yingxu_review74_80_protocol_role": {
+    "class_type": "JoinStringMulti",
+    "inputs": {
+      "inputcount": 2,
+      "string_1": [
+        "83",
+        0
+      ],
+      "string_2": [
+        "yingxu_review74_80_protocol_format",
+        0
+      ],
+      "delimiter": "\n\n",
+      "return_list": false
+    }
+  },
+  "yingxu_review74_80_protocol_response": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "146",
+        0
+      ]
+    }
+  },
+  "yingxu_review74_80_protocol_valid": {
+    "class_type": "RegexMatch",
+    "inputs": {
+      "string": [
+        "yingxu_review74_80_protocol_response",
+        0
+      ],
+      "regex_pattern": "\\A\\s*(?!(?i:COMPILATION_ERROR:|ERROR:))[^\\s|][^|]*(?:\\|\\s*[^\\s|][^|]*){2}\\s*\\Z",
+      "case_insensitive": false,
+      "multiline": false,
+      "dotall": false
+    }
+  },
+  "yingxu_review74_80_protocol_prompt": {
+    "class_type": "easy blocker",
+    "inputs": {
+      "continue": [
+        "yingxu_review74_80_protocol_valid",
+        0
+      ],
+      "in": [
+        "yingxu_review74_80_protocol_response",
+        0
+      ]
     }
   }
 }

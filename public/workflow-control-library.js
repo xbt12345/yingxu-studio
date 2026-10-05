@@ -1,22 +1,22 @@
-import {installPointPickers} from './point-picker.js?v=70.1';
+import {installPointPickers} from './point-picker.js?v=75.1';
 import {resultMediaMarkup} from './result-media.js?v=70.0';
-import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=69.0';
+import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=75.1';
 import {outputActionMarkup,installOutputActionPlacement} from './output-actions.js?v=70.0';
 import {installTimecodeControls} from './timecode-control.js?v=60.1';
-import {installMultiCamera} from './multi-camera.js?v=60.1';
-import {installProcessingDurations} from './processing-duration.js?v=60.1';
-import {liveDurationControl,liveWorkflowEditor,installTrimPlayback} from './workflow-page.js?v=63.0';
+import {installMultiCamera} from './multi-camera.js?v=75.1';
+import {installProcessingDurations} from './processing-duration.js?v=75.1';
+import {liveDurationControl,liveWorkflowEditor,installTrimPlayback} from './workflow-page.js?v=75.1';
 import {installDirectoryPicker} from './directory-picker.js?v=60.1';
-import {installWorkflowSelects} from './workflow-select.js?v=63.0';
+import {installWorkflowSelects} from './workflow-select.js?v=75.1';
 import {annotateImage} from './region-annotation.js?v=54.0';
 import {esc} from './data.js';
 import {advancedFields} from './advanced.js?v=60.1';
-import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=70.1';
-import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=70.1';
+import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=75.1';
+import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=75.1';
 
 // The library renders production components with harmless sample values; no saving or generation.
 const [catalog,schemas,live]=await Promise.all([
- fetch('local-catalog.json').then(r=>r.json()),fetch('workflow-interfaces.json').then(r=>r.json()),fetch('/api/workflows').then(r=>r.ok?r.json():[]).catch(()=>[])
+ fetch('local-catalog.json').then(r=>r.json()),fetch('workflow-interfaces.json?v=75.1').then(r=>r.json()),fetch('/api/workflows').then(r=>r.ok?r.json():[]).catch(()=>[])
 ]);
 const records=catalog.workflows.map(w=>({...w,interface:schemas.workflows[w.id]}));
 const blank=()=>({prompt:'保留原图主体，调整背景与光线。',refs:[],catalogValues:{},catalogTexts:{},catalogSeedModes:{}});
@@ -91,7 +91,7 @@ function renderDemo(e){
  return template.innerHTML;
 }
 const root=document.getElementById('component-library');
-root.innerHTML=examples.map(e=>`<article class="library-example" id="${e.id}"><header><h2>${e.title}</h2><p title="${esc(e.note)}">${esc(e.note)}</p><a href="studio.html?review=70.0#${e.w.id==='model'?'create':'workflow/'+e.w.id}" target="_blank" rel="noopener">在对应工作流中查看 ↗</a></header><div class="library-demo catalog-editor">${renderDemo(e)}</div></article>`).join('');
+root.innerHTML=examples.map(e=>`<article class="library-example" id="${e.id}"><header><h2>${e.title}</h2><p title="${esc(e.note)}">${esc(e.note)}</p><a href="studio.html?review=73.0#${e.w.id==='model'?'create':'workflow/'+e.w.id}" target="_blank" rel="noopener">在对应工作流中查看 ↗</a></header><div class="library-demo catalog-editor">${renderDemo(e)}</div></article>`).join('');
 document.getElementById('library-index').innerHTML=examples.map(e=>`<a href="#${e.id}">${e.title}</a>`).join('');
 const counts={};for(const w of records)for(const f of w.interface.controls)counts[f.kind]=(counts[f.kind]||0)+1;
 document.getElementById('library-counts').textContent=`${records.length} 个本地工作流 · ${Object.values(counts).reduce((a,b)=>a+b,0)} 个已配置参数 · ${examples.length} 组组件示例 · 2 个独立接入页 / 12 个内置演示共用控件`;
@@ -116,7 +116,7 @@ document.addEventListener('click',event=>{
  if(id){const f=e.w.interface?.controls.find(f=>f.id===id);e.d.catalogValues[id]=f.type==='number'?Number(button.dataset.value):button.dataset.value;const input=[...document.getElementById(e.id).querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===id);if(input)input.value=button.dataset.value;update(e);}
  if(button.dataset.catalogSeedMode){e.d.catalogSeedModes[button.dataset.catalogSeedMode]=button.dataset.value;update(e);}
  if(e.id==='media'&&button.dataset.catalogAnnotate){annotateImage({src:'assets/coast.jpg',mode:'visual',optional:true,help:'组件示例，标注不写入素材库。',onSave:async()=>{}});return;}
- if(e.id.startsWith('media'))window.open(`studio.html?review=70.0#workflow/${e.w.id}`,'_blank','noopener');
+ if(e.id.startsWith('media'))window.open(`studio.html?review=73.0#workflow/${e.w.id}`,'_blank','noopener');
 });
 document.addEventListener('change',event=>{
  const e=context(event);if(!e)return;
@@ -146,10 +146,10 @@ installPointPickers();
 installDirectoryPicker({getCommit:button=>{const e=examples.find(x=>x.id===button.closest('.library-example')?.id);return e?path=>{e.d.catalogValues[button.dataset.localDirectory]=path;}:null;}});
 
 document.addEventListener('click',event=>{
- const copy=event.target.closest('#text-result [data-action="copy-output"]');if(copy){navigator.clipboard.writeText(textExample.text).catch(()=>{});return;}const audio=event.target.closest('#audio-result button');if(audio){window.open('studio.html?review=70.0#create','_blank','noopener');return;}const output=event.target.closest('#output-actions button');if(output){if(output.dataset.select){const selected=output.getAttribute('aria-pressed')!=='true';output.setAttribute('aria-pressed',String(selected));output.classList.toggle('active',selected);output.setAttribute('aria-label',selected?'取消对比':'加入对比');output.title=selected?'取消对比':'加入对比';}else window.open('studio.html?review=70.0#create','_blank','noopener');return;}
+ const copy=event.target.closest('#text-result [data-action="copy-output"]');if(copy){navigator.clipboard.writeText(textExample.text).catch(()=>{});return;}const audio=event.target.closest('#audio-result button');if(audio){window.open('studio.html?review=73.0#create','_blank','noopener');return;}const output=event.target.closest('#output-actions button');if(output){if(output.dataset.select){const selected=output.getAttribute('aria-pressed')!=='true';output.setAttribute('aria-pressed',String(selected));output.classList.toggle('active',selected);output.setAttribute('aria-label',selected?'取消对比':'加入对比');output.title=selected?'取消对比':'加入对比';}else window.open('studio.html?review=73.0#create','_blank','noopener');return;}
  const example=event.target.closest('#reference-shelf');if(!example)return;
  const remove=event.target.closest('[data-remove]');if(remove){const index=referenceSamples.findIndex(r=>r.id===remove.dataset.remove);if(index>=0){if(referenceSamples[index].cutoutSrc)URL.revokeObjectURL(referenceSamples[index].cutoutSrc);referenceSamples.splice(index,1);}const pinned=example.querySelector('.api-reference-shelf').classList.contains('pinned');const prompt=example.querySelector('textarea').value;clearExampleShelf();example.querySelector('.api-composer').outerHTML=referenceExample(pinned,prompt);clearExampleShelf=installReferenceShelf(example.querySelector('.api-reference-shelf'));return;}
- const add=event.target.closest('[data-action="add-reference"]');if(add){window.open('studio.html?review=70.0#create','_blank','noopener');return;}
+ const add=event.target.closest('[data-action="add-reference"]');if(add){window.open('studio.html?review=73.0#create','_blank','noopener');return;}
  const toggle=event.target.closest('[data-action="reference-stack"]');if(toggle){const shelf=toggle.closest('.api-reference-shelf');toggleReferenceShelf(shelf);}
  const preview=event.target.closest('[data-preview-ref]');if(preview){const ref=referenceSamples.find(r=>r.id===preview.dataset.previewRef);editReference({ref,cutoutSrc:ref.cutoutSrc,onSave:async result=>{ref.referenceEdits=result.edits;ref.referenceStrength=result.strength;if(result.settingsOnly)return;if(ref.cutoutSrc)URL.revokeObjectURL(ref.cutoutSrc);ref.cutoutSrc=result.cutout?URL.createObjectURL(result.cutout):null;const image=preview.querySelector('img');if(image.dataset.previousBlob)URL.revokeObjectURL(image.dataset.previousBlob);const url=URL.createObjectURL(result.image);image.src=url;image.dataset.previousBlob=url;}}).catch(console.error);}
 });

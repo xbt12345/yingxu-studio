@@ -6,10 +6,19 @@
       "image_load_cap": 0,
       "start_index": 0,
       "load_always": false,
-      "sort_method": "None"
+      "sort_method": "Alphabetical (ASC)"
     },
     "_meta": {
-      "title": "LoadImageListFromDir //Inspire"
+      "title": "LoadImageListFromDir //Inspire",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-explicit-directory-image-order",
+          "node": "12",
+          "input": "sort_method",
+          "from": "None",
+          "to": "Alphabetical (ASC)"
+        }
+      ]
     }
   },
   "11": {

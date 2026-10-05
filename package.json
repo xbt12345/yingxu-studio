@@ -5,7 +5,7 @@
   "type": "module",
   "engines": {"node": ">=22"},
   "scripts": {
-    "test": "node --test scripts/test_reference_actions.mjs scripts/test_reference_numbering.mjs scripts/test_workflow_experience.mjs scripts/test_workflow_guidance.mjs scripts/test_workflow_interactions.mjs scripts/test_workflow_interfaces.mjs scripts/test_workspace_media.mjs scripts/test_catalog_submission.mjs scripts/test_point_picker.mjs",
+    "test": "node --test scripts/test_reference_actions.mjs scripts/test_reference_numbering.mjs scripts/test_workflow_experience.mjs scripts/test_workflow_guidance.mjs scripts/test_h3_duration_guidance.mjs scripts/test_workflow_interactions.mjs scripts/test_workflow_interfaces.mjs scripts/test_workspace_media.mjs scripts/test_catalog_submission.mjs scripts/test_point_picker.mjs scripts/test_workspace_save.mjs",
     "test:live-layout": "node scripts/test_workflow_inline_live.mjs"
   }
 }

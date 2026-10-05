@@ -14,6 +14,7 @@ from urllib.parse import urlsplit
 
 from adapters import prune
 from configuration import ROOT, WORKFLOW_DIR, workflow_path
+from reviewed_repairs import apply_reviewed_repairs
 
 REGISTRY_PATH = ROOT / 'workflows/compiled-registry.json'
 
@@ -143,6 +144,8 @@ def validate_values(spec, supplied):
         if kind=='indices':value=validate_indices(value)
         options = field.get('options')
         allowed = [option.get('value') if isinstance(option, dict) else option for option in options or []]
+        disabled=next((option for option in options or [] if isinstance(option,dict) and option.get('value')==value and option.get('disabled')),None)
+        if disabled:raise ValueError(disabled.get('reason')or f'{label}的这个选项暂不可用。')
         custom = field.get('customRange')
         if options and value not in allowed and not custom:
             raise ValueError(f'请选择支持的{label}。')
@@ -214,6 +217,14 @@ def _put(graph, target, value):
     graph[node]['inputs'] = inputs
 
 
+def _validate_native_conversion(transform,value):
+    bounds=transform.get('nativeBounds')
+    if not isinstance(bounds,dict)or set(bounds)!={'min','max'}or not all(_number(bounds[k])for k in ('min','max'))or bounds['max']<bounds['min']:
+        raise ValueError('单位转换的原生范围未完成审查，请刷新工作流。')
+    if not _number(value)or not bounds['min']<=value<=bounds['max']:
+        raise ValueError('单位转换后的数值超出原生节点支持范围。')
+
+
 def _control_values(field, value, values, geometry=None):
     transform = field.get('transform') or field.get('derived')
     if not transform:
@@ -236,6 +247,8 @@ def _control_values(field, value, values, geometry=None):
                  'neg_coordinates':json.dumps(absolute['negative'],separators=(',',':')),
                  'points_store':json.dumps(absolute,separators=(',',':')),
                  'bboxes':'[]','bbox_store':'[]','normalize':False}
+        if geometry.get('bindDimensions'):
+            encoded.update(width=geometry['width'],height=geometry['height'])
         bindings=[({'node':str(node),'input':key},data)for key,data in encoded.items()]
         if geometry.get('negativeTarget'):
             bindings.append((geometry['negativeTarget'],[str(node),1]))
@@ -244,12 +257,18 @@ def _control_values(field, value, values, geometry=None):
         fps = transform.get('fps')
         if not _number(fps) or fps <= 0:
             raise ValueError('工作流未确认帧率，不能将秒数换成帧数。')
-        return [(target, round(value * fps)) for target in _targets(field)]
+        if not _number(value)or not _number(value*fps):
+            raise ValueError('秒数换算后的帧数超出支持范围。')
+        converted=round(value*fps)
+        _validate_native_conversion(transform,converted)
+        return [(target,converted) for target in _targets(field)]
     if operation == 'audio-end':
         start = values.get(transform.get('startId'))
         if not _number(start) or not _number(value) or value <= start:
             raise ValueError('音频终点需要晚于起点。')
-        return [(target, value - start) for target in _targets(field)]
+        converted=value-start
+        _validate_native_conversion(transform,converted)
+        return [(target,converted) for target in _targets(field)]
     if operation == 'size':
         match = re.fullmatch(r'(\d{1,5})[x×](\d{1,5})', value)
         if not match:
@@ -276,6 +295,39 @@ def _prefixes(graph, outputs, job_id):
         inputs = graph.get(str(node), {}).get('inputs', {})
         if 'filename_prefix' in inputs:
             inputs['filename_prefix'] = 'yingxu/' + job_id + ('/result-' + str(index + 1) if len(outputs) > 1 else '')
+
+
+def _audio_crop_seconds(graph, value):
+    """AudioCrop uses integer seconds or minutes:seconds, not an end=0 sentinel.
+
+    The reviewed two-speaker template shares its end through an easy string
+    constant. Resolve only that known literal node; do not evaluate arbitrary
+    graph expressions while validating an interval.
+    """
+    if isinstance(value, list):
+        node = graph.get(str(value[0]), {}) if len(value) == 2 else {}
+        if len(value) != 2 or value[1] != 0 or node.get('class_type') != 'easy string':
+            raise ValueError('音频裁剪时间绑定尚未完成审查。')
+        value = node.get('inputs', {}).get('value')
+    match = re.fullmatch(r'\s*([0-9]+)(?:\s*:\s*([0-9]+))?\s*', value) if isinstance(value, str) else None
+    if not match:
+        raise ValueError('音频裁剪时间需填写非负整数秒，或分:秒，例如 5 或 0:05。')
+    try:
+        first, second = match.groups()
+        return int(first) if second is None else 60 * int(first) + int(second)
+    except ValueError:
+        raise ValueError('音频裁剪时间超出支持范围。') from None
+
+
+def validate_audio_crops(graph):
+    """Check actual reachable crop inputs after all reviewed fields are bound."""
+    for node in graph.values():
+        if node.get('class_type') != 'AudioCrop':
+            continue
+        inputs = node.get('inputs', {})
+        start, end = (_audio_crop_seconds(graph, inputs.get(key)) for key in ('start_time', 'end_time'))
+        if end <= start:
+            raise ValueError('音频裁剪终点需要晚于起点；终点 0 表示零秒，不能表示全部音频。')
 
 
 def bind_assets(graph, spec, records):
@@ -328,6 +380,8 @@ def bind_api_profiles(graph, spec, profiles):
                 if not isinstance(target, dict):
                     raise ValueError('API 输入绑定尚未完成审查。')
                 _put(graph, target, value)
+                if name=='model':
+                    graph[str(target['node'])].setdefault('_meta',{})['yingxu_custom_api_profile']=field['id']
     return graph
 
 
@@ -346,23 +400,28 @@ def build(spec, supplied_values, supplied_texts, records, profiles, job_id, prom
             _put(graph, target, texts[field['id']])
     bind_assets(graph, spec, records)
     bind_api_profiles(graph, spec, profiles)
+    apply_reviewed_repairs(graph, spec)
     _prefixes(graph, spec['outputs'], job_id)
     graph = prune(graph, spec['outputs'])
+    validate_audio_crops(graph)
     return graph, values, texts
 
 
-def rerun(original, records, job_id):
+def rerun(original, records, job_id,randomize_seed=True):
     """Keep the saved graph and credentials; redraw only reviewed random seeds."""
     spec = original['schema_spec']
     graph = copy.deepcopy(original['graph'])
     values = copy.deepcopy(original['catalog_values'])
     for field in spec.get('controls', []):
-        if field.get('kind') != 'seed':
+        if not randomize_seed or field.get('kind') != 'seed':
             continue
         value = _random_seed(field, values.get(field['id']))
         values[field['id']] = value
         for target, adjusted in _control_values(field, value, values):
             _put(graph, target, adjusted)
     bind_assets(graph, spec, records)
+    apply_reviewed_repairs(graph, spec)
     _prefixes(graph, spec['outputs'], job_id)
-    return prune(graph, spec['outputs']), values
+    graph = prune(graph, spec['outputs'])
+    validate_audio_crops(graph)
+    return graph, values

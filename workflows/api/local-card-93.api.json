@@ -16,11 +16,20 @@
         "78",
         0
       ],
-      "lora_name": "qwen/Qwen-Image-Edit-Lightning-8steps-V1.0.safetensors",
+      "lora_name": "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-fp32.safetensors",
       "strength_model": 1
     },
     "_meta": {
-      "title": "LoraLoaderModelOnly"
+      "title": "LoraLoaderModelOnly",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-qwen2511-matching-lightning",
+          "node": "79",
+          "input": "lora_name",
+          "from": "qwen/Qwen-Image-Edit-Lightning-8steps-V1.0.safetensors",
+          "to": "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-fp32.safetensors"
+        }
+      ]
     }
   },
   "3": {
@@ -165,7 +174,7 @@
     }
   },
   "10": {
-    "class_type": "TextEncodeQwenImageEdit",
+    "class_type": "TextEncodeQwenImageEditPlus",
     "inputs": {
       "clip": [
         "1",
@@ -179,17 +188,34 @@
         "2",
         0
       ],
-      "image": [
+      "image1": [
         "103",
         0
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEdit"
+      "title": "TextEncodeQwenImageEdit",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-qwen2511-reference-encoding",
+          "node": "10",
+          "input": "class_type",
+          "from": "TextEncodeQwenImageEdit",
+          "to": "TextEncodeQwenImageEditPlus",
+          "reference_port": {
+            "from": "image",
+            "to": "image1",
+            "value": [
+              "103",
+              0
+            ]
+          }
+        }
+      ]
     }
   },
   "13": {
-    "class_type": "TextEncodeQwenImageEdit",
+    "class_type": "TextEncodeQwenImageEditPlus",
     "inputs": {
       "clip": [
         "1",
@@ -200,13 +226,30 @@
         "2",
         0
       ],
-      "image": [
+      "image1": [
         "103",
         0
       ]
     },
     "_meta": {
-      "title": "TextEncodeQwenImageEdit"
+      "title": "TextEncodeQwenImageEdit",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-qwen2511-reference-encoding",
+          "node": "13",
+          "input": "class_type",
+          "from": "TextEncodeQwenImageEdit",
+          "to": "TextEncodeQwenImageEditPlus",
+          "reference_port": {
+            "from": "image",
+            "to": "image1",
+            "value": [
+              "103",
+              0
+            ]
+          }
+        }
+      ]
     }
   },
   "5": {
@@ -236,8 +279,8 @@
         "50",
         0
       ],
-      "steps": 8,
-      "cfg": 2.5,
+      "steps": 4,
+      "cfg": 1,
       "sampler_name": "euler",
       "scheduler": "simple",
       "positive": [
@@ -255,7 +298,23 @@
       "denoise": 1
     },
     "_meta": {
-      "title": "KSampler"
+      "title": "KSampler",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-qwen2511-four-step-sampling",
+          "node": "20",
+          "input": "steps",
+          "from": 8,
+          "to": 4
+        },
+        {
+          "id": "review73-qwen2511-distilled-guidance",
+          "node": "20",
+          "input": "cfg",
+          "from": 2.5,
+          "to": 1
+        }
+      ]
     }
   },
   "15": {

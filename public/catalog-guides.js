@@ -1,4 +1,4 @@
-import {syncMultiCamera} from './multi-camera.js?v=60.1';
+import {syncMultiCamera} from './multi-camera.js?v=75.1';
 import {dragCamera,nudgeZoom} from './camera-motion.js?v=60.1';
 import {cameraOrbitMarkup,updateCameraOrbit} from './camera-orbit.js?v=60.1';
 // Direct-manipulation guides for two source-specific ComfyUI inputs.

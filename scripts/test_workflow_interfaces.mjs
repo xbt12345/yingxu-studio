@@ -22,10 +22,11 @@ for(const original of catalog){
   assert.equal(first.catalogSeedModes[f.id],'fixed');
  }
  const panel=catalogCommonPanel(w,draft);
- for(const f of w.interface.controls.filter(c=>c.key==='megapixels')){
+ for(const f of w.interface.controls.filter(c=>c.key==='megapixels'||c.unit==='MP')){
   const min=f.customRange?.min??f.min,max=f.customRange?.max??f.max,step=f.customRange?.step??f.step;
   const choices=[...panel.matchAll(/data-catalog-preset="([^"]+)" data-value="([^"]+)"/g)].filter(m=>m[1]===f.id).map(m=>Number(m[2]));
   assert.ok(choices.length,`${w.id}: no valid MP presets`);
+  assert.ok(panel.includes(`aria-label="自定义${f.label}"`),`${w.id}: independent MP control loses its branch label`);
   for(const n of choices){
    assert.ok((min===undefined||n>=min)&&(max===undefined||n<=max),`${w.id}: MP preset outside source range`);
    if(Number(step)>0){const k=(n-(min??0))/Number(step);assert.ok(Math.abs(k-Math.round(k))<1e-6,`${w.id}: MP preset violates source step`);}
@@ -120,9 +121,14 @@ assert.deepEqual(interfaces['local-card-34'].presentation.branches.map(b=>b.labe
 const migrated=(id,values)=>prepareCatalogSnapshot({...catalog.find(w=>w.id===id),interface:interfaces[id]},{prompt:'',refs:[],catalogValues:values});
 assert.equal(migrated('local-card-7',{'45:frame_load_cap':48}).catalogValues['45:frame_load_cap:seconds'],2);
 assert.equal(migrated('local-card-7',{'45:frame_load_cap:seconds':2.5}).catalogValues['45:frame_load_cap'],60);
+assert.equal(migrated('local-card-7',{'45:frame_load_cap:seconds':0.1875}).catalogValues['45:frame_load_cap'],4,'half-frame rounding matches the backend');
+assert.equal(migrated('local-card-7',{'45:frame_load_cap:seconds':0.0625}).catalogValues['45:frame_load_cap'],2);
+assert.throws(()=>migrated('local-card-7',{'45:frame_load_cap:seconds':1e308}),/范围/);
 const audio=migrated('local-card-98',{'15:offset_seconds':3,'15:duration_seconds':8});
 assert.equal(audio.catalogValues['15:audio_end_seconds'],11);
 assert.equal(migrated('local-card-98',{'15:offset_seconds':3,'15:audio_end_seconds':10}).catalogValues['15:duration_seconds'],7);
 assert.throws(()=>migrated('local-card-98',{'15:offset_seconds':3,'15:audio_end_seconds':2}),/终点/);
+assert.equal(migrated('local-card-98',{'15:offset_seconds':1e17,'15:audio_end_seconds':2e17}).catalogValues['15:duration_seconds'],1e17,'audio duration ceiling is relative to its starting point');
+assert.throws(()=>migrated('local-card-98',{'15:offset_seconds':0,'15:audio_end_seconds':1e18}),/范围/);
 for(const cfg of Object.values(interfaces))for(const f of [...cfg.controls,...cfg.texts]){assert.ok(!f.help||!f.help.includes('\n'));if(f.kind==='indices')assert.match(f.help,/编号以检测结果为准/);else assert.ok(!f.help||f.help.length<=12);}
 console.log(JSON.stringify({sourceOmissions:'covered',secondsToNativeFrames:'passed',audioEndToNativeDuration:'passed',oldDraftMigration:'passed'}));

@@ -34,7 +34,7 @@
     "inputs": {
       "api_baseurl": "https://api.apilio.ai/v1",
       "api_key": "",
-      "model": "gemini-3.8-flash-low",
+      "model": "gemini-3.8-flash-thinking-low",
       "role": "描述图像\n",
       "prompt": "",
       "temperature": 0.6,
@@ -45,7 +45,16 @@
       ]
     },
     "_meta": {
-      "title": "RH_LLMAPI_NODE"
+      "title": "RH_LLMAPI_NODE",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-unavailable-owner-model-alias",
+          "node": "29",
+          "input": "model",
+          "from": "gemini-3.8-flash-low",
+          "to": "gemini-3.8-flash-thinking-low"
+        }
+      ]
     }
   },
   "18": {

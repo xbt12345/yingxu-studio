@@ -59,6 +59,12 @@ def valid_graph(graph):
         meta=metadata[cls]
         inputs=node.get('inputs',{})
         fields,required,problems=expanded_fields(meta,inputs)
+        # rgthree serializes FlexibleOptionalInputType as an empty optional
+        # object; its switch accepts saved any_* socket links in kwargs.
+        if cls=='Any Switch (rgthree)':
+            for name,value in inputs.items():
+                if name.startswith('any_') and isinstance(value,list) and len(value)==2:
+                    fields[name]=['*']
         issues.extend({'node':node_id,'input':name,'kind':kind}for name,kind in problems)
         for name in required-set(inputs):
             issues.append({'node':node_id,'input':name,'kind':'missing-required'})

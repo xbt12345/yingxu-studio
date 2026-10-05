@@ -394,7 +394,12 @@
   },
   "400": {
     "class_type": "Any Switch (rgthree)",
-    "inputs": {},
+    "inputs": {
+      "any_02": [
+        "435",
+        1
+      ]
+    },
     "_meta": {
       "title": "Any Switch (rgthree)"
     }
@@ -596,6 +601,14 @@
       "image_2": [
         "435",
         1
+      ],
+      "image_3": [
+        "438",
+        0
+      ],
+      "image_4": [
+        "456",
+        0
       ]
     },
     "_meta": {

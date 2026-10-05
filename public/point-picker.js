@@ -32,6 +32,16 @@ export function processingFrameSize(width,height,longSide=1024,multiple=32,sourc
  const scale=longSide/Math.max(width,height),round=n=>Math.ceil(Math.max(1,Math.floor(n))/multiple)*multiple;
  return {width:round(width*scale),height:round(height*scale)};
 }
+// Core ImageScaleBy uses Python's ties-to-even round, with crop disabled.
+// In card51 the preceding dimensions are multiples of32 and postScale=.5,
+// so the result is a multiple of16; LTXVPreprocess's even-edge crop is a no-op.
+export function postScaledFrameSize(width,height,postScale=1){
+ if(![width,height,postScale].every(Number.isFinite)||width<=0||height<=0||postScale<=0)throw new Error('点选处理缩放无效。');
+ const round=n=>{const floor=Math.floor(n),fraction=n-floor;return fraction===.5?(floor%2?floor+1:floor):Math.round(n);};
+ const size={width:round(width*postScale),height:round(height*postScale)};
+ if(size.width<=0||size.height<=0)throw new Error('点选处理尺寸无效。');
+ return size;
+}
 export function coverCropRect(width,height,targetWidth,targetHeight){
  if(![width,height,targetWidth,targetHeight].every(n=>Number.isFinite(n)&&n>0))throw new Error('预览尺寸无效。');
  const scale=Math.max(targetWidth/width,targetHeight/height),cropWidth=targetWidth/scale,cropHeight=targetHeight/scale;
@@ -39,11 +49,11 @@ export function coverCropRect(width,height,targetWidth,targetHeight){
 }
 export function previewPointInSource(point,crop){return {x:crop.x+point.x*crop.width,y:crop.y+point.y*crop.height};}
 export function processingPreviewGeometry(width,height,recipe,longSide=recipe.longSide??1024){
- const source=sourceFrameSize(width,height,recipe.sourceMultiple??0),target=processingFrameSize(source.width,source.height,longSide,recipe.multiple??32);
- const first=coverCropRect(width,height,source.width,source.height),second=coverCropRect(source.width,source.height,target.width,target.height);
+ const source=sourceFrameSize(width,height,recipe.sourceMultiple??0),layerTarget=processingFrameSize(source.width,source.height,longSide,recipe.multiple??32),target=postScaledFrameSize(layerTarget.width,layerTarget.height,recipe.postScale??1);
+ const first=coverCropRect(width,height,source.width,source.height),second=coverCropRect(source.width,source.height,layerTarget.width,layerTarget.height);
  const crop={x:first.x+second.x/source.width*first.width,y:first.y+second.y/source.height*first.height,width:second.width/source.width*first.width,height:second.height/source.height*first.height};
- const scale=Math.max(target.width/source.width,target.height/source.height);
- return {source,target,crop,framePercent:{width:source.width*scale/target.width*100,height:source.height*scale/target.height*100}};
+ const scale=Math.max(layerTarget.width/source.width,layerTarget.height/source.height);
+ return {source,layerTarget,target,crop,framePercent:{width:source.width*scale/layerTarget.width*100,height:source.height*scale/layerTarget.height*100}};
 }
 export function pointFromPointer(clientX,clientY,rect){
  if(!rect||rect.width<=0||rect.height<=0)throw new Error('预览尚未准备好。');
@@ -67,7 +77,7 @@ export function pointPickerControl(d,f,value,id){
  const ref=(d.refs||[]).find(r=>r.catalogSlot===f.mediaSlotId&&r.kind==='video'&&r.src&&r.available!==false),recipe=f.previewRecipe||{},longSide=d.catalogValues?.[recipe.longSideControlId]??recipe.longSide??1024,skipFrames=d.catalogValues?.[recipe.skipControlId]??recipe.skipFrames??0;
  // Invalid saved input stays visible as an error; it is never silently coerced.
  let stored,error='';try{stored=serializePointSelection(value);}catch(err){stored=String(value??'');error=err.message;}
- return `<section class="catalog-field catalog-point-picker" data-point-picker data-point-mode="positive" data-point-recipe="${esc(JSON.stringify({...recipe,longSide,skipFrames}))}"><strong>${esc(f.label||'选择跟踪主体')}</strong><input type="hidden" id="${id}" data-catalog-field="${esc(f.id)}" value="${esc(stored)}"><div class="point-picker-tools" role="group" aria-label="点选方式"><button type="button" data-point-mode="positive" aria-pressed="true"><i class="point-positive-dot" aria-hidden="true"></i>保留主体</button><button type="button" data-point-mode="negative" aria-pressed="false"><i class="point-negative-dot" aria-hidden="true"></i>排除区域</button><button type="button" data-point-clear>清空</button><span data-point-count>0 / 0</span></div>${ref?`<div class="point-picker-stage" data-point-stage tabindex="0" role="group" aria-label="视频起始帧点选；方向键移动位置，回车添加；点击已有点移除"><div class="point-picker-source-frame" data-point-source-frame><video src="${esc(ref.src)}" muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video></div><div class="point-picker-layer" data-point-layer></div><span class="point-picker-cursor" data-point-cursor hidden aria-hidden="true"></span><span class="point-picker-loading" data-point-loading>正在读取视频起始帧…</span></div>`:'<div class="point-picker-empty">先添加原视频，再点击起始帧选择主体</div>'}<small class="catalog-field-help">绿点保留，红点排除；点击点可移除，每类最多 ${POINT_LIMIT} 个。</small><p class="point-picker-error" data-point-error role="alert" ${error?'':'hidden'}>${esc(error)}</p></section>`;
+ return `<section class="catalog-field catalog-point-picker" data-point-picker data-point-mode="positive" data-point-recipe="${esc(JSON.stringify({...recipe,longSide,skipFrames}))}"><strong>${esc(f.label||'选择跟踪主体')}</strong><input type="hidden" id="${id}" data-catalog-field="${esc(f.id)}" value="${esc(stored)}"><div class="point-picker-tools" role="group" aria-label="点选方式"><button type="button" data-point-mode="positive" aria-pressed="true"><i class="point-positive-dot" aria-hidden="true"></i>保留主体</button><button type="button" data-point-mode="negative" aria-pressed="false"><i class="point-negative-dot" aria-hidden="true"></i>排除区域</button><button type="button" data-point-clear>清空</button><span data-point-count>0 / 0</span></div>${ref?`<div class="point-picker-stage" data-point-stage tabindex="0" role="group" aria-label="视频起始帧点选；方向键移动位置，回车添加；点击已有点移除"><div class="point-picker-source-frame" data-point-source-frame><video src="${esc(ref.src)}" muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video></div><div class="point-picker-layer" data-point-layer></div><span class="point-picker-cursor" data-point-cursor hidden aria-hidden="true"></span><span class="point-picker-loading" data-point-loading>正在读取视频起始帧…</span></div>`:'<div class="point-picker-empty">先添加原视频，再点击起始帧选择主体</div>'}<small class="catalog-field-help">绿点保留，红点排除；点击点可移除，每类最多 ${POINT_LIMIT} 个。</small>${f.id==='1095:points'?'<small class="catalog-field-help">选区用于跟踪与生成引导；其他区域也可能变化。</small>':''}<p class="point-picker-error" data-point-error role="alert" ${error?'':'hidden'}>${esc(error)}</p></section>`;
 }
 
 const installed=new WeakSet();

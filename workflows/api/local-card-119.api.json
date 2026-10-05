@@ -118,7 +118,7 @@
   "517": {
     "class_type": "MathExpression|pysssss",
     "inputs": {
-      "expression": "(a // b) + 1 ",
+      "expression": "(a + b - 1) // b",
       "a": [
         "521",
         3
@@ -129,7 +129,16 @@
       ]
     },
     "_meta": {
-      "title": "MathExpression|pysssss"
+      "title": "MathExpression|pysssss",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-exact-ceiling-chunk-count",
+          "node": "517",
+          "input": "expression",
+          "from": "(a // b) + 1 ",
+          "to": "(a + b - 1) // b"
+        }
+      ]
     }
   },
   "488": {
@@ -155,10 +164,25 @@
         "488",
         2
       ],
-      "split_index": 0
+      "split_index": [
+        "519",
+        0
+      ]
     },
     "_meta": {
-      "title": "VHS_SplitImages"
+      "title": "VHS_SplitImages",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-nonempty-flashvsr-chunks",
+          "node": "514",
+          "input": "split_index",
+          "from": 0,
+          "to": [
+            "519",
+            0
+          ]
+        }
+      ]
     }
   },
   "513": {
@@ -279,12 +303,27 @@
         3
       ],
       "any_2": [
-        "527",
+        "522",
         0
       ]
     },
     "_meta": {
-      "title": "easy batchAnything"
+      "title": "easy batchAnything",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-preserve-upscaled-frame-count",
+          "node": "515",
+          "input": "any_2",
+          "from": [
+            "527",
+            0
+          ],
+          "to": [
+            "522",
+            0
+          ]
+        }
+      ]
     }
   },
   "503": {
@@ -340,7 +379,7 @@
         "530",
         0
       ],
-      "frame_rate": 8,
+      "frame_rate": 24,
       "loop_count": 0,
       "filename_prefix": "yingxu/result",
       "format": "video/h264-mp4",
@@ -352,7 +391,16 @@
       ]
     },
     "_meta": {
-      "title": "VHS_VideoCombine"
+      "title": "VHS_VideoCombine",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-preserve-video-playback-rate",
+          "node": "502",
+          "input": "frame_rate",
+          "from": 8,
+          "to": 24
+        }
+      ]
     }
   }
 }

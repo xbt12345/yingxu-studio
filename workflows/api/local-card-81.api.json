@@ -145,6 +145,15 @@
       "title": "CR Text Replace"
     }
   },
+  "271": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": ""
+    },
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
   "270": {
     "class_type": "JoinStringMulti",
     "inputs": {
@@ -157,6 +166,10 @@
       "return_list": false,
       "string_2": [
         "288",
+        0
+      ],
+      "string_3": [
+        "271",
         0
       ]
     },

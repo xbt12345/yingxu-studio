@@ -26,8 +26,23 @@ export function modelLabel(w){
  const model=name.match(/Bernini|H3|qwen(?:image)?[\d.]*|klein[- ]?9b|nano[- ]?banana\d*|krea\d*|Z-Image[- ]?Turbo|flux[\w. -]*/i)?.[0];
  return model?model.replace(/^qwen/i,'Qwen').replace(/^klein/i,'Klein'):name.replace(/^\d{4}/,'');
 }
-export function originalReference(j,o){
- return (j.snapshot?.refs||[]).find(r=>r.kind===o.type&&r.src);
+const durableSource=src=>typeof src==='string'&&src&&!src.startsWith('blob:')?src:'';
+const currentAssetSource=(id,assets)=>{if(!id)return '';const asset=assets.find(a=>a.id===id);return asset?.src&&(asset.blob||durableSource(asset.src))?asset.src:'';};
+const currentSource=(src,assets)=>durableSource(src)||(assets.some(a=>a.blob&&a.src===src)?src:'');
+export function originalMediaReference(ref,assets=[]){
+ const src=currentAssetSource(ref.originalAssetId===ref.serverAssetId&&ref.annotationMode==='mask'?null:ref.originalAssetId,assets)||(ref.originalAvailable===false?'':(ref.originalServerAssetId&&(ref.annotationMode!=='mask'||ref.originalServerAssetId!==ref.serverAssetId)?'/api/assets/'+encodeURIComponent(ref.originalServerAssetId)+'/file':'')||currentSource(ref.originalSrc,assets));
+ if(src)return {...ref,src,available:true};
+ const edited=ref.originalAssetId||ref.originalServerAssetId||ref.originalSrc||ref.annotationMode||ref.referenceEdits?.regions?.length||ref.referenceEdits?.cutouts?.length||ref.referenceEdits?.autoCutout;
+ if(edited)return null; // A masked/edited input cannot stand in for a lost original.
+ const plain=currentAssetSource(ref.assetId,assets)||(ref.serverAssetId?'/api/assets/'+encodeURIComponent(ref.serverAssetId)+'/file':'')||currentSource(ref.src,assets);
+ return plain&&ref.available!==false?{...ref,src:plain}:null;
+}
+export function originalReferences(j,o,assets=[]){
+ return (j.snapshot?.refs||[]).filter(r=>r.kind===o.type).map(r=>originalMediaReference(r,assets)).filter(Boolean);
+}
+export function originalReference(j,o,assets=[]){
+ const ref=(j.snapshot?.refs||[]).find(r=>r.kind===o.type&&(r.src||r.assetId||r.serverAssetId||r.originalAssetId||r.originalServerAssetId||r.originalSrc));
+ return ref?originalMediaReference(ref,assets):null;
 }
 export function restoredInputs(snapshot,w){
  const d=JSON.parse(JSON.stringify(snapshot));
@@ -76,11 +91,11 @@ function diagram(key){
  if(key==='参考图与套图')return `${picture(35,55,89,79)}${picture(116,35,89,79)}${picture(197,55,89,79)}`;
  return `${picture(38,40,106,101)}${arrow}${picture(187,40,96,101)}<path d="m219 76 23 14-23 14z" fill="#eeddfc"/>${key==='首尾帧生视频'?'<text x="63" y="162" fill="#a58bb8" font-size="11">首帧</text><text x="215" y="162" fill="#a58bb8" font-size="11">尾帧</text>':''}`;
 }
-export function taskCover(w,rows=[],category=false){
+export function taskCover(w,rows=[],category=false,assets=[]){
  const candidates=rows.filter(({j,o})=>j.real&&j.status==='done'&&j.snapshot.workflowId===w.id);
  const last=candidates.at(-1),op=taskOperation(w);
  if(last&&(last.o.type!=='video'||last.o.poster)){
-  const {o,j}=last,ref=originalReference(j,o);
+  const {o,j}=last,ref=originalReference(j,o,assets);
   if(o.type==='image'&&ref?.src&&ref.available!==false)return `<div class="task-cover-pair"><img src="${esc(ref.src)}" alt="原图" loading="lazy"><img src="${esc(o.src)}" alt="历史生成结果" loading="lazy"><span class="task-cover-arrow">→</span></div><span class="task-cover-note">原图 → 历史结果</span>`;
   return `${o.type==='video'?`<img src="${esc(o.poster)}" alt="历史视频封面" loading="lazy">`:`<img src="${esc(o.src)}" alt="历史生成结果" loading="lazy">`}<span class="task-cover-note">历史结果</span>`;
  }

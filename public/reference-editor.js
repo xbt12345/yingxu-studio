@@ -3,6 +3,17 @@ import {I,esc} from './data.js?v=64.0';
 const canvasBlob=canvas=>new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('无法保存图片')),'image/png'));
 export const cloneEdits=edits=>JSON.parse(JSON.stringify(edits||{regions:[],cutouts:[]}));
 
+// Legacy annotation strokes use original-image pixels, never displayed canvas pixels.
+export function legacyStrokesToRegions(strokes,width,height){
+ if(!Number.isFinite(width)||!Number.isFinite(height)||width<=0||height<=0)throw new Error('无法读取原图尺寸，请重新导入原图。');
+ return (strokes||[]).map(stroke=>{
+  if(!Number.isFinite(stroke.size)||stroke.size<=0||!stroke.points?.length||stroke.points.some(p=>!Array.isArray(p)||p.length!==2||!p.every(Number.isFinite)))throw new Error('历史标注数据无法恢复，请重新导入原图后标注。');
+  return {kind:'brush',points:stroke.points.map(([x,y])=>[x/width,y/height]),size:stroke.size/Math.min(width,height),erase:!!stroke.erase};
+ });
+}
+export const regionEditorOptions=annotation=>annotation?.editor==='reference-region'?{allowedTools:['region'],initialTool:'region',requireRegion:annotation.required!==false,help:annotation.help||''}:null;
+export const referenceToolMarkup=(allowed=['region','cutout','strength'])=>[['region','region','选定编辑区域'],['cutout','cutout','抠图'],['strength','settings','参考强度']].filter(([tool])=>allowed.includes(tool)).map(([tool,icon,label])=>`<button type="button" data-ref-tool="${tool}" aria-pressed="false">${I(icon)}${label}</button>`).join('');
+
 // All geometry is normalized to the image, independent of its displayed size.
 export function selectionPath(ctx,shape,width,height){
  ctx.beginPath();
@@ -20,15 +31,16 @@ export function paintSelections(ctx,shapes,width,height){
  ctx.globalCompositeOperation='source-over';
 }
 
-export async function editReference({ref,originalSrc,cutoutSrc,onSave}){
+export async function editReference({ref,originalSrc,cutoutSrc,onSave,allowedTools=['region','cutout','strength'],initialTool=null,requireRegion=false,help=''}){
  const source=new Image();source.src=originalSrc||ref.src;await source.decode();
  const edits=cloneEdits(ref.referenceEdits),undo=[];
  edits.regions||=[];edits.cutouts||=[];
+ if(!ref.referenceEdits&&ref.annotationMode==='mask'&&ref.annotationStrokes?.length)edits.regions=legacyStrokesToRegions(ref.annotationStrokes,source.naturalWidth,source.naturalHeight);
  const imageSignature=value=>JSON.stringify({regions:value.regions,cutouts:value.cutouts,autoCutout:!!value.autoCutout});
  const initialEdits=imageSignature(edits),initialStrength=Math.max(0,Math.min(100,Number(ref.referenceStrength??75)||0));
  let strength=initialStrength,strengthGesture=false;
  const modal=document.createElement('dialog');modal.className='reference-editor-dialog';modal.setAttribute('aria-label','编辑参考图');
- modal.innerHTML=`<div class="dialog-head"><h2>编辑参考图</h2><button type="button" class="icon-button" data-ref-close aria-label="关闭参考图编辑">${I('close')}</button></div><div class="reference-editor-stage"><canvas aria-label="参考图编辑画布"></canvas><div class="reference-editor-tools"><button type="button" data-ref-tool="region" aria-pressed="false">${I('region')}选定编辑区域</button><button type="button" data-ref-tool="cutout" aria-pressed="false">${I('cutout')}抠图</button><button type="button" data-ref-tool="strength" aria-pressed="false">${I('settings')}参考强度</button></div></div><div class="reference-tool-options" hidden><div class="reference-selection-options"><div class="reference-shape-tools"><button type="button" data-ref-shape="rect" aria-pressed="true">框选</button><button type="button" data-ref-shape="polygon" aria-pressed="false">圈选</button><button type="button" data-ref-shape="brush" aria-pressed="false">画笔</button><button type="button" data-ref-erase aria-pressed="false">橡皮擦</button></div><div class="reference-selection-adjustments"><label class="reference-brush-control"><span>画笔大小</span><input type="range" data-ref-size min="1" max="15" value="4" aria-label="参考图画笔大小"><output data-ref-size-value>4%</output></label><button type="button" data-ref-clear>清除选区</button></div><p data-ref-help>拖动框选要修改的区域。</p><details class="reference-precise"><summary>精确选区</summary><div>${[['x','左',10],['y','上',10],['width','宽',80],['height','高',80]].map(([key,label,value])=>`<label>${label} (%)<input type="number" min="0" max="100" step="1" value="${value}" data-ref-bound="${key}" aria-label="选区${label}百分比"></label>`).join('')}<button type="button" data-ref-apply>应用框选</button></div></details></div><div class="reference-strength-options" hidden><label>参考强度 <output>${Number(ref.referenceStrength??75)}%</output><input type="range" min="0" max="100" value="${Number(ref.referenceStrength??75)}" aria-label="参考强度"></label><div><span>0 · 自由发挥</span><span>100 · 贴近参考</span></div><p>仅保存为参考偏好，当前尚未接入生成参数。</p></div></div><div class="reference-editor-footer"><span class="reference-edit-status" role="status">${esc(ref.id)} · 未修改</span><button type="button" class="small-button" data-ref-undo>撤销</button><button type="button" class="small-button" data-ref-reset>恢复原图</button><button type="button" class="button primary" data-ref-save>保存</button></div><p class="reference-edit-error" role="alert"></p>`;
+ modal.innerHTML=`<div class="dialog-head"><h2>编辑参考图</h2><button type="button" class="icon-button" data-ref-close aria-label="关闭参考图编辑">${I('close')}</button></div><div class="reference-editor-stage"><canvas aria-label="参考图编辑画布"></canvas><div class="reference-editor-tools">${referenceToolMarkup(allowedTools)}</div></div><div class="reference-tool-options" hidden><div class="reference-selection-options"><div class="reference-shape-tools"><button type="button" data-ref-shape="rect" aria-pressed="true">框选</button><button type="button" data-ref-shape="polygon" aria-pressed="false">圈选</button><button type="button" data-ref-shape="brush" aria-pressed="false">画笔</button><button type="button" data-ref-erase aria-pressed="false">橡皮擦</button></div><div class="reference-selection-adjustments"><label class="reference-brush-control"><span>画笔大小</span><input type="range" data-ref-size min="1" max="15" value="4" aria-label="参考图画笔大小"><output data-ref-size-value>4%</output></label><button type="button" data-ref-clear>清除选区</button></div><p data-ref-help>拖动框选要修改的区域。</p><details class="reference-precise"><summary>精确选区</summary><div>${[['x','左',10],['y','上',10],['width','宽',80],['height','高',80]].map(([key,label,value])=>`<label>${label} (%)<input type="number" min="0" max="100" step="1" value="${value}" data-ref-bound="${key}" aria-label="选区${label}百分比"></label>`).join('')}<button type="button" data-ref-apply>应用框选</button></div></details></div><div class="reference-strength-options" hidden><label>参考强度 <output>${Number(ref.referenceStrength??75)}%</output><input type="range" min="0" max="100" value="${Number(ref.referenceStrength??75)}" aria-label="参考强度"></label><div><span>0 · 自由发挥</span><span>100 · 贴近参考</span></div><p>仅保存为参考偏好，当前尚未接入生成参数。</p></div></div><div class="reference-editor-footer"><span class="reference-edit-status" role="status">${esc(ref.id)} · 未修改</span><button type="button" class="small-button" data-ref-undo>撤销</button><button type="button" class="small-button" data-ref-reset>恢复原图</button><button type="button" class="button primary" data-ref-save>保存</button></div><p class="reference-edit-error" role="alert"></p>`;
  document.body.append(modal);
  const q=s=>modal.querySelector(s),canvas=q('canvas'),ctx=canvas.getContext('2d');
  canvas.width=source.naturalWidth;canvas.height=source.naturalHeight;
@@ -82,7 +94,7 @@ export async function editReference({ref,originalSrc,cutoutSrc,onSave}){
   modal.querySelectorAll('input[type="range"]').forEach(syncRange);q('[data-ref-size-value]').textContent=q('[data-ref-size]').value+'%';
   syncTools();if(!busy)q('.reference-edit-status').textContent=ref.id+' · '+(isDirty()?'有修改，尚未保存':'未修改');
  }
- function setTool(value){q('.reference-edit-error').textContent='';tool=tool===value?null:value;current=null;q('.reference-tool-options').hidden=!tool;q('.reference-selection-options').hidden=tool==='strength';q('.reference-strength-options').hidden=tool!=='strength';q('[data-ref-auto-cutout]').hidden=tool!=='cutout';modal.querySelectorAll('[data-ref-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.refTool===tool)));q('[data-ref-help]').textContent=tool==='cutout'?'自动分离主体；画笔保留或补回主体，橡皮擦去除背景。':'选中区域用于局部修改；画笔大小按图片短边计算。';canvas.classList.toggle('editing',!!tool&&tool!=='strength');draw();}
+  function setTool(value){if(!allowedTools.includes(value))return;q('.reference-edit-error').textContent='';tool=tool===value?null:value;current=null;q('.reference-tool-options').hidden=!tool;q('.reference-selection-options').hidden=tool==='strength';q('.reference-strength-options').hidden=tool!=='strength';q('[data-ref-auto-cutout]').hidden=tool!=='cutout';modal.querySelectorAll('[data-ref-tool]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.refTool===tool)));q('[data-ref-help]').textContent=tool==='cutout'?'自动分离主体；画笔保留或补回主体，橡皮擦去除背景。':help||'选中区域用于局部修改；画笔大小按图片短边计算。';canvas.classList.toggle('editing',!!tool&&tool!=='strength');draw();}
  const point=e=>{const box=canvas.getBoundingClientRect();return[Math.max(0,Math.min(1,(e.clientX-box.left)/box.width)),Math.max(0,Math.min(1,(e.clientY-box.top)/box.height))];};
  canvas.onpointerdown=e=>{if(!tool||tool==='strength'||busy)return;e.preventDefault();canvas.setPointerCapture(e.pointerId);const p=point(e);current=shape==='rect'?{kind:'rect',x:p[0],y:p[1],width:0,height:0,start:p,erase}:{kind:shape,points:[p],size:Number(q('[data-ref-size]').value)/100,erase};draw();};
  canvas.onpointermove=e=>{if(!current)return;const p=point(e);if(current.kind==='rect'){const start=current.start;current.x=Math.min(p[0],start[0]);current.y=Math.min(p[1],start[1]);current.width=Math.abs(p[0]-start[0]);current.height=Math.abs(p[1]-start[1]);}else current.points.push(p);draw();};
@@ -113,7 +125,9 @@ export async function editReference({ref,originalSrc,cutoutSrc,onSave}){
  strengthInput.oninput=e=>{const value=Number(e.target.value);if(value!==strength){if(!strengthGesture)remember();strengthGesture=true;strength=value;syncEditorState();}};
  strengthInput.onchange=strengthInput.onblur=()=>{strengthGesture=false;};
  q('[data-ref-save]').onclick=async()=>{
-  if(busy)return;if(!isDirty()){modal.close();return;}setBusy(true,'正在保存…');q('.reference-edit-error').textContent='';
+   if(busy)return;
+   if(requireRegion){const result=document.createElement('canvas');result.width=canvas.width;result.height=canvas.height;const target=result.getContext('2d');drawForeground(target);if(edits.regions.length){target.globalCompositeOperation='destination-out';target.drawImage(maskFor(edits.regions),0,0);}const data=target.getImageData(0,0,result.width,result.height).data;let marked=false;for(let i=3;i<data.length;i+=4)if(data[i]<255){marked=true;break;}if(!marked){q('.reference-edit-error').textContent='请先框选、圈选或用画笔标出要编辑的区域。';return;}}
+   if(!isDirty()){modal.close();return;}setBusy(true,'正在保存…');q('.reference-edit-error').textContent='';
   try{
    if(imageSignature(edits)===initialEdits){await onSave({settingsOnly:true,edits:cloneEdits(edits),strength});modal.close();return;}
    const result=document.createElement('canvas');result.width=canvas.width;result.height=canvas.height;const resultCtx=result.getContext('2d');drawForeground(resultCtx);
@@ -122,7 +136,7 @@ export async function editReference({ref,originalSrc,cutoutSrc,onSave}){
    await onSave({image:await canvasBlob(result),mask:regionMask,cutout,edits:cloneEdits(edits),strength,changed:!!(edits.autoCutout||edits.regions.length||edits.cutouts.length)});modal.close();
   }catch(e){q('.reference-edit-error').textContent=e.message||'保存失败，请重试。';}finally{setBusy(false);}
  };
- modal.addEventListener('cancel',e=>{if(busy)e.preventDefault();});modal.addEventListener('close',()=>{localURLs.forEach(URL.revokeObjectURL);modal.remove();},{once:true});draw();modal.showModal();
+  modal.addEventListener('cancel',e=>{if(busy)e.preventDefault();});modal.addEventListener('close',()=>{localURLs.forEach(URL.revokeObjectURL);modal.remove();},{once:true});draw();if(initialTool)setTool(initialTool);modal.showModal();
 }
 
 export function referenceShelfMarkup(refs,{pinned=false}={}){

@@ -1,6 +1,9 @@
 *
 !requirements.txt
 !*.py
+!scripts/
+!scripts/reviewed_native_seed_limits.py
+!scripts/review75_generation_sizes.py
 !public/
 !public/**
 !workflows/

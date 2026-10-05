@@ -4,6 +4,11 @@ import {dragCamera,nudgeZoom} from './camera-motion.js?v=60.1';
 
 // Limits from the exact Qwen revision recorded in graph-072, not current upstream.
 export const legacyCameraRanges={horizontal_angle:{min:0,max:360,step:1},vertical_angle:{min:-30,max:90,step:1},zoom:{min:0,max:10,step:0.1}};
+export function cameraInputRanges(inputs){return ['horizontal_angle','vertical_angle','zoom'].map((key,index)=>{
+ const input=inputs[index],fallback=legacyCameraRanges[key],read=(name)=>input?.[name]!==''&&input?.[name]!=null&&Number.isFinite(Number(input[name]))?Number(input[name]):fallback[name];
+ return {min:read('min'),max:read('max'),step:read('step')};
+});}
+export function boundCameraInputs(inputs,next){const ranges=cameraInputRanges(inputs);return Object.fromEntries(['h','v','z'].map((key,index)=>{const r=ranges[index],clamped=Math.max(r.min,Math.min(r.max,next[key]));return [key,r.step>0?Number((Math.max(r.min,Math.min(r.max,Math.round(clamped/r.step)*r.step))).toFixed(6)):clamped];}));}
 const describe=(h,v,z)=>cameraDescription(h,0,5).split(' · ')[0]+' · '+(v < -15?'仰视':v < 15?'平视':v < 45?'俯视':v < 75?'鸟瞰':'正俯视')+' · '+(z < 2?'远景':z < 4?'中远景':z < 6?'中景':z < 8?'近景':'特写');
 export function cameraGroups(fields){const groups=new Map();for(const f of fields.filter(f=>f.kind==='camera')){const key=String(f.nodeId??f.id.split(':')[0]);if(!groups.has(key))groups.set(key,[]);groups.get(key).push(f);}const ordered=["108","109","110","111","112","119","121","122","120"];return groups.size===9&&ordered.every(id=>groups.has(id))?ordered.map(id=>[id,groups.get(id)]):[...groups.entries()];}
 const values=(fields,d)=>Object.fromEntries(fields.map(f=>[f.key,Number(d.catalogValues?.[f.id]??f.value)]));
@@ -38,10 +43,10 @@ export function installMultiCamera(){
  let dragging=null,suppressClick=false;
  const coordinates=(svg,e)=>{const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;return p.matrixTransform(svg.getScreenCTM().inverse());};
  const context=point=>{const root=point.closest('[data-control-module="multi-camera"]'),row=root.querySelector(`[data-camera-row="${point.dataset.cameraNode}"]`),inputs=JSON.parse(row.dataset.cameraFields).map(id=>[...row.querySelectorAll('[data-catalog-field]')].find(el=>el.dataset.catalogField===id));return {root,inputs};};
- const write=(inputs,next,commit=false)=>inputs.forEach((input,index)=>{input.value=[next.h,next.v,next.z][index];input.dispatchEvent(new Event(commit?'change':'input',{bubbles:true}));});
+ const write=(inputs,next,commit=false)=>{const bounded=boundCameraInputs(inputs,next);inputs.forEach((input,index)=>{input.value=[bounded.h,bounded.v,bounded.z][index];input.dispatchEvent(new Event(commit?'change':'input',{bubbles:true}));});};
  const read=inputs=>({h:Number(inputs[0].value),v:Number(inputs[1].value),z:Number(inputs[2].value)});
  document.addEventListener('pointerdown',e=>{const point=e.target.closest('[data-camera-node]');if(!point)return;const {root,inputs}=context(point);highlight(root,point.dataset.cameraNode);dragging={point,root,inputs,start:coordinates(point.closest('svg'),e),initial:read(inputs),pointerId:e.pointerId};suppressClick=false;point.setPointerCapture(e.pointerId);point.classList.add('is-dragging');e.preventDefault();});
- document.addEventListener('pointermove',e=>{if(!dragging||e.pointerId!==dragging.pointerId)return;const p=coordinates(dragging.point.closest('svg'),e),dx=p.x-dragging.start.x,dy=p.y-dragging.start.y;if(Math.hypot(dx,dy)<2&&!suppressClick)return;suppressClick=true;write(dragging.inputs,dragCamera(dragging.initial,dx,dy,{sx:65,sy:32,vertical:53,maxElevation:90}));});
+ document.addEventListener('pointermove',e=>{if(!dragging||e.pointerId!==dragging.pointerId)return;const p=coordinates(dragging.point.closest('svg'),e),dx=p.x-dragging.start.x,dy=p.y-dragging.start.y;if(Math.hypot(dx,dy)<2&&!suppressClick)return;suppressClick=true;write(dragging.inputs,dragCamera(dragging.initial,dx,dy,{sx:65,sy:32,vertical:53,maxElevation:cameraInputRanges(dragging.inputs)[1].max}));});
  const finish=e=>{if(!dragging||e.pointerId!==dragging.pointerId)return;dragging.point.classList.remove('is-dragging');write(dragging.inputs,read(dragging.inputs),true);dragging=null;};
  document.addEventListener('pointerup',finish);document.addEventListener('pointercancel',finish);
  document.addEventListener('click',e=>{const point=e.target.closest('[data-camera-node]');if(!point)return;e.preventDefault();if(suppressClick){suppressClick=false;return;}const {root,inputs}=context(point);highlight(root,point.dataset.cameraNode);inputs[0].focus();});

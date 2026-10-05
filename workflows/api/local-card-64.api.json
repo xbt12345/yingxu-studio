@@ -244,12 +244,12 @@
     "class_type": "CreateVideo",
     "inputs": {
       "images": [
-        "122",
+        "yingxu_review74_requested_duration_images",
         0
       ],
       "fps": 24,
       "audio": [
-        "121",
+        "yingxu_review74_requested_duration_audio",
         0
       ],
       "bit_depth": 8,
@@ -257,7 +257,21 @@
       "codec": "none"
     },
     "_meta": {
-      "title": "CreateVideo"
+      "title": "CreateVideo",
+      "yingxu_requested_duration": {
+        "id": "review74-h3-save-requested-duration",
+        "source_hash": "2aee949e9b20edabc0971eb08d106eb27cee0e11a45d7383afb1e00333530bdc",
+        "fps": 24,
+        "minimum_frames": 5,
+        "seconds_source": "133",
+        "create_video": "130",
+        "output": "92",
+        "latent_grid_unchanged": true,
+        "seconds_binding": [
+          "133",
+          0
+        ]
+      }
     }
   },
   "92": {
@@ -274,6 +288,66 @@
     },
     "_meta": {
       "title": "SaveVideo"
+    }
+  },
+  "yingxu_review74_requested_duration_frames": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "max(5, round(a * 24))",
+      "values.a": [
+        "133",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "保留用户选择的视频时长"
+    }
+  },
+  "yingxu_review74_requested_duration_seconds": {
+    "class_type": "ComfyMathExpression",
+    "inputs": {
+      "expression": "a / 24",
+      "values.a": [
+        "yingxu_review74_requested_duration_frames",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "保留用户选择的视频时长"
+    }
+  },
+  "yingxu_review74_requested_duration_images": {
+    "class_type": "ImageFromBatch",
+    "inputs": {
+      "image": [
+        "122",
+        0
+      ],
+      "batch_index": 0,
+      "length": [
+        "yingxu_review74_requested_duration_frames",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "保留用户选择的视频时长"
+    }
+  },
+  "yingxu_review74_requested_duration_audio": {
+    "class_type": "TrimAudioDuration",
+    "inputs": {
+      "audio": [
+        "121",
+        0
+      ],
+      "start_index": 0,
+      "duration": [
+        "yingxu_review74_requested_duration_seconds",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "保留用户选择的视频时长"
     }
   }
 }

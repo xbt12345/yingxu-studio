@@ -1,93 +1,4 @@
 {
-  "296": {
-    "class_type": "Any Switch (rgthree)",
-    "inputs": {},
-    "_meta": {
-      "title": "Any Switch (rgthree)"
-    }
-  },
-  "353": {
-    "class_type": "Any Switch (rgthree)",
-    "inputs": {},
-    "_meta": {
-      "title": "Any Switch (rgthree)"
-    }
-  },
-  "100": {
-    "class_type": "GrowMask",
-    "inputs": {
-      "mask": [
-        "353",
-        0
-      ],
-      "expand": 10,
-      "tapered_corners": true
-    },
-    "_meta": {
-      "title": "GrowMask"
-    }
-  },
-  "108": {
-    "class_type": "BlockifyMask",
-    "inputs": {
-      "masks": [
-        "100",
-        0
-      ],
-      "block_size": 32,
-      "device": "cpu"
-    },
-    "_meta": {
-      "title": "BlockifyMask"
-    }
-  },
-  "99": {
-    "class_type": "DrawMaskOnImage",
-    "inputs": {
-      "image": [
-        "296",
-        0
-      ],
-      "mask": [
-        "108",
-        0
-      ],
-      "color": "0, 0, 0",
-      "device": "cpu"
-    },
-    "_meta": {
-      "title": "DrawMaskOnImage"
-    }
-  },
-  "75": {
-    "class_type": "VHS_VideoCombine",
-    "inputs": {
-      "images": [
-        "99",
-        0
-      ],
-      "frame_rate": 24,
-      "loop_count": 0,
-      "filename_prefix": "yingxu/result",
-      "format": "video/h264-mp4",
-      "pingpong": false,
-      "save_output": false
-    },
-    "_meta": {
-      "title": "VHS_VideoCombine"
-    }
-  },
-  "308": {
-    "class_type": "OnnxDetectionModelLoader",
-    "inputs": {
-      "vitpose_model": "vitpose-l-wholebody.onnx",
-      "yolo_model": "yolov10m.onnx",
-      "onnx_device": "CUDAExecutionProvider"
-    },
-    "_meta": {
-      "title": "OnnxDetectionModelLoader"
-    }
-  },
   "257": {
     "class_type": "ImpactInt",
     "inputs": {
@@ -188,6 +99,207 @@
     },
     "_meta": {
       "title": "LayerUtility: ImageScaleByAspectRatio V2"
+    }
+  },
+  "296": {
+    "class_type": "Any Switch (rgthree)",
+    "inputs": {
+      "any_02": [
+        "228",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "352": {
+    "class_type": "SeCModelLoader",
+    "inputs": {
+      "model_file": "SeC-4B (sharded)",
+      "device": "auto",
+      "use_flash_attn": true,
+      "allow_mask_overlap": true
+    },
+    "_meta": {
+      "title": "SeCModelLoader"
+    }
+  },
+  "344": {
+    "class_type": "PrimitiveInt",
+    "inputs": {
+      "value": 0
+    },
+    "_meta": {
+      "title": "Annotation Frame"
+    }
+  },
+  "345": {
+    "class_type": "ImageFromBatch",
+    "inputs": {
+      "image": [
+        "228",
+        0
+      ],
+      "batch_index": [
+        "344",
+        0
+      ],
+      "length": 1
+    },
+    "_meta": {
+      "title": "ImageFromBatch"
+    }
+  },
+  "359": {
+    "class_type": "LayerMask: HumanPartsUltra",
+    "inputs": {
+      "image": [
+        "345",
+        0
+      ],
+      "face": true,
+      "hair": true,
+      "glasses": false,
+      "top_clothes": false,
+      "bottom_clothes": false,
+      "torso_skin": false,
+      "left_arm": false,
+      "right_arm": false,
+      "left_leg": false,
+      "right_leg": false,
+      "left_foot": false,
+      "right_foot": false,
+      "detail_method": "VITMatte",
+      "detail_erode": 8,
+      "detail_dilate": 6,
+      "black_point": 0.01,
+      "white_point": 0.99,
+      "process_detail": true,
+      "device": "cuda",
+      "max_megapixels": 2
+    },
+    "_meta": {
+      "title": "LayerMask: HumanPartsUltra"
+    }
+  },
+  "360": {
+    "class_type": "SeCVideoSegmentation",
+    "inputs": {
+      "model": [
+        "352",
+        0
+      ],
+      "frames": [
+        "228",
+        0
+      ],
+      "positive_points": "bidirectional",
+      "negative_points": "bidirectional",
+      "input_mask": [
+        "359",
+        1
+      ],
+      "tracking_direction": 1,
+      "annotation_frame_idx": [
+        "344",
+        0
+      ],
+      "object_id": 12,
+      "max_frames_to_track": 20,
+      "mllm_memory_size": true,
+      "offload_video_to_cpu": false,
+      "auto_unload_model": true
+    },
+    "_meta": {
+      "title": "SeCVideoSegmentation"
+    }
+  },
+  "353": {
+    "class_type": "Any Switch (rgthree)",
+    "inputs": {
+      "any_03": [
+        "360",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "100": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": [
+        "353",
+        0
+      ],
+      "expand": 10,
+      "tapered_corners": true
+    },
+    "_meta": {
+      "title": "GrowMask"
+    }
+  },
+  "108": {
+    "class_type": "BlockifyMask",
+    "inputs": {
+      "masks": [
+        "100",
+        0
+      ],
+      "block_size": 32,
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "BlockifyMask"
+    }
+  },
+  "99": {
+    "class_type": "DrawMaskOnImage",
+    "inputs": {
+      "image": [
+        "296",
+        0
+      ],
+      "mask": [
+        "108",
+        0
+      ],
+      "color": "0, 0, 0",
+      "device": "cpu"
+    },
+    "_meta": {
+      "title": "DrawMaskOnImage"
+    }
+  },
+  "75": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "99",
+        0
+      ],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": false
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
+    }
+  },
+  "308": {
+    "class_type": "OnnxDetectionModelLoader",
+    "inputs": {
+      "vitpose_model": "vitpose-l-wholebody.onnx",
+      "yolo_model": "yolov10m.onnx",
+      "onnx_device": "CUDAExecutionProvider"
+    },
+    "_meta": {
+      "title": "OnnxDetectionModelLoader"
     }
   },
   "309": {
@@ -463,7 +575,12 @@
   },
   "244": {
     "class_type": "Any Switch (rgthree)",
-    "inputs": {},
+    "inputs": {
+      "any_02": [
+        "310",
+        1
+      ]
+    },
     "_meta": {
       "title": "Any Switch (rgthree)"
     }
@@ -682,6 +799,14 @@
       "image_2": [
         "310",
         1
+      ],
+      "image_3": [
+        "313",
+        0
+      ],
+      "image_4": [
+        "228",
+        0
       ]
     },
     "_meta": {

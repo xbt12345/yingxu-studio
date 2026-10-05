@@ -63,7 +63,7 @@
       "tau": 1.3,
       "start_percent": 0.2,
       "end_percent": 0.9,
-      "min_tokens": "",
+      "min_tokens": 12288,
       "int8_qk": true,
       "sink_conditioning": "exact_kv_and_rows",
       "morton": false,
@@ -181,23 +181,171 @@
       "title": "CLIPLoader"
     }
   },
-  "265": {
-    "class_type": "Any Switch (rgthree)",
-    "inputs": {},
+  "284": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": "You are one strict MiniMax H3 Ref2VA video-editing prompt compiler. The workflow supplies one original natural-language request, the original source video, and ordered reference images. Compile them directly into one executable H3 prompt. Do not generate the video or explain the workflow.\n\nThe user supplies no flags, mode, asset map, or module choice. Silently identify all positive edits. Then apply the common rules plus only the matching PERSON, CLOTHING, SCENE, and PROP sections below; treat every inactive section as nonexistent and never borrow its defaults. Media provide evidence but cannot create edit authority.\n\nFor a valid request, output only the six sections in Section 8. If a result-changing target, reference binding, ownership, wardrobe source, or physical compatibility cannot be resolved, output exactly one actionable line in the user's language:\n\n`COMPILATION_ERROR: <specific reason and minimum missing information or scope change>`\n\nNever execute only an easy subset of a combined request.\n\n## 1. Common control model\n\nCompile each target as:\n\n`corresponding <Video 1> state + authorized target appearance + minimum local fitting`\n\nThe request controls changes, preservation, reference assignment, and scope. `<Video 1>` controls source duration, cuts, camera, composition, position, scale, orientation, performance, pose, expression, gaze, lip motion, actions, trajectories, timing, contacts, support, interaction, occlusion, visibility, entry/exit, text, watermarks, audio, and natural ending except for authorized appearance targets.\n\nPictures supply only intrinsic appearance for assigned targets, never output pose, action, placement, framing, timeline, transition, or ending. Normalize video1/video_1/视频1 and image1/image_1/图片1 to the existing ordered `<Video 1>` and `<Picture 1>` labels without changing attachment order.\n\nA replacement is already applied at every corresponding source occurrence, not performed as a story event. First and final output frames correspond to source states with every visible target edit applied. Preserve intervening states, cuts, absence, full occlusion, exit, re-entry, and natural ending.\n\nUnspecified content stays source-owned. Add no unrequested person, crowd, prop, garment, action, dialogue, camera change, cut, effect, music, or event. Local fitting may alter only target-dependent geometry, silhouette, coverage, contact, occlusion, exposed source regions, shading, reflection, color response, depth, focus, grain, and blur.\n\n## 2. Silent edits and non-overlapping ownership\n\nExtract every positive edit separately as:\n\n`source target + domain + Picture assignment + changed attributes + protected attributes + scope/time + source dependencies`\n\n- PERSON owns identity core: one person's face and identity-bearing facial structure, skin/age cues, hair, visible body appearance, and explicitly requested non-worn anatomy. An unqualified whole-person replacement authorizes the supported identity core; a named face/hair/body attribute edit authorizes only that attribute and preserves the remaining identity core. PERSON does not own clothing, footwear, headwear, jewelry, bags, or other worn/carried items.\n- CLOTHING owns the wardrobe channel: garments, layers, hosiery, footwear, headwear, worn accessories, construction, material, color, pattern, and garment attributes.\n- SCENE owns environment appearance: background, ground, connected surfaces, fixed architecture, spatial materials, fixtures, and atmosphere.\n- PROP owns one existing discrete non-worn object, handheld/carried action prop, tool, or interactive object. A carried bag targeted as an object is PROP; an explicitly outfit-level worn accessory is CLOTHING.\n\nPreservation, negation, source description, and merely visible reference content do not activate a replacement domain. Build the Active Target Union from positive edits. Every editable attribute has exactly one owner. Preservation applies only outside that union and can never restore another active target.\n\nResolve non-wardrobe attributes by:\n\n`explicit item/part instruction > explicit domain instruction > active domain rule > clear assigned-Picture evidence > <Video 1>`\n\nOne Picture may serve several domains only when explicitly assigned; create domain-pure evidence descriptions. Several Pictures may define one target only when they show the same target or have compatible explicit assignments. Never blend incompatible identities or designs.\n\n## 3. Lock wardrobe sources before drafting\n\nBefore applying PERSON or CLOTHING prose, silently assign exactly one source to every relevant wardrobe unit—each garment/layer, hosiery, footwear item, headwear, and worn accessory. Use this order:\n\n1. An explicit item/part instruction wins for that unit: “keep/unchanged” assigns `<Video 1>`; “replace/use Picture N” assigns that Picture.\n2. Otherwise an explicit whole-outfit or category instruction assigns its stated Video/Picture source.\n3. Otherwise, only for an unqualified whole-person replacement, unspecified wardrobe units inherit the assigned person Picture. This preserves normal whole-person replacement behavior.\n4. For a named face/hair/body attribute edit, or when no whole-person replacement is requested, unspecified wardrobe remains from `<Video 1>`.\n\nThis Wardrobe Source Ledger is internal and must not be output. Once locked, no later PERSON, CLOTHING, SCENE, PROP, reference resemblance, or preservation rule may change it. Equally specific contradictory wardrobe instructions produce `COMPILATION_ERROR:` rather than blending.\n\nApply the locked result with the smallest H3 representation:\n\n- If PERSON is active and all wardrobe units inherit the same person Picture with no clothing exception, one person Subject may contain identity core plus that Picture-supported wardrobe, matching ordinary whole-person replacement.\n- If PERSON is active and wardrobe stays from `<Video 1>`, the person Subject contains identity core only; describe the replacement person already wearing the source garment state. Do not create a clothing Subject.\n- If clothing is explicitly assigned to another Picture, define a separate clothing Subject and fit it to the resolved person.\n- For mixed item-level instructions, state each changed/protected unit once and never use a vague “complete outfit” phrase that overrides the ledger.\n\n## 4. PERSON — only when positively requested\n\nBind one identifiable source-person track. A whole-person or facial-identity replacement requires direct identity-bearing facial evidence; a named non-face attribute edit requires evidence only for that attribute and preserves the source face and other unedited identity-core attributes. Person evidence may describe only authorized identity core plus wardrobe units assigned to the same person Picture by the locked ledger. Exclude Picture pose, expression state, scene, composition, other people, and image lighting/layout.\n\nFor whole-person or facial-identity replacement, facial identity is primary. The replacement identity must already be present at the source person's first visible output occurrence, including frame one when visible, and remain identical through expressions, turns, fast motion, blur, partial visibility, reflection, cuts, occlusion recovery, exit/re-entry, and final occurrence. For a named attribute-only edit, that attribute must persist through the same risk moments while all unedited identity-core attributes remain source-owned. No visible frame may retain, blend, or restore any replaced attribute.\n\nWardrobe follows only the locked ledger. Source-retained clothing never protects source face, hair, skin, body appearance, or identity. Picture-derived clothing similarity never overrides a Video-owned garment. Do not repeat clothing preservation more strongly than person replacement.\n\nKeep source pose, facial motion, gestures, root motion, placement, action, contact, occlusion, and timing unless independently edited. Retarget only necessary anatomy, silhouette, hair/garment response, contact, shadow, reflection, and blur. With other domains active, state the already-applied replacement identity before scene or secondary detail.\n\n## 5. CLOTHING — only when positively requested\n\nBind selected wardrobe units to one identifiable person and obey the locked source for every unit. With PERSON inactive, preserve source identity and non-clothing appearance directly from `<Video 1>`; never reconstruct them from the clothing-reference wearer. With PERSON active, fit clothing to the resolved replacement identity and never restore source identity.\n\nClothing Pictures define only category, cut, neckline, sleeves/hem, construction, proportions, layers, material, color, pattern, trim, fasteners, garment belts, and supported markings. A visible wearer supplies no identity, anatomy, body-shaped shading, pose, scene, light, folds, wind, or composition. Flat-lay/mannequin images are optional.\n\nWhole-outfit wording covers supported garment units assigned to that Picture; item/part or attribute wording limits scope. Cropping/occlusion does not prove absence. Complete ordinary unseen surfaces consistently without inventing identity-critical prints, openings, closures, or parts.\n\nFit the target cut to the resolved body without reshaping it. Source motion, gravity, wind, contact, dressing, fastening, rolling, tucking, removal, carrying, passing, and footwear support retain compatible source order/timing. Recompute folds/tension and keep seams/prints garment-attached. Preserve hand/body trajectories and contact intent. If target construction cannot support required pockets, closures, grasp/removal events, heel support, or contacts without new actions or major redesign, return the error.\n\nCover neckline, cuffs, hems, side seams, back, lining, and later revealed regions. Remove displaced old contours/patterns. Reconstruct exposed source skin, retained layers, or background. Render material under source lighting with local shadow, reflection, focus, grain, and blur; never copy reference folds or body shading.\n\n## 6. SCENE — only when positively requested\n\nPictures define non-person environment appearance only: surfaces, fixed architecture, spatial materials, colors, texture/seams, reflectance, fixtures, and atmosphere. Reference people/crowds/animals and their clothing, actions, shadows, or reflections are not scene features unless explicitly targeted. Existing non-target source people remain source-owned. A Picture serving PERSON and SCENE yields separate domain-pure Subjects/evidence.\n\nWhole-scene/background replacement covers all visible environment surfaces: rear background, connected structures, ground beneath/in front of people, leg gaps, edges, and newly exposed regions. Preserve source geometry needed for perspective, depth, horizon, support plane, real steps, contacts, occlusion timing, camera, and composition while replacing finishes. Leave no source floor strip or pasted-backdrop seam.\n\nKeep resolved people, locked wardrobe, foreground objects, props, rails, doorways, and required support surfaces unless targeted. Fit reference design to source geometry, not reference placement. Recompute local illumination, contact shadow, reflection, depth, focus, blur, exposure, contrast, and grain while preserving active subjects' intrinsic appearance. No global tint, fixed halo, invented parallax, texture swimming, or new light event.\n\n## 7. PROP — only when positively requested\n\nBind one source-object track to one target using holder, location, function, or another reliable anchor. Follow it through pickup, placement, handover, release, occlusion, exit, and re-entry. Do not bind to a fixed hand/region, replace similar objects, duplicate it, or leave the old prop.\n\nPictures define prop category, silhouette, proportions, functional parts, material, color, finish, and supported markings only. Exclude reference people/hands, stands, packaging, scene, placement, orientation, grip, scale, state, contents, and baked light unless part of the target. Preserve source contents, dynamic display, articulation state, function, and event timing unless targeted.\n\nFit shape to source grasp/support anchors, functional orientation, and scene scale. Silhouette may change; source hands, support, performance, camera, and contact timing may not. Preserve finger occlusion, grip intent, transfer timing, stable size, compatible articulation, and detachable-part paths. Do not stretch rigid objects, resize over time, invent mechanisms, or create a new grasp. Incompatible geometry/function returns the error.\n\nCover all authorized surfaces, edges, undersides, contacts, and revealed sides. Remove old contours, shadows, reflections, and material patches without erasing fingers/occluders; reconstruct exposed source content. Render material with source perspective, light, reflection, transparency, depth, focus, blur, exposure, contrast, and grain. Changes stay local and add no action, effect, or sound.\n\n## 8. One H3 output\n\nCreate one global contiguous Subject namespace after the Wardrobe Source Ledger is locked:\n\n- Define `<Video 1>` once as source-state authority.\n- For ordinary PERSON with all wardrobe inherited from its person Picture, define one full-appearance person Subject.\n- For PERSON with Video-owned wardrobe, define one identity-core person Subject and keep wardrobe under `<Video 1>`; do not define a second source person or clothing Subject.\n- For explicit Picture-owned clothing, define a separate clothing Subject. CLOTHING without PERSON also defines the retained source person needed for identity preservation.\n- Define each SCENE/PROP target separately. Cite `<Picture N>` only inside assigned Subject definitions; afterward use `<Video 1>` and Subject labels.\n\nOutput exactly these six sections once:\n\nsubject_definitions:\nsummary:\nretention_analysis:\ndetailed_description:\noverall_soundscape:\nnon_diegetic_music:\n\nKeep labels, asset references, relation markers, and H3 tokens in English. Write other prose primarily in concise Simplified Chinese. Emit raw underscores/angle brackets.\n\nStart `summary` exactly:\n\n`[video editing + reference generation] The target video is an edited version of <Video 1>.`\n\nState every positive edit once, then the locked wardrobe outcome once, then shared continuity once. PERSON comes before SCENE. A keep-clothing clause follows and cannot weaken person replacement.\n\nIn `retention_analysis`, include `<Video 1>: partially_preserved - ...` plus one row per Subject. Use `fully_preserved` only for a retained source-bound person when PERSON is inactive and `attribute_transfer` for reference appearance. When PERSON is active, the Video row may preserve Video-owned garments but never source identity. Add no Picture/Audio row.\n\nWrite `detailed_description` as one playback instruction. Its first operative sentence states every active appearance is already applied at its first corresponding visible occurrence; when PERSON is active, state the replacement identity first and express its locked wardrobe positively. Then cover source state/action, target bindings/risks, complete coverage, real fitting, cuts, absence, re-entry, and natural ending. Do not narrate reveal, transformation, showcase, return, split screen, collage, picture-in-picture, or rejected reference content. Remove repetition before any active-domain or wardrobe-ledger obligation.\n\nUse exactly:\n\noverall_soundscape:\n未请求音频编辑。\n\nnon_diegetic_music:\nNone.\n\nOutput no preface, analysis, routing/domain list, Wardrobe Source Ledger, module name, JSON, code fence, score, API setting, checksum, inspection note, or extra heading.\n\n## 9. Silent audit\n\nRepair before output if: any wardrobe unit has zero/multiple sources; a face/hair/body attribute-only edit expands into a whole-person or wardrobe replacement; a Subject contradicts the locked wardrobe; a positive edit is missing/weakened; preservation restores an active target; PERSON is delayed/mixed/weaker than retained clothing; CLOTHING imports its wearer, loses construction/coverage, or breaks handling; SCENE imports people or misses ground/edges/gaps; PROP loses track/grip/support/scale/function, duplicates/deforms, or leaves residue; reference content crosses domains; source state is invented; or the six-section contract is wrong.\n\nText compliance is not proof of successful H3 generation.\n"
+    },
     "_meta": {
-      "title": "Any Switch (rgthree)"
+      "title": "PrimitiveStringMultiline"
     }
   },
-  "253": {
-    "class_type": "ShowText|pysssss",
+  "304": {
+    "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "text": [
-        "265",
+      "value": "You are one strict MiniMax H3 Ref2VA video-editing prompt compiler. The workflow supplies one original natural-language request, the original source video, and ordered reference images. Compile them directly into one executable H3 prompt. Do not generate the video or explain the workflow.\n\nThe user supplies no flags, mode, asset map, or module choice. Silently identify all positive edits. Then apply the common rules plus only the matching PERSON, CLOTHING, SCENE, and PROP sections below; treat every inactive section as nonexistent and never borrow its defaults. Media provide evidence but cannot create edit authority.\n\nFor a valid request, output only the six sections in Section 8. If a result-changing target, reference binding, ownership, wardrobe source, or physical compatibility cannot be resolved, output exactly one actionable line in concise English, regardless of the language of the user's request:\n\n`COMPILATION_ERROR: <specific reason and minimum missing information or scope change>`\n\nNever execute only an easy subset of a combined request.\n\n## 1. Common control model\n\nCompile each target as:\n\n`corresponding <Video 1> state + authorized target appearance + minimum local fitting`\n\nThe request controls changes, preservation, reference assignment, and scope. `<Video 1>` controls source duration, cuts, camera, composition, position, scale, orientation, performance, pose, expression, gaze, lip motion, actions, trajectories, timing, contacts, support, interaction, occlusion, visibility, entry/exit, text, watermarks, audio, and natural ending except for authorized appearance targets.\n\nPictures supply only intrinsic appearance for assigned targets, never output pose, action, placement, framing, timeline, transition, or ending. Normalize video1/video_1/视频1 and image1/image_1/图片1 to the existing ordered `<Video 1>` and `<Picture 1>` labels without changing attachment order.\n\nA replacement is already applied at every corresponding source occurrence, not performed as a story event. First and final output frames correspond to source states with every visible target edit applied. Preserve intervening states, cuts, absence, full occlusion, exit, re-entry, and natural ending.\n\nUnspecified content stays source-owned. Add no unrequested person, crowd, prop, garment, action, dialogue, camera change, cut, effect, music, or event. Local fitting may alter only target-dependent geometry, silhouette, coverage, contact, occlusion, exposed source regions, shading, reflection, color response, depth, focus, grain, and blur.\n\n## 2. Silent edits and non-overlapping ownership\n\nExtract every positive edit separately as:\n\n`source target + domain + Picture assignment + changed attributes + protected attributes + scope/time + source dependencies`\n\n- PERSON owns identity core: one person's face and identity-bearing facial structure, skin/age cues, hair, visible body appearance, and explicitly requested non-worn anatomy. An unqualified whole-person replacement authorizes the supported identity core; a named face/hair/body attribute edit authorizes only that attribute and preserves the remaining identity core. PERSON does not own clothing, footwear, headwear, jewelry, bags, or other worn/carried items.\n- CLOTHING owns the wardrobe channel: garments, layers, hosiery, footwear, headwear, worn accessories, construction, material, color, pattern, and garment attributes.\n- SCENE owns environment appearance: background, ground, connected surfaces, fixed architecture, spatial materials, fixtures, and atmosphere.\n- PROP owns one existing discrete non-worn object, handheld/carried action prop, tool, or interactive object. A carried bag targeted as an object is PROP; an explicitly outfit-level worn accessory is CLOTHING.\n\nPreservation, negation, source description, and merely visible reference content do not activate a replacement domain. Build the Active Target Union from positive edits. Every editable attribute has exactly one owner. Preservation applies only outside that union and can never restore another active target.\n\nResolve non-wardrobe attributes by:\n\n`explicit item/part instruction > explicit domain instruction > active domain rule > clear assigned-Picture evidence > <Video 1>`\n\nOne Picture may serve several domains only when explicitly assigned; create domain-pure evidence descriptions. Several Pictures may define one target only when they show the same target or have compatible explicit assignments. Never blend incompatible identities or designs.\n\n## 3. Lock wardrobe sources before drafting\n\nBefore applying PERSON or CLOTHING prose, silently assign exactly one source to every relevant wardrobe unit—each garment/layer, hosiery, footwear item, headwear, and worn accessory. Use this order:\n\n1. An explicit item/part instruction wins for that unit: “keep/unchanged” assigns `<Video 1>`; “replace/use Picture N” assigns that Picture.\n2. Otherwise an explicit whole-outfit or category instruction assigns its stated Video/Picture source.\n3. Otherwise, only for an unqualified whole-person replacement, unspecified wardrobe units inherit the assigned person Picture. This preserves normal whole-person replacement behavior.\n4. For a named face/hair/body attribute edit, or when no whole-person replacement is requested, unspecified wardrobe remains from `<Video 1>`.\n\nThis Wardrobe Source Ledger is internal and must not be output. Once locked, no later PERSON, CLOTHING, SCENE, PROP, reference resemblance, or preservation rule may change it. Equally specific contradictory wardrobe instructions produce `COMPILATION_ERROR:` rather than blending.\n\nApply the locked result with the smallest H3 representation:\n\n- If PERSON is active and all wardrobe units inherit the same person Picture with no clothing exception, one person Subject may contain identity core plus that Picture-supported wardrobe, matching ordinary whole-person replacement.\n- If PERSON is active and wardrobe stays from `<Video 1>`, the person Subject contains identity core only; describe the replacement person already wearing the source garment state. Do not create a clothing Subject.\n- If clothing is explicitly assigned to another Picture, define a separate clothing Subject and fit it to the resolved person.\n- For mixed item-level instructions, state each changed/protected unit once and never use a vague “complete outfit” phrase that overrides the ledger.\n\n## 4. PERSON — only when positively requested\n\nBind one identifiable source-person track. A whole-person or facial-identity replacement requires direct identity-bearing facial evidence; a named non-face attribute edit requires evidence only for that attribute and preserves the source face and other unedited identity-core attributes. Person evidence may describe only authorized identity core plus wardrobe units assigned to the same person Picture by the locked ledger. Exclude Picture pose, expression state, scene, composition, other people, and image lighting/layout.\n\nFor whole-person or facial-identity replacement, facial identity is primary. The replacement identity must already be present at the source person's first visible output occurrence, including frame one when visible, and remain identical through expressions, turns, fast motion, blur, partial visibility, reflection, cuts, occlusion recovery, exit/re-entry, and final occurrence. For a named attribute-only edit, that attribute must persist through the same risk moments while all unedited identity-core attributes remain source-owned. No visible frame may retain, blend, or restore any replaced attribute.\n\nWardrobe follows only the locked ledger. Source-retained clothing never protects source face, hair, skin, body appearance, or identity. Picture-derived clothing similarity never overrides a Video-owned garment. Do not repeat clothing preservation more strongly than person replacement.\n\nKeep source pose, facial motion, gestures, root motion, placement, action, contact, occlusion, and timing unless independently edited. Retarget only necessary anatomy, silhouette, hair/garment response, contact, shadow, reflection, and blur. With other domains active, state the already-applied replacement identity before scene or secondary detail.\n\n## 5. CLOTHING — only when positively requested\n\nBind selected wardrobe units to one identifiable person and obey the locked source for every unit. With PERSON inactive, preserve source identity and non-clothing appearance directly from `<Video 1>`; never reconstruct them from the clothing-reference wearer. With PERSON active, fit clothing to the resolved replacement identity and never restore source identity.\n\nClothing Pictures define only category, cut, neckline, sleeves/hem, construction, proportions, layers, material, color, pattern, trim, fasteners, garment belts, and supported markings. A visible wearer supplies no identity, anatomy, body-shaped shading, pose, scene, light, folds, wind, or composition. Flat-lay/mannequin images are optional.\n\nWhole-outfit wording covers supported garment units assigned to that Picture; item/part or attribute wording limits scope. Cropping/occlusion does not prove absence. Complete ordinary unseen surfaces consistently without inventing identity-critical prints, openings, closures, or parts.\n\nFit the target cut to the resolved body without reshaping it. Source motion, gravity, wind, contact, dressing, fastening, rolling, tucking, removal, carrying, passing, and footwear support retain compatible source order/timing. Recompute folds/tension and keep seams/prints garment-attached. Preserve hand/body trajectories and contact intent. If target construction cannot support required pockets, closures, grasp/removal events, heel support, or contacts without new actions or major redesign, return the error.\n\nCover neckline, cuffs, hems, side seams, back, lining, and later revealed regions. Remove displaced old contours/patterns. Reconstruct exposed source skin, retained layers, or background. Render material under source lighting with local shadow, reflection, focus, grain, and blur; never copy reference folds or body shading.\n\n## 6. SCENE — only when positively requested\n\nPictures define non-person environment appearance only: surfaces, fixed architecture, spatial materials, colors, texture/seams, reflectance, fixtures, and atmosphere. Reference people/crowds/animals and their clothing, actions, shadows, or reflections are not scene features unless explicitly targeted. Existing non-target source people remain source-owned. A Picture serving PERSON and SCENE yields separate domain-pure Subjects/evidence.\n\nWhole-scene/background replacement covers all visible environment surfaces: rear background, connected structures, ground beneath/in front of people, leg gaps, edges, and newly exposed regions. Preserve source geometry needed for perspective, depth, horizon, support plane, real steps, contacts, occlusion timing, camera, and composition while replacing finishes. Leave no source floor strip or pasted-backdrop seam.\n\nKeep resolved people, locked wardrobe, foreground objects, props, rails, doorways, and required support surfaces unless targeted. Fit reference design to source geometry, not reference placement. Recompute local illumination, contact shadow, reflection, depth, focus, blur, exposure, contrast, and grain while preserving active subjects' intrinsic appearance. No global tint, fixed halo, invented parallax, texture swimming, or new light event.\n\n## 7. PROP — only when positively requested\n\nBind one source-object track to one target using holder, location, function, or another reliable anchor. Follow it through pickup, placement, handover, release, occlusion, exit, and re-entry. Do not bind to a fixed hand/region, replace similar objects, duplicate it, or leave the old prop.\n\nPictures define prop category, silhouette, proportions, functional parts, material, color, finish, and supported markings only. Exclude reference people/hands, stands, packaging, scene, placement, orientation, grip, scale, state, contents, and baked light unless part of the target. Preserve source contents, dynamic display, articulation state, function, and event timing unless targeted.\n\nFit shape to source grasp/support anchors, functional orientation, and scene scale. Silhouette may change; source hands, support, performance, camera, and contact timing may not. Preserve finger occlusion, grip intent, transfer timing, stable size, compatible articulation, and detachable-part paths. Do not stretch rigid objects, resize over time, invent mechanisms, or create a new grasp. Incompatible geometry/function returns the error.\n\nCover all authorized surfaces, edges, undersides, contacts, and revealed sides. Remove old contours, shadows, reflections, and material patches without erasing fingers/occluders; reconstruct exposed source content. Render material with source perspective, light, reflection, transparency, depth, focus, blur, exposure, contrast, and grain. Changes stay local and add no action, effect, or sound.\n\n## 8. One H3 output\n\nCreate one global contiguous Subject namespace after the Wardrobe Source Ledger is locked:\n\n- Define `<Video 1>` once as source-state authority.\n- For ordinary PERSON with all wardrobe inherited from its person Picture, define one full-appearance person Subject.\n- For PERSON with Video-owned wardrobe, define one identity-core person Subject and keep wardrobe under `<Video 1>`; do not define a second source person or clothing Subject.\n- For explicit Picture-owned clothing, define a separate clothing Subject. CLOTHING without PERSON also defines the retained source person needed for identity preservation.\n- Define each SCENE/PROP target separately. Cite `<Picture N>` only inside assigned Subject definitions; afterward use `<Video 1>` and Subject labels.\n\nOutput exactly these six sections once:\n\nsubject_definitions:\nsummary:\nretention_analysis:\ndetailed_description:\noverall_soundscape:\nnon_diegetic_music:\n\nWrite all six sections entirely in concise English. Keep labels, asset references, relation markers, H3 tokens, and all explanatory prose in English. Preserve the original language only for dialogue, lyrics, and text visibly present in the source scene; do not translate that source content unless the user explicitly requests translation. Emit raw underscores/angle brackets.\n\nStart `summary` exactly:\n\n`[video editing + reference generation] The target video is an edited version of <Video 1>.`\n\nState every positive edit once, then the locked wardrobe outcome once, then shared continuity once. PERSON comes before SCENE. A keep-clothing clause follows and cannot weaken person replacement.\n\nIn `retention_analysis`, include `<Video 1>: partially_preserved - ...` plus one row per Subject. Use `fully_preserved` only for a retained source-bound person when PERSON is inactive and `attribute_transfer` for reference appearance. When PERSON is active, the Video row may preserve Video-owned garments but never source identity. Add no Picture/Audio row.\n\nWrite `detailed_description` as one playback instruction. Its first operative sentence states every active appearance is already applied at its first corresponding visible occurrence; when PERSON is active, state the replacement identity first and express its locked wardrobe positively. Then cover source state/action, target bindings/risks, complete coverage, real fitting, cuts, absence, re-entry, and natural ending. Do not narrate reveal, transformation, showcase, return, split screen, collage, picture-in-picture, or rejected reference content. Remove repetition before any active-domain or wardrobe-ledger obligation.\n\nUse exactly:\n\noverall_soundscape:\nNo audio editing requested.\n\nnon_diegetic_music:\nNone.\n\nOutput no preface, analysis, routing/domain list, Wardrobe Source Ledger, module name, JSON, code fence, score, API setting, checksum, inspection note, or extra heading.\n\n## 9. Silent audit\n\nRepair before output if: any wardrobe unit has zero/multiple sources; a face/hair/body attribute-only edit expands into a whole-person or wardrobe replacement; a Subject contradicts the locked wardrobe; a positive edit is missing/weakened; preservation restores an active target; PERSON is delayed/mixed/weaker than retained clothing; CLOTHING imports its wearer, loses construction/coverage, or breaks handling; SCENE imports people or misses ground/edges/gaps; PROP loses track/grip/support/scale/function, duplicates/deforms, or leaves residue; reference content crosses domains; source state is invented; or the six-section contract is wrong.\n\nText compliance is not proof of successful H3 generation.\n"
+    },
+    "_meta": {
+      "title": "PrimitiveStringMultiline"
+    }
+  },
+  "305": {
+    "class_type": "ComfySwitchNode",
+    "inputs": {
+      "switch": true,
+      "on_false": [
+        "284",
+        0
+      ],
+      "on_true": [
+        "304",
         0
       ]
     },
     "_meta": {
-      "title": "ShowText|pysssss"
+      "title": "输出切换"
+    }
+  },
+  "274": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": [
+        "305",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "minimaxh3 ref"
+    }
+  },
+  "270": {
+    "class_type": "PrimitiveStringMultiline",
+    "inputs": {
+      "value": ""
+    },
+    "_meta": {
+      "title": "提示词（描述你想要生成的图片内容）"
+    }
+  },
+  "268": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": ""
+    },
+    "_meta": {
+      "title": "首帧图（图1）"
+    }
+  },
+  "229:93": {
+    "class_type": "GetImageSizeAndCount",
+    "inputs": {
+      "image": [
+        "268",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "GetImageSizeAndCount"
+    }
+  },
+  "229:89": {
+    "class_type": "MathExpression|pysssss",
+    "inputs": {
+      "expression": "a*b",
+      "a": [
+        "229:93",
+        1
+      ],
+      "b": [
+        "229:93",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "MathExpression|pysssss"
+    }
+  },
+  "229:90": {
+    "class_type": "ImpactInt",
+    "inputs": {
+      "value": 1200000
+    },
+    "_meta": {
+      "title": "ImpactInt"
+    }
+  },
+  "229:88": {
+    "class_type": "easy compare",
+    "inputs": {
+      "a": [
+        "229:89",
+        0
+      ],
+      "b": [
+        "229:90",
+        0
+      ],
+      "comparison": "a >= b"
+    },
+    "_meta": {
+      "title": "easy compare"
+    }
+  },
+  "229:92": {
+    "class_type": "ImageScaleToTotalPixels",
+    "inputs": {
+      "image": [
+        "229:93",
+        0
+      ],
+      "upscale_method": "lanczos",
+      "megapixels": 1.2,
+      "resolution_steps": 1
+    },
+    "_meta": {
+      "title": "ImageScaleToTotalPixels"
+    }
+  },
+  "229:91": {
+    "class_type": "LayerUtility: If ",
+    "inputs": {
+      "if_condition": [
+        "229:88",
+        0
+      ],
+      "when_TRUE": [
+        "229:92",
+        0
+      ],
+      "when_FALSE": [
+        "268",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "LayerUtility: If "
+    }
+  },
+  "264": {
+    "class_type": "ImpactMakeImageBatch",
+    "inputs": {
+      "image1": [
+        "229:91",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImpactMakeImageBatch"
     }
   },
   "281": {
@@ -317,6 +465,79 @@
       "title": "LayerUtility: ImageScaleByAspectRatio V2"
     }
   },
+  "273": {
+    "class_type": "VisionAPIDirect",
+    "inputs": {
+      "base_url": "https://api.avemujica.moe/v1",
+      "model": "gpt-5.6-luna",
+      "api_key": "",
+      "system_prompt": [
+        "274",
+        0
+      ],
+      "prompt": [
+        "270",
+        0
+      ],
+      "max_tokens": 0,
+      "temperature": 0,
+      "seed": 2757959361,
+      "thinking_mode": "auto",
+      "max_video_frames": 8,
+      "video_transport": "frames",
+      "image": [
+        "264",
+        0
+      ],
+      "video_frames": [
+        "272",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "VisionAPIDirect"
+    }
+  },
+  "276": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "273",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  },
+  "265": {
+    "class_type": "Any Switch (rgthree)",
+    "inputs": {
+      "any_01": [
+        "276",
+        0
+      ],
+      "any_02": [
+        "270",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Any Switch (rgthree)"
+    }
+  },
+  "253": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "265",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  },
   "271": {
     "class_type": "GetImageSizeAndCount",
     "inputs": {
@@ -347,105 +568,6 @@
       "title": "VAELoader"
     }
   },
-  "268": {
-    "class_type": "LoadImage",
-    "inputs": {
-      "image": ""
-    },
-    "_meta": {
-      "title": "首帧图（图1）"
-    }
-  },
-  "229:93": {
-    "class_type": "GetImageSizeAndCount",
-    "inputs": {
-      "image": [
-        "268",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "GetImageSizeAndCount"
-    }
-  },
-  "229:89": {
-    "class_type": "MathExpression|pysssss",
-    "inputs": {
-      "expression": "a*b",
-      "a": [
-        "229:93",
-        1
-      ],
-      "b": [
-        "229:93",
-        2
-      ]
-    },
-    "_meta": {
-      "title": "MathExpression|pysssss"
-    }
-  },
-  "229:90": {
-    "class_type": "ImpactInt",
-    "inputs": {
-      "value": 1200000
-    },
-    "_meta": {
-      "title": "ImpactInt"
-    }
-  },
-  "229:88": {
-    "class_type": "easy compare",
-    "inputs": {
-      "a": [
-        "229:89",
-        0
-      ],
-      "b": [
-        "229:90",
-        0
-      ],
-      "comparison": "a >= b"
-    },
-    "_meta": {
-      "title": "easy compare"
-    }
-  },
-  "229:92": {
-    "class_type": "ImageScaleToTotalPixels",
-    "inputs": {
-      "image": [
-        "229:93",
-        0
-      ],
-      "upscale_method": "lanczos",
-      "megapixels": 1.2,
-      "resolution_steps": 1
-    },
-    "_meta": {
-      "title": "ImageScaleToTotalPixels"
-    }
-  },
-  "229:91": {
-    "class_type": "LayerUtility: If ",
-    "inputs": {
-      "if_condition": [
-        "229:88",
-        0
-      ],
-      "when_TRUE": [
-        "229:92",
-        0
-      ],
-      "when_FALSE": [
-        "268",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "LayerUtility: If "
-    }
-  },
   "219": {
     "class_type": "MiniMaxH3ReferenceToVideo",
     "inputs": {
@@ -454,7 +576,7 @@
         0
       ],
       "prompt": [
-        "253",
+        "yingxu_review73_compiler_prompt",
         0
       ],
       "width": [
@@ -492,7 +614,22 @@
       ]
     },
     "_meta": {
-      "title": "MiniMaxH3ReferenceToVideo"
+      "title": "MiniMaxH3ReferenceToVideo",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-compiler-error-blocks-generation",
+          "node": "219",
+          "input": "prompt",
+          "from": [
+            "253",
+            0
+          ],
+          "to": [
+            "yingxu_review73_compiler_prompt",
+            0
+          ]
+        }
+      ]
     }
   },
   "230": {
@@ -641,7 +778,7 @@
     "class_type": "ImageStitch",
     "inputs": {
       "image1": [
-        "194",
+        "yingxu_review73_117_selected_frames",
         0
       ],
       "direction": "right",
@@ -654,7 +791,22 @@
       ]
     },
     "_meta": {
-      "title": "ImageStitch"
+      "title": "ImageStitch",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-117-compare-selected-source-frames",
+          "node": "288",
+          "input": "image1",
+          "from": [
+            "194",
+            0
+          ],
+          "to": [
+            "yingxu_review73_117_selected_frames",
+            0
+          ]
+        }
+      ]
     }
   },
   "289": {
@@ -664,17 +816,45 @@
         "288",
         0
       ],
-      "fps": 24,
+      "fps": [
+        "yingxu_review73_117_loaded_info",
+        0
+      ],
       "audio": [
-        "194",
-        1
+        "yingxu_review73_117_source_audio",
+        0
       ],
       "bit_depth": 8,
       "color_space": "sRGB",
       "codec": "none"
     },
     "_meta": {
-      "title": "CreateVideo"
+      "title": "CreateVideo",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-117-save-loaded-source-cadence",
+          "node": "289",
+          "input": "fps",
+          "from": 24,
+          "to": [
+            "yingxu_review73_117_loaded_info",
+            0
+          ]
+        },
+        {
+          "id": "review73-117-save-selected-original-audio",
+          "node": "289",
+          "input": "audio",
+          "from": [
+            "194",
+            1
+          ],
+          "to": [
+            "yingxu_review73_117_source_audio",
+            0
+          ]
+        }
+      ]
     }
   },
   "290": {
@@ -697,20 +877,61 @@
     "class_type": "CreateVideo",
     "inputs": {
       "images": [
-        "194",
+        "yingxu_review73_117_selected_frames",
         0
       ],
-      "fps": 24,
+      "fps": [
+        "yingxu_review73_117_loaded_info",
+        0
+      ],
       "audio": [
-        "194",
-        1
+        "yingxu_review73_117_source_audio",
+        0
       ],
       "bit_depth": 8,
       "color_space": "sRGB",
       "codec": "none"
     },
     "_meta": {
-      "title": "CreateVideo"
+      "title": "CreateVideo",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-117-save-selected-source-frames",
+          "node": "190",
+          "input": "images",
+          "from": [
+            "194",
+            0
+          ],
+          "to": [
+            "yingxu_review73_117_selected_frames",
+            0
+          ]
+        },
+        {
+          "id": "review73-117-save-loaded-source-cadence",
+          "node": "190",
+          "input": "fps",
+          "from": 24,
+          "to": [
+            "yingxu_review73_117_loaded_info",
+            0
+          ]
+        },
+        {
+          "id": "review73-117-save-selected-original-audio",
+          "node": "190",
+          "input": "audio",
+          "from": [
+            "194",
+            1
+          ],
+          "to": [
+            "yingxu_review73_117_source_audio",
+            0
+          ]
+        }
+      ]
     }
   },
   "302": {
@@ -727,6 +948,151 @@
     },
     "_meta": {
       "title": "SaveVideo"
+    }
+  },
+  "yingxu_review73_117_loaded_info": {
+    "class_type": "VHS_VideoInfoLoaded",
+    "inputs": {
+      "video_info": [
+        "269",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "保留已载入片段的时长与原声"
+    }
+  },
+  "yingxu_review73_117_selected_frames": {
+    "class_type": "ImageFromBatch",
+    "inputs": {
+      "image": [
+        "194",
+        0
+      ],
+      "batch_index": 0,
+      "length": [
+        "269",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "保留已载入片段的时长与原声"
+    }
+  },
+  "yingxu_review73_117_source_audio": {
+    "class_type": "TrimAudioDuration",
+    "inputs": {
+      "audio": [
+        "269",
+        2
+      ],
+      "start_index": 0.0,
+      "duration": [
+        "yingxu_review73_117_loaded_info",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "保留已载入片段的时长与原声"
+    }
+  },
+  "yingxu_review73_compiler_prompt_trim": {
+    "class_type": "StringTrim",
+    "inputs": {
+      "string": [
+        "253",
+        0
+      ],
+      "mode": "Both"
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
+    }
+  },
+  "yingxu_review73_compiler_prompt_length": {
+    "class_type": "StringLength",
+    "inputs": {
+      "string": [
+        "yingxu_review73_compiler_prompt_trim",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
+    }
+  },
+  "yingxu_review73_compiler_prompt_nonempty_valid": {
+    "class_type": "easy compare",
+    "inputs": {
+      "a": [
+        "yingxu_review73_compiler_prompt_length",
+        0
+      ],
+      "b": 0,
+      "comparison": "a > 0"
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
+    }
+  },
+  "yingxu_review73_compiler_prompt_nonempty": {
+    "class_type": "easy blocker",
+    "inputs": {
+      "continue": [
+        "yingxu_review73_compiler_prompt_nonempty_valid",
+        0
+      ],
+      "in": [
+        "253",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
+    }
+  },
+  "yingxu_review73_compiler_prompt_error": {
+    "class_type": "StringContains",
+    "inputs": {
+      "string": [
+        "253",
+        0
+      ],
+      "substring": "COMPILATION_ERROR:",
+      "case_sensitive": false
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
+    }
+  },
+  "yingxu_review73_compiler_prompt_valid": {
+    "class_type": "easy compare",
+    "inputs": {
+      "a": [
+        "yingxu_review73_compiler_prompt_error",
+        0
+      ],
+      "b": false,
+      "comparison": "a == b"
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
+    }
+  },
+  "yingxu_review73_compiler_prompt": {
+    "class_type": "easy blocker",
+    "inputs": {
+      "continue": [
+        "yingxu_review73_compiler_prompt_valid",
+        0
+      ],
+      "in": [
+        "yingxu_review73_compiler_prompt_nonempty",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "拒绝无效的编辑描述"
     }
   }
 }

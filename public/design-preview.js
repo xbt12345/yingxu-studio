@@ -1,11 +1,11 @@
 import {I as baseIcon,esc} from './data.js';
 const I=name=>({download:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>',more:'<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1"/><circle cx="10" cy="10" r="1"/><circle cx="16" cy="10" r="1"/></svg>'}[name]||baseIcon(name));
-import {controlField,controlValue,seedControls,syncControlChoices,dimensionOptions} from './workflow-controls.js?v=62.0';
-import {catalogCommonPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=63.0';
-import {installMultiCamera} from './multi-camera.js?v=60.1';
-import {installWorkflowSelects} from './workflow-select.js?v=63.0';
+import {controlField,controlValue,seedControls,syncControlChoices,dimensionOptions} from './workflow-controls.js?v=75.1';
+import {catalogCommonPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=75.1';
+import {installMultiCamera} from './multi-camera.js?v=75.1';
+import {installWorkflowSelects} from './workflow-select.js?v=75.1';
 import {installTimecodeControls} from './timecode-control.js?v=60.1';
-import {installProcessingDurations} from './processing-duration.js?v=60.1';
+import {installProcessingDurations} from './processing-duration.js?v=75.1';
 
 // This review surface only issues same-origin GET requests. No production storage or job submission.
 const root=document.getElementById('design-root'),dialog=document.getElementById('preview-dialog');
@@ -27,7 +27,7 @@ const scenes=[
 ];
 const route=()=>location.hash.slice(1).split('/')[0]||'home';
 const info=id=>scenes.find(s=>s[0]===id)||scenes[0];
-const legacy=id=>info(id)[2]==='@library'?'workflow-control-library.html?review=61.2':'studio.html#'+info(id)[2];
+const legacy=id=>info(id)[2]==='@library'?'workflow-control-library.html?review=73.0':'studio.html?review=73.0#'+info(id)[2];
 let toastTimer;function toast(t){const e=document.getElementById('preview-toast');e.textContent=t;e.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>e.classList.remove('visible'),3200)}
 const button=(label,attrs='',cls='')=>`<button type="button" ${attrs} class="${cls}">${label}</button>`;
 const img=(src,alt='',attrs='')=>`<img src="${esc(src)}" alt="${esc(alt)}" ${attrs}>`;
@@ -41,7 +41,7 @@ if(!inner){
  root.innerHTML=`<div class="review-shell"><header class="review-bar"><div class="review-brand">${img('assets/brand-mark.svg')}映序 · 设计对比</div><span class="review-label">可操作预览 · 不提交生成，不保存到原站</span><div class="grow"></div><div class="segmented" aria-label="对比方式">${[['before','原版'],['after','建议版'],['split','并排对比']].map(([v,t])=>button(t,`data-view="${v}" aria-pressed="${v==='after'}"`)).join('')}</div><div class="segmented device-switch" aria-label="设备宽度">${button('桌面','data-device="desktop" aria-pressed="true"')}${button('手机','data-device="phone" aria-pressed="false"')}</div>${button('收起导航','data-immersive','small-icon')}</header><nav class="review-tabs" aria-label="建议效果页面">${scenes.map(s=>button(s[1],`data-scene="${s[0]}"`)).join('')}</nav><div class="review-caption"><strong id="scene-number"></strong><span id="scene-caption"></span><div class="grow"></div><span>原版仅供对照 · 建议版可操作</span></div><div class="review-stage"><section class="frame-wrap before" hidden><label>原版 · 当前网站 / 只读对照</label><iframe title="原版只读对照" tabindex="-1" inert></iframe></section><section class="frame-wrap after"><label>建议版 · 可操作设计预览</label><iframe title="建议版交互预览"></iframe></section></div></div>`;
  const stage=root.querySelector('.review-stage'),before=root.querySelector('.before'),after=root.querySelector('.after');
  function layout(){stage.classList.toggle('split',mode==='split');stage.classList.toggle('phone',device==='phone');before.hidden=mode==='after';after.hidden=mode==='before';for(const wrap of [before,after]){wrap.style.display=wrap.hidden?'none':'';const frame=wrap.querySelector('iframe');if(mode==='split'&&device==='desktop'){const scale=wrap.clientWidth/1280;frame.style.width='1280px';frame.style.height=Math.max(700,(wrap.clientHeight-28)/scale)+'px';frame.style.transform=`scale(${scale})`;}else{frame.style.width='100%';frame.style.height='100%';frame.style.transform='none';}}root.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===mode)));root.querySelectorAll('[data-device]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.device===device)))}
- function showScene(fromChild=false){const id=route(),s=info(id);root.querySelectorAll('[data-scene]').forEach(b=>b.classList.toggle('active',b.dataset.scene===id));root.querySelector('#scene-number').textContent=String(scenes.indexOf(s)+1).padStart(2,'0')+' / '+scenes.length;root.querySelector('#scene-caption').textContent=s[3];if(!fromChild)after.querySelector('iframe').src=`design-preview.html?inside=1#${id}`;if(mode!=='after')before.querySelector('iframe').src=legacy(id);layout()}
+ function showScene(fromChild=false){const id=route(),s=info(id);root.querySelectorAll('[data-scene]').forEach(b=>b.classList.toggle('active',b.dataset.scene===id));root.querySelector('#scene-number').textContent=String(scenes.indexOf(s)+1).padStart(2,'0')+' / '+scenes.length;root.querySelector('#scene-caption').textContent=s[3];if(!fromChild)after.querySelector('iframe').src=`design-preview.html?inside=1&review=73.0#${id}`;if(mode!=='after')before.querySelector('iframe').src=legacy(id);layout()}
  root.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.scene){location.hash=b.dataset.scene;}if(b.dataset.view){mode=b.dataset.view;if(mode!=='after')before.querySelector('iframe').src=legacy(route());layout()}if(b.dataset.device){device=b.dataset.device;layout()}if(b.hasAttribute('data-immersive')){immersive=!immersive;root.querySelector('.review-shell').classList.toggle('immersive',immersive);b.textContent=immersive?'展开导航':'收起导航';layout()}});
  before.addEventListener('wheel',e=>{const frame=before.querySelector('iframe'),doc=frame.contentDocument;if(!doc)return;const rect=frame.getBoundingClientRect(),scale=rect.width/frame.offsetWidth||1;let el=doc.elementFromPoint((e.clientX-rect.left)/scale,(e.clientY-rect.top)/scale);while(el&&el!==doc.body){const st=frame.contentWindow.getComputedStyle(el);if(/auto|scroll/.test(st.overflowY)&&el.scrollHeight>el.clientHeight){e.preventDefault();el.scrollTop+=e.deltaY/scale;return}el=el.parentElement}e.preventDefault();doc.scrollingElement.scrollTop+=e.deltaY/scale},{passive:false});
  window.addEventListener('hashchange',()=>showScene());window.addEventListener('resize',layout);new ResizeObserver(layout).observe(stage);
@@ -49,7 +49,7 @@ if(!inner){
  showScene();
 }else{
  const safeGet=async(url,fallback)=>{try{const r=await fetch(url);return r.ok?await r.json():fallback}catch{return fallback}};
- const [catalog,schemas,jobs,live,connections]=await Promise.all([safeGet('local-catalog.json',{workflows:[]}),safeGet('workflow-interfaces.json',{workflows:{}}),safeGet('/api/jobs',[]),safeGet('/api/workflows',[]),safeGet('/api/catalog-connections',[])]);
+ const [catalog,schemas,jobs,live,connections]=await Promise.all([safeGet('local-catalog.json',{workflows:[]}),safeGet('workflow-interfaces.json?v=75.1',{workflows:{}}),safeGet('/api/jobs',[]),safeGet('/api/workflows',[]),safeGet('/api/catalog-connections',[])]);
  const records=catalog.workflows.map(w=>({...w,interface:schemas.workflows[w.id]}));
  const sources=new Map(records.map(w=>[w.id,w]));
  const done=Array.isArray(jobs)?jobs.filter(j=>j.status==='done'&&j.outputs?.length):[];
@@ -201,7 +201,7 @@ if(!inner){
  if(b.dataset.assetsTo){const d=draft(b.dataset.assetsTo),w=sources.get(workflowMap[b.dataset.assetsTo]),chosen=[...selectedAssets].map(i=>assetPool[i]);d.refs=w.interface.media.map((m,i)=>chosen[i]?{...chosen[i],catalogSlot:m.id}:null);d.stage='ready';dialog.close();nav(b.dataset.assetsTo)}
  if(b.hasAttribute('data-example-prompt')){window.previewExample='平静的海岸，清晨柔和光线，海浪缓慢翻涌。';nav('create')}
  if(b.hasAttribute('data-admin'))openDialog('管理员维护',`<div class="source-record"><strong>品牌标志</strong><p>Logo 上传、字标样式。</p></div><div class="source-record"><strong>工作流与接入</strong><p>管理原始图、字段配置和真实生成验收状态。</p></div><p>本轮展示入口分工，未增加工作流导入功能。</p>`);
- if(b.hasAttribute('data-original-library'))window.open('workflow-control-library.html?review=61.2','_blank','noopener');
+ if(b.hasAttribute('data-original-library'))window.open('workflow-control-library.html?review=73.0','_blank','noopener');
  if(b.hasAttribute('data-reset-demo')){const input=root.querySelector('[data-demo-validation]');input.value=1324;input.dispatchEvent(new Event('input',{bubbles:true}))}
  if(b.hasAttribute('data-state-upload')){const input=document.createElement('input');input.type='file';input.accept='image/*';input.onchange=()=>{const file=input.files[0];if(file?.type.startsWith('image/')){b.innerHTML=img(URL.createObjectURL(file),file.name);b.classList.add('filled');b.parentElement.querySelector('.inline-error').textContent='素材已载入此预览。'}};input.click()}
  if(b.hasAttribute('data-state-retry')){b.textContent='正在重试…';b.disabled=true;setTimeout(()=>{b.textContent='重试';b.disabled=false;toast('重试状态展示完成，输入保持原样。')},1200)}

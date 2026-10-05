@@ -181,8 +181,12 @@ def _validate_custom_size(value):
     return value
 
 def settings_for(w, supplied):
+    from scripts.reviewed_native_seed_limits import validate_legacy_native_seed
+    validate_legacy_native_seed(w,supplied)
     if w['id'] in ('local-card-11','local-card-15','local-card-16','local-card-17','local-card-18','local-card-20'):
+        from scripts.review75_generation_sizes import legacy_generation_size_keys,generation_size_settings
         allowed={'seed'}
+        allowed.update(legacy_generation_size_keys(w['id']))
         if w['id']=='local-card-11':allowed.add('resolution')
         if w['id']=='local-card-15':allowed.add('strength')
         if set(supplied)-allowed:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
@@ -200,6 +204,7 @@ def settings_for(w, supplied):
             if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or not 0<=value<=10 or abs(value*100-round(value*100))>1e-6:
                 raise ValueError('调色强度应在 0–10 之间，按 0.01 调整。')
             result['strength']=value
+        result.update(generation_size_settings(w['id'],supplied))
         return result
     if w['id']=='local-card-134':
         if set(supplied)-{'strength'}:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
@@ -268,7 +273,7 @@ def settings_for(w, supplied):
             raise ValueError('风格强度需在 -1 到 1 之间，每次调整 0.05。')
         return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,'size':size,'lora_strength':strength}
     if w['id']=='local-card-107':
-        if set(supplied)-{'seed','size','output_size'}:
+        if set(supplied)-{'seed','size','output_size','upscale_seed'}:
             raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
         seed=supplied.get('seed',-1)
         if isinstance(seed,bool) or not isinstance(seed,int) or not -1<=seed<=9007199254740991:
@@ -279,7 +284,13 @@ def settings_for(w, supplied):
         output_size=supplied.get('output_size',1536)
         if isinstance(output_size,bool) or not isinstance(output_size,int) or not 512<=output_size<=2048 or output_size%32:
             raise ValueError('增强尺寸需在 512–2048 像素之间，按 32 调整。')
-        return {'seed':secrets.randbelow(2**32) if seed==-1 else seed,'size':size,'output_size':output_size,'width':width,'height':height}
+        result={'seed':secrets.randbelow(2**32) if seed==-1 else seed,'size':size,'output_size':output_size,'width':width,'height':height}
+        if 'upscale_seed'in supplied:
+            upscale_seed=supplied['upscale_seed']
+            if isinstance(upscale_seed,bool) or not isinstance(upscale_seed,int) or not -1<=upscale_seed<=4294967295:
+                raise ValueError('增强种子需为 -1 到 4294967295 之间的整数。')
+            result['upscale_seed']=secrets.randbelow(2**32) if upscale_seed==-1 else upscale_seed
+        return result
     if w['id'] in ('local-card-109','local-card-128'):
         if set(supplied)-{'seed','resolution','branch','upscale'}:
             raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
@@ -353,7 +364,7 @@ def settings_for(w, supplied):
             raise ValueError('输出最长边需在 256–4096 像素之间，按 32 调整。')
         return {**seeds,'output_long_side':side}
     if w['id']=='local-card-14':
-        if set(supplied)-{'seed','strength','horizontal_angle','vertical_angle','zoom'}:
+        if set(supplied)-{'seed','strength','horizontal_angle','vertical_angle','zoom','output_pixels'}:
             raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
         seed=supplied.get('seed',-1)
         if isinstance(seed,bool) or not isinstance(seed,int) or not -1<=seed<=9007199254740991:
@@ -362,12 +373,17 @@ def settings_for(w, supplied):
         vertical=supplied.get('vertical_angle',30)
         zoom=supplied.get('zoom',5)
         strength=supplied.get('strength',0.4)
+        # The source scales by total kilo-pixels before creating the latent.
+        # Keep 1324, including its non-multiple-of-32 value, as the source default.
+        output_pixels=supplied.get('output_pixels',1324)
+        if isinstance(output_pixels,bool) or not isinstance(output_pixels,int) or not 512<=output_pixels<=4096:
+            raise ValueError('输出总像素需在 512–4096 千像素之间，填写整数。')
         if any(isinstance(v,bool) or not isinstance(v,int) for v in (horizontal,vertical)) or not 0<=horizontal<=360 or not -30<=vertical<=60:
             raise ValueError('视角超出原节点支持范围。')
         for key,value in [('zoom',zoom),('strength',strength)]:
             if isinstance(value,bool) or not isinstance(value,(int,float)) or not math.isfinite(value) or not 0<=value<=10 or abs(value*10-round(value*10))>1e-6:
                 raise ValueError(('镜头拉近' if key=='zoom' else '调色强度')+'应在 0–10 之间，按 0.1 调整。')
-        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,'strength':strength,'horizontal_angle':horizontal,'vertical_angle':vertical,'zoom':zoom}
+        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,'strength':strength,'horizontal_angle':horizontal,'vertical_angle':vertical,'zoom':zoom,'output_pixels':output_pixels}
     if w['id'] in ('local-card-105','local-card-106'):
         if set(supplied)-{'seed','noise_seed','aspect_ratio','megapixels'}:
             raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
@@ -402,25 +418,35 @@ def settings_for(w, supplied):
         if abs(mp*10-round(mp*10))>1e-6:raise ValueError('百万像素按 0.1 MP 调整。')
         return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,'aspect_ratio':ratio,'megapixels':mp}
     if w['id']=='local-card-78':
-        if set(supplied)-{'seed'}:
+        from scripts.review75_generation_sizes import generation_size_settings
+        if set(supplied)-{'seed','megapixels'}:
             raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
         seed=supplied.get('seed',-1)
         if isinstance(seed,bool) or not isinstance(seed,int) or not -1<=seed<=9007199254740991:
             raise ValueError('图像生成种子需要填写有效整数。')
-        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed}
+        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,**generation_size_settings(w['id'],supplied)}
     if w['id']=='local-card-12':
-        if set(supplied)-{'seed','prompt_turn2real','prompt_semireal'}:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
+        from scripts.review75_generation_sizes import generation_size_settings
+        if set(supplied)-{'seed','prompt_turn2real','prompt_semireal','output_pixels'}:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
         seed=supplied.get('seed',-1)
         if isinstance(seed,bool) or not isinstance(seed,int) or not -1<=seed<=9007199254740991:raise ValueError('图像生成种子需要填写有效整数。')
         prompts={k:supplied.get(k,v) for k,v in [('prompt_turn2real','reskin this into a real photo'),('prompt_semireal','转为写实摄影')]}
-        if any(not isinstance(v,str) or not v.strip() or len(v)>6000 for v in prompts.values()):raise ValueError('请填写三个模型各自的真人化描述。')
-        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,**prompts}
+        if any(not isinstance(v,str) or not v.strip() or len(v)>6000 or '\x00' in v for v in prompts.values()):raise ValueError('请填写三个模型各自的有效真人化描述（6000 字以内）。')
+        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,**prompts,**generation_size_settings(w['id'],supplied)}
     if w['id']=='local-card-85':
-        if set(supplied)-{'seed','size'}:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
+        from scripts.review75_generation_sizes import generation_size_settings
+        if set(supplied)-{'seed','size','refine_seed','scale_by'}:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
         seed=supplied.get('seed',-1)
-        if isinstance(seed,bool) or not isinstance(seed,int) or not -1<=seed<=9007199254740991:raise ValueError('图像生成种子需要填写有效整数。')
+        if isinstance(seed,bool) or not isinstance(seed,int) or not -1<=seed<=1125899906842624:raise ValueError('基础生成种子需为 -1 到 1125899906842624 之间的整数。')
         size=_validate_custom_size(supplied.get('size','896x1088'))
-        return {'seed':secrets.randbelow(2**48) if seed==-1 else seed,'size':size}
+        result={'seed':secrets.randbelow(2**48) if seed==-1 else seed,'size':size}
+        if 'refine_seed'in supplied:
+            refine_seed=supplied['refine_seed']
+            if isinstance(refine_seed,bool) or not isinstance(refine_seed,int) or not -1<=refine_seed<=9007199254740991:
+                raise ValueError('放大重绘种子需要填写有效整数。')
+            result['refine_seed']=secrets.randbelow(2**48) if refine_seed==-1 else refine_seed
+        result.update(generation_size_settings(w['id'],supplied))
+        return result
     if w['id']=='local-card-83':
         if set(supplied)-{'seed'}:raise ValueError('含有不属于此工作流的参数，请刷新后重试。')
         seed=supplied.get('seed',-1)
@@ -478,14 +504,17 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
             g['144']['inputs']['strength']=settings['strength']
             prefix('135');return prune(g,['135'])
         if workflow_id=='local-card-16':
+            from scripts.review75_generation_sizes import apply_generation_size_settings
             bind_image('36',0);bind_image('25',1);bind_text('37',prompt)
             # Without painted alpha, use the original image directly; no empty mask reaches DrawMaskOnImage.
             if not images[0].get('has_edit_mask',False):
                 g['38']['inputs'].pop('mask',None)
                 g['21']['inputs']['pixels']=['38',0]
             g['17']['inputs']['seed']=settings['seed']
+            apply_generation_size_settings(workflow_id,g,settings)
             prefix('26');return prune(g,['26'])
         if workflow_id in ('local-card-17','local-card-18'):
+            from scripts.review75_generation_sizes import apply_generation_size_settings
             bind_image('76',0);bind_image('81',1)
             if workflow_id=='local-card-17':
                 bind_text('109',prompt);bind_text('121',prompt)
@@ -495,10 +524,13 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
                 bind_text('108',negative);bind_text('128',negative)
                 seeds=('104','117')
             for node in seeds:g[node]['inputs']['noise_seed']=settings['seed']
+            apply_generation_size_settings(workflow_id,g,settings)
             prefix('9','single');prefix('94','double')
             return prune(g,['9','94'])
         bind_image('43',0);bind_text('36',prompt)
+        from scripts.review75_generation_sizes import apply_generation_size_settings
         g['7']['inputs']['noise_seed']=settings['seed']
+        apply_generation_size_settings(workflow_id,g,settings)
         prefix('15');return prune(g,['15'])
     if workflow_id=='local-card-134':
         g=json.loads(workflow_path('local-card-134').read_text('utf-8'))
@@ -523,6 +555,17 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
         return prune(g,['62'])
     if workflow_id=='local-card-14':
         g=json.loads(workflow_path('local-card-14').read_text('utf-8'))
+        size=g.get('135',{})
+        latent=g.get('83',{})
+        if (size.get('class_type')!='LayerUtility: ImageScaleByAspectRatio V2'
+                or size.get('inputs',{}).get('scale_to_side')!='total_pixel(kilo pixel)'
+                or size['inputs'].get('aspect_ratio')!='original'
+                or size['inputs'].get('round_to_multiple')!='64'
+                or size['inputs'].get('scale_to_length')!=1324
+                or latent.get('class_type')!='EmptyFlux2LatentImage'
+                or latent.get('inputs',{}).get('width')!=['135',3]
+                or latent['inputs'].get('height')!=['135',4]):
+            raise ValueError('视角工作流的输出尺寸来源已改变，需要重新审查。')
         images=[a for a in assets if a['kind']=='image']
         if len(images)!=1:raise ValueError('此工作流需要一张待转换原图。')
         g['63']['inputs']['image']=images[0]['remote']
@@ -530,9 +573,12 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
         g['95']['inputs']['seed']=settings['seed']
         for key in ('horizontal_angle','vertical_angle','zoom'):g['105']['inputs'][key]=settings[key]
         g['108']['inputs']['strength']=settings['strength']
+        # Old saved settings without this field keep their original size.
+        g['135']['inputs']['scale_to_length']=settings.get('output_pixels',1324)
         g['62']['inputs']['filename_prefix']='yingxu/'+job_id
         return prune(g,['62'])
     if workflow_id=='local-card-12':
+        from scripts.review75_generation_sizes import apply_generation_size_settings
         g=json.loads(workflow_path('local-card-12').read_text('utf-8'))
         images=[a for a in assets if a['kind']=='image']
         if len(images)!=1:raise ValueError('此工作流需要一张动漫原图。')
@@ -540,6 +586,7 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
         for node,text in [('19',prompt),('171',settings['prompt_turn2real']),('180',settings['prompt_semireal'])]:
             g[node]['inputs']['text']=text
         g['158']['inputs']['seed']=settings['seed']
+        apply_generation_size_settings(workflow_id,g,settings)
         for node,branch in [('62','Anything-to-Real'),('170','Turn2Real'),('179','anime2real-semi')]:
             g[node]['inputs']['filename_prefix']='yingxu/'+job_id+'/'+branch
         return prune(g,['62','170','179'])
@@ -596,14 +643,15 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
         g[output]['inputs']['filename_prefix']='yingxu/'+job_id
         return prune(g,[output])
     if workflow_id=='local-card-78':
+        from scripts.review75_generation_sizes import apply_generation_size_settings
         g=json.loads(workflow_path('local-card-78').read_text('utf-8'))
         images=[a for a in assets if a['kind']=='image']
         if len(images)!=1:raise ValueError('此工作流需要一张待编辑原图。')
         g['31']['inputs']['image']=images[0]['remote']
         g['11']['inputs']['prompt']=prompt
         g['3']['inputs']['prompt']=negative
-        # Source preprocessing is fixed at 1.5 MP; it is not an output control.
-        g['39']['inputs']['megapixels']=1.5
+        # This image feeds VAEEncode and the sampled latent, so it sets output size.
+        apply_generation_size_settings(workflow_id,g,settings)
         g['14']['inputs']['seed']=settings['seed']
         g['80']['inputs']['filename_prefix']='yingxu/'+job_id
         return prune(g,['80'])
@@ -642,7 +690,8 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
         g['7']['inputs']['text']=negative
         g['58']['inputs'].update(width=settings['width'],height=settings['height'])
         g['3']['inputs']['seed']=settings['seed']
-        g['80']['inputs'].update(seed=settings['seed']%(2**32),resolution=settings['output_size'])
+        # Old receipts did not distinguish the two stages; keep their replay.
+        g['80']['inputs'].update(seed=settings.get('upscale_seed',settings['seed']%(2**32)),resolution=settings['output_size'])
         g['site-output']={'class_type':'SaveImage','inputs':{'filename_prefix':'yingxu/'+job_id,'images':['80',0]}}
         return prune(g,['site-output'])
     if workflow_id in ('local-card-109','local-card-128'):
@@ -716,12 +765,15 @@ def build_graph(workflow_id,prompt,negative,settings,assets,job_id):
         g['461']['inputs']['filename_prefix']='yingxu/'+job_id
         return prune(g,['461'])
     if workflow_id=='local-card-85':
+        from scripts.review75_generation_sizes import apply_generation_size_settings
         g=json.loads(workflow_path('local-card-85').read_text('utf-8'))
         g['67']['inputs']['value']=prompt
         if negative.strip():g['66']['inputs']['text']=negative
         width,height=map(int,settings['size'].split('x'))
         g['65']['inputs'].update(width_override=width,height_override=height)
-        for key in ['58','63']:g[key]['inputs']['seed']=settings['seed']
+        g['58']['inputs']['seed']=settings['seed']
+        g['63']['inputs']['seed']=settings.get('refine_seed',settings['seed'])
+        apply_generation_size_settings(workflow_id,g,settings)
         g['54']['inputs']['filename_prefix']='yingxu/'+job_id
         return prune(g,['54'])
     g=json.loads(workflow_path(workflow_id).read_text('utf-8'))

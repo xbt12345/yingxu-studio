@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {emptyPointSelection,normalizePointSelection,serializePointSelection,sourceFrameSize,processingFrameSize,processingPreviewGeometry,coverCropRect,previewPointInSource,pointFromPointer,previewFrameTime,clearPointsForMedia,installPointPickers,syncPointPickers} from '../public/point-picker.js';
+import {emptyPointSelection,normalizePointSelection,serializePointSelection,sourceFrameSize,processingFrameSize,postScaledFrameSize,processingPreviewGeometry,coverCropRect,previewPointInSource,pointFromPointer,previewFrameTime,clearPointsForMedia,installPointPickers,syncPointPickers} from '../public/point-picker.js';
 import {controlField} from '../public/workflow-controls.js';
 import {catalogEditor,prepareCatalogSnapshot} from '../public/catalog-ui.js';
 import {catalogSubmission} from '../public/catalog-submission.js';
+import {pointPickerControl} from '../public/point-picker.js';
+assert.match(pointPickerControl({refs:[]},{id:'1095:points'},'{"positive":[],"negative":[]}','guidance-test'),/选区用于跟踪与生成引导；其他区域也可能变化/);
 
 const close=(actual,expected)=>assert.ok(Math.abs(actual-expected)<1e-6,`${actual} != ${expected}`);
 assert.deepEqual(processingFrameSize(1920,1080,1280,32),{width:1280,height:736});
@@ -16,6 +18,14 @@ assert.deepEqual(processingFrameSize(2,1,1,32),{width:32,height:32});
 assert.throws(()=>processingFrameSize(0,1080),/无效/);
 assert.throws(()=>processingFrameSize(1920,1080,NaN),/无效/);
 assert.throws(()=>processingFrameSize(1920,1080,1280,0),/无效/);
+assert.deepEqual(postScaledFrameSize(512,288,.5),{width:256,height:144},'point frame matches the actual SeC input after ImageScaleBy');
+assert.deepEqual(postScaledFrameSize(1280,736,.5),{width:640,height:368});
+assert.deepEqual(postScaledFrameSize(5,7,.5),{width:2,height:4},'Comfy ImageScaleBy follows Python ties-to-even, not JS half-up');
+assert.throws(()=>postScaledFrameSize(512,288,0),/无效/);
+assert.throws(()=>postScaledFrameSize(512,288,NaN),/无效/);
+const actualPointFrame=processingPreviewGeometry(512,288,{longSide:512,sourceMultiple:8,multiple:32,postScale:.5});
+assert.deepEqual(actualPointFrame.layerTarget,{width:512,height:288});assert.deepEqual(actualPointFrame.target,{width:256,height:144});
+assert.deepEqual({x:Math.round(.25*actualPointFrame.target.width),y:Math.round(.75*actualPointFrame.target.height)},{x:64,y:108},'positive and negative coordinates share the final frame, not the pre-scale frame');
 
 const crop=coverCropRect(1920,1080,1280,736);
 close(crop.x,20.869565217391255);close(crop.y,0);close(crop.width,1878.2608695652175);close(crop.height,1080);
@@ -54,6 +64,7 @@ const catalog=JSON.parse(readFileSync(new URL('../public/local-catalog.json',imp
 const w={...catalog.find(w=>w.id==='local-card-51'),interface:schemas['local-card-51'],catalogConnected:true,catalogConnection:{adapter:'generic',validation:'structural-verified'}};
 const f=w.interface.controls.find(f=>f.kind==='points');
 assert.equal(f.mediaSlotId,'1084');assert.equal(f.previewRecipe.longSideControlId,'1105:value');assert.equal(f.previewRecipe.longSide,1280);assert.equal(f.previewRecipe.frameRate,24);assert.equal(f.previewRecipe.sourceMultiple,8);assert.equal(f.previewRecipe.skipControlId,'1084:skip_first_frames');
+assert.equal(f.previewRecipe.postScale,.5);
 assert.deepEqual(normalizePointSelection(f.value),emptyPointSelection(),'public defaults must never inherit private sample selections');
 const draft={prompt:'点选测试',refs:[],catalogValues:{},catalogTexts:{},catalogSeedModes:{}};
 const blank=controlField(draft,f);assert.match(blank,/先添加原视频/);assert(!blank.includes('<video'),'an absent source must not use unrelated media');
@@ -85,7 +96,7 @@ const eventRoot={matches:()=>false,querySelectorAll:selector=>selector==='[data-
 const fire=(type,target,extra={})=>{for(const handler of events.get(type)||[])handler({target,...extra});};
 input.dispatchEvent=()=>{writes.push(input.value);assert.ok(writes.length<100,'input synchronization must not recurse');fire('input',input);syncPointPickers(eventRoot);};
 installPointPickers(eventRoot);
-assert.equal(stage.dataset.pointWidth,1280);assert.equal(stage.dataset.pointHeight,736);assert.equal(stage.dataset.pointReady,'true');
+assert.equal(stage.dataset.pointWidth,640);assert.equal(stage.dataset.pointHeight,368);assert.equal(stage.dataset.pointReady,'true');
 fire('click',stage,{clientX:180,clientY:132});assert.deepEqual(normalizePointSelection(input.value).positive,[{x:.25,y:.25}]);
 fire('click',modeButtons[1]);fire('click',stage,{clientX:500,clientY:316});assert.deepEqual(normalizePointSelection(input.value).negative,[{x:.75,y:.75}]);
 const remove={dataset:{pointRemove:'negative',pointIndex:'0'},closest:selector=>selector==='[data-point-picker]'?box:selector==='[data-point-remove]'?remove:null};
@@ -95,6 +106,6 @@ assert.equal(video.currentTime,2);assert.equal(writes.length,beforeFrameChange+1
 fire('keydown',stage,{key:'Enter',preventDefault(){}});assert.equal(normalizePointSelection(input.value).negative.length,1,'keyboard point selection shares the active mode');
 const clearButton={closest:selector=>selector==='[data-point-picker]'?box:selector==='[data-point-clear]'?clearButton:null};
 fire('click',clearButton);assert.deepEqual(normalizePointSelection(input.value),emptyPointSelection());
-assert.ok(sourceFrame.style.width.endsWith('%'));assert.equal(stage.style.aspectRatio,'1280 / 736');
+assert.ok(sourceFrame.style.width.endsWith('%'));assert.equal(stage.style.aspectRatio,'640 / 368');
 
 console.log(JSON.stringify({processedFrameGeometry:'passed',coverCoordinates:'passed',knownFrameSeek:'passed',normalizedLimitAndValidation:'passed',sourceSlotIdentity:'passed',emptySourceGate:'passed',submission:'passed',mediaReplacementReset:'passed',pointerAndKeyboardEvents:'passed',frameChangeReentrantCommit:'passed'}));

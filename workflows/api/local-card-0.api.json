@@ -126,7 +126,7 @@
         "579",
         0
       ],
-      "model": "grok-4-fast-non-reasoning",
+      "model": "grok-4.6",
       "role": "描述图像参考如下格式,输出为英文.\nCharacter appearance description: A young woman with fair skin, slender build, and messy shoulder-length bubblegum-pink hair. She wears a black cropped distressed leather jacket with gold buttons and buckles over a dark bandeau top. Both arms are gold and black mechanical prosthetics with visible gears and joints. She wears black leather shorts, a wide black belt with a large gold buckle, and black straps on her right thigh.\nBackground description: Plain light gray studio background, soft even lighting, no decorations.\n",
       "prompt": "",
       "temperature": 0.6,
@@ -137,7 +137,16 @@
       ]
     },
     "_meta": {
-      "title": "LLM API · LLM Node"
+      "title": "LLM API · LLM Node",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-unavailable-owner-grok-alias",
+          "node": "577",
+          "input": "model",
+          "from": "grok-4-fast-non-reasoning",
+          "to": "grok-4.6"
+        }
+      ]
     }
   },
   "576": {

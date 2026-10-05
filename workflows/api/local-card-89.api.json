@@ -35,6 +35,33 @@
       "title": "PrimitiveStringMultiline"
     }
   },
+  "116": {
+    "class_type": "DeepTranslatorTextNode",
+    "inputs": {
+      "from_translate": "auto",
+      "to_translate": "english",
+      "add_proxies": false,
+      "proxies": "",
+      "auth_data": "",
+      "service": "GoogleTranslator [free]",
+      "text": ""
+    },
+    "_meta": {
+      "title": "DeepTranslatorTextNode"
+    }
+  },
+  "125": {
+    "class_type": "ShowText|pysssss",
+    "inputs": {
+      "text": [
+        "116",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ShowText|pysssss"
+    }
+  },
   "42": {
     "class_type": "JoinStringMulti",
     "inputs": {
@@ -47,6 +74,10 @@
       "return_list": false,
       "string_2": [
         "147",
+        0
+      ],
+      "string_3": [
+        "125",
         0
       ]
     },

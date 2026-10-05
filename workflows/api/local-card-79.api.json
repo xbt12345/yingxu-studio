@@ -103,6 +103,15 @@
       "title": "CR Text Replace"
     }
   },
+  "31": {
+    "class_type": "Text Multiline",
+    "inputs": {
+      "text": "最后输出时.每一大段以Next Scene:为开头的描述用|括起来。\n\n"
+    },
+    "_meta": {
+      "title": "Text Multiline"
+    }
+  },
   "26": {
     "class_type": "JoinStringMulti",
     "inputs": {
@@ -115,6 +124,10 @@
       "return_list": false,
       "string_2": [
         "27",
+        0
+      ],
+      "string_3": [
+        "31",
         0
       ]
     },

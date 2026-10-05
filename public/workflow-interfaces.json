@@ -226,7 +226,7 @@
           "id": "577",
           "label": "提示词辅助 API",
           "baseUrl": "https://api.apilio.ai/v1",
-          "model": "grok-4-fast-non-reasoning",
+          "model": "grok-4.6",
           "bindings": {
             "baseUrl": {
               "node": "577",
@@ -241,7 +241,8 @@
               "input": "api_key"
             }
           },
-          "help": "需兼容节点协议"
+          "help": "需兼容节点协议",
+          "reviewedOwnerDefaultModel": "grok-4.6"
         }
       ],
       "annotation": null,
@@ -357,7 +358,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -509,7 +510,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -677,7 +678,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -894,9 +895,16 @@
               "input": "values.a"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": "any"
+          "step": "any",
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         }
       ],
       "texts": [
@@ -914,7 +922,8 @@
           "node": "minimaxh3 ref",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -1129,9 +1138,47 @@
           "derived": {
             "operation": "frames",
             "targetId": "378:value",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": -18446744073709551615,
+              "max": 18446744073709551615
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 7.686143364045645e+17
+        },
+        {
+          "id": "415:scale_to_length",
+          "nodeId": "415",
+          "key": "output_long_side",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出最长边",
+          "value": 1024,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "unit": "px",
+          "targets": [
+            {
+              "node": "415",
+              "input": "scale_to_length"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "integer": true,
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ],
+          "uiGroup": "output"
         }
       ],
       "texts": [
@@ -1454,9 +1501,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "45:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "45:skip_first_frames",
@@ -1931,7 +1983,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -2064,7 +2116,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "两条结果共用，便于对比",
           "members": [
@@ -2155,7 +2207,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -2170,6 +2222,38 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "142:scale_to_length",
+          "nodeId": "142",
+          "key": "output_pixels",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "value": 1324,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "unit": "千像素",
+          "targets": [
+            {
+              "node": "142",
+              "input": "scale_to_length"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "integer": true,
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
           ]
         }
       ],
@@ -2443,6 +2527,36 @@
       "sourceHash": "2734f9df96bc0dd7ba8157e2acb935033db8a9c39d873d79c094272f72ee86f5",
       "controls": [
         {
+          "id": "135:scale_to_length",
+          "nodeId": "135",
+          "key": "output_pixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "value": 1324,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "targets": [
+            {
+              "node": "135",
+              "input": "scale_to_length"
+            }
+          ],
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ],
+          "help": "越大，生成成本越高"
+        },
+        {
           "id": "108:strength",
           "key": "strength",
           "label": "调色强度",
@@ -2685,7 +2799,9 @@
       "apiProfiles": [],
       "annotation": {
         "mode": "mask",
-        "help": "涂抹区域用于生成掩膜"
+        "help": "涂抹区域用于生成掩膜",
+        "editor": "reference-region",
+        "required": true
       },
       "notes": [
         "原图未提供可独立编辑的输出尺寸；不能把预处理尺寸当成输出分辨率。"
@@ -2738,6 +2854,38 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "38:scale_to_length",
+          "nodeId": "38",
+          "key": "output_long_side",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出最长边",
+          "value": 1324,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "unit": "px",
+          "targets": [
+            {
+              "node": "38",
+              "input": "scale_to_length"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "integer": true,
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
           ]
         }
       ],
@@ -2838,6 +2986,72 @@
               ]
             }
           ]
+        },
+        {
+          "id": "106:megapixels",
+          "nodeId": "106",
+          "key": "model1_megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "模型 1 输出总像素",
+          "value": 1,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "106",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
+          ]
+        },
+        {
+          "id": "123:megapixels",
+          "nodeId": "123",
+          "key": "model2_megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "模型 2 输出总像素",
+          "value": 1,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "123",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
+          ]
         }
       ],
       "texts": [
@@ -2937,6 +3151,72 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "111:megapixels",
+          "nodeId": "111",
+          "key": "model1_megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "模型 1 输出总像素",
+          "value": 1,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "111",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
+          ]
+        },
+        {
+          "id": "122:megapixels",
+          "nodeId": "122",
+          "key": "model2_megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "模型 2 输出总像素",
+          "value": 1,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "122",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
           ]
         }
       ],
@@ -3150,6 +3430,39 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "32:megapixels",
+          "nodeId": "32",
+          "key": "megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "value": 1,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "32",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
           ]
         }
       ],
@@ -3941,9 +4254,9 @@
           "id": "3724:value",
           "key": "value",
           "node": "描述",
-          "label": "创作描述",
+          "label": "分割目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "3621:negative_prompt",
@@ -3958,13 +4271,13 @@
         {
           "id": "3688",
           "kind": "image",
-          "label": "角色参考图 1",
+          "label": "背景图",
           "node": "LoadImage"
         },
         {
           "id": "3737",
           "kind": "image",
-          "label": "角色参考图 2",
+          "label": "角色参考图",
           "node": "LoadImage"
         },
         {
@@ -4161,9 +4474,9 @@
           "id": "623:value",
           "key": "value",
           "node": "描述",
-          "label": "创作描述",
+          "label": "分割目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "520:negative_prompt",
@@ -4581,9 +4894,9 @@
           "id": "753:value",
           "key": "value",
           "node": "描述",
-          "label": "创作描述",
+          "label": "分割目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "650:negative_prompt",
@@ -4793,9 +5106,9 @@
           "id": "443:value",
           "key": "value",
           "node": "描述",
-          "label": "创作描述",
+          "label": "分割目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "1:text",
@@ -4842,7 +5155,7 @@
         {
           "id": "159:widget_0",
           "key": "value",
-          "label": "输出最长边（像素）",
+          "label": "输出短边（像素）",
           "node": "720表示1280X720(720P视频)",
           "nodeId": "159",
           "value": 720,
@@ -4953,25 +5266,9 @@
           "id": "75:prompt",
           "key": "prompt",
           "node": "SDPoseOODProcessor",
-          "label": "创作描述",
+          "label": "姿势检测目标",
           "role": "prompt",
-          "help": ""
-        },
-        {
-          "id": "156:text",
-          "key": "text",
-          "node": "CR Text",
-          "label": "创作描述",
-          "role": "prompt",
-          "help": ""
-        },
-        {
-          "id": "157:text",
-          "key": "text",
-          "node": "CR Text",
-          "label": "创作描述",
-          "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "95:negative_prompt",
@@ -5295,7 +5592,7 @@
           "id": "31",
           "label": "图片反推 API",
           "baseUrl": "https://api.apilio.ai/v1",
-          "model": "grok-4-fast-non-reasoning",
+          "model": "grok-4.6",
           "bindings": {
             "baseUrl": {
               "node": "31",
@@ -5311,7 +5608,8 @@
             }
           },
           "help": "需兼容节点协议",
-          "branchId": "31"
+          "branchId": "31",
+          "reviewedOwnerDefaultModel": "grok-4.6"
         }
       ],
       "annotation": null,
@@ -5410,7 +5708,7 @@
           "id": "29",
           "label": "图片反推 API",
           "baseUrl": "https://api.apilio.ai/v1",
-          "model": "gemini-3.8-flash-low",
+          "model": "gemini-3.8-flash-thinking-low",
           "bindings": {
             "baseUrl": {
               "node": "29",
@@ -5426,7 +5724,8 @@
             }
           },
           "help": "需兼容节点协议",
-          "branchId": "29"
+          "branchId": "29",
+          "reviewedOwnerDefaultModel": "gemini-3.8-flash-thinking-low"
         }
       ],
       "annotation": null,
@@ -7101,6 +7400,38 @@
           "help": "",
           "min": 0,
           "step": 1
+        },
+        {
+          "id": "434:scale_to_length",
+          "nodeId": "434",
+          "key": "output_long_side",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出最长边",
+          "value": 1024,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "unit": "px",
+          "targets": [
+            {
+              "node": "434",
+              "input": "scale_to_length"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "integer": true,
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ]
         }
       ],
       "texts": [
@@ -7477,6 +7808,26 @@
               "input": "resize_type.longer_size"
             }
           ]
+        },
+        {
+          "id": "455:num_guides.strength_1",
+          "nodeId": "455",
+          "key": "num_guides.strength_1",
+          "label": "原视频参考强度",
+          "node": "LTXVAddGuideMulti",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "455",
+              "input": "num_guides.strength_1"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -7697,9 +8048,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "34:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "34:skip_first_frames",
@@ -8336,6 +8692,26 @@
               "input": "resize_type.longer_size"
             }
           ]
+        },
+        {
+          "id": "455:num_guides.strength_1",
+          "nodeId": "455",
+          "key": "num_guides.strength_1",
+          "label": "原视频参考强度",
+          "node": "LTXVAddGuideMulti",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "455",
+              "input": "num_guides.strength_1"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -8524,6 +8900,26 @@
               "input": "resize_type.longer_size"
             }
           ]
+        },
+        {
+          "id": "440:num_guides.strength_1",
+          "nodeId": "440",
+          "key": "num_guides.strength_1",
+          "label": "原视频参考强度",
+          "node": "LTXVAddGuideMulti",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "440",
+              "input": "num_guides.strength_1"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -8572,26 +8968,59 @@
       "sourceHash": "3d342e398469872d2acbcaf4fa7e6030e48e311d6e7b7aee5dbe0cd9abcf3075",
       "controls": [
         {
-          "id": "432:noise_seed",
+          "id": "467:noise_seed",
+          "nodeId": "467",
           "key": "noise_seed",
-          "label": "视频生成种子",
           "node": "RandomNoise",
-          "nodeId": "432",
-          "value": 43,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
           "kind": "seed",
+          "type": "number",
+          "value": 42,
+          "label": "首轮生成种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
+            {
+              "node": "467",
+              "input": "noise_seed"
+            }
+          ],
+          "members": [
+            {
+              "id": "467:noise_seed",
+              "nodeId": "467",
+              "key": "noise_seed",
+              "targets": [
+                {
+                  "node": "467",
+                  "input": "noise_seed"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "432:noise_seed",
+          "nodeId": "432",
+          "key": "noise_seed",
+          "node": "RandomNoise",
+          "kind": "seed",
+          "type": "number",
+          "value": 43,
+          "label": "放大精修种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
           "targets": [
             {
               "node": "432",
               "input": "noise_seed"
             }
           ],
-          "min": 0,
-          "max": 9007199254740991,
-          "step": 1,
-          "help": "",
           "members": [
             {
               "id": "432:noise_seed",
@@ -8600,17 +9029,6 @@
               "targets": [
                 {
                   "node": "432",
-                  "input": "noise_seed"
-                }
-              ]
-            },
-            {
-              "id": "467:noise_seed",
-              "nodeId": "467",
-              "key": "noise_seed",
-              "targets": [
-                {
-                  "node": "467",
                   "input": "noise_seed"
                 }
               ]
@@ -8697,7 +9115,7 @@
         {
           "id": "403:aspect_ratio",
           "key": "aspect_ratio",
-          "label": "画面比例",
+          "label": "处理范围比例",
           "node": "ResolutionSelector",
           "nodeId": "403",
           "value": "3:4 (Portrait Standard)",
@@ -8711,7 +9129,7 @@
               "input": "aspect_ratio"
             }
           ],
-          "help": "",
+          "help": "保留原片比例，设缩放范围",
           "options": [
             "1024x1024",
             "1024x1536",
@@ -8730,7 +9148,7 @@
         {
           "id": "403:megapixels",
           "key": "megapixels",
-          "label": "百万像素",
+          "label": "处理像素预算",
           "node": "ResolutionSelector",
           "nodeId": "403",
           "value": 1.1,
@@ -8744,7 +9162,7 @@
               "input": "megapixels"
             }
           ],
-          "help": "",
+          "help": "按原片比例，像素可能少",
           "min": 0.01,
           "step": "any"
         }
@@ -8795,26 +9213,59 @@
       "sourceHash": "22850d24d702737845f1774c14f4c6af1bb0d0d99f8dc6397fb5963be21aea3d",
       "controls": [
         {
-          "id": "981:noise_seed",
+          "id": "1020:noise_seed",
+          "nodeId": "1020",
           "key": "noise_seed",
-          "label": "视频生成种子",
           "node": "RandomNoise",
-          "nodeId": "981",
-          "value": 999,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
           "kind": "seed",
+          "type": "number",
+          "value": 666,
+          "label": "首轮局部重绘种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
+            {
+              "node": "1020",
+              "input": "noise_seed"
+            }
+          ],
+          "members": [
+            {
+              "id": "1020:noise_seed",
+              "nodeId": "1020",
+              "key": "noise_seed",
+              "targets": [
+                {
+                  "node": "1020",
+                  "input": "noise_seed"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "981:noise_seed",
+          "nodeId": "981",
+          "key": "noise_seed",
+          "node": "RandomNoise",
+          "kind": "seed",
+          "type": "number",
+          "value": 999,
+          "label": "放大精修种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
           "targets": [
             {
               "node": "981",
               "input": "noise_seed"
             }
           ],
-          "min": 0,
-          "max": 9007199254740991,
-          "step": 1,
-          "help": "",
           "members": [
             {
               "id": "981:noise_seed",
@@ -8823,17 +9274,6 @@
               "targets": [
                 {
                   "node": "981",
-                  "input": "noise_seed"
-                }
-              ]
-            },
-            {
-              "id": "1020:noise_seed",
-              "nodeId": "1020",
-              "key": "noise_seed",
-              "targets": [
-                {
-                  "node": "1020",
                   "input": "noise_seed"
                 }
               ]
@@ -8931,8 +9371,50 @@
             "frameRate": 24,
             "skipControlId": "1084:skip_first_frames",
             "skipFrames": 0,
-            "sourceMultiple": 8
+            "sourceMultiple": 8,
+            "postScale": 0.5
           }
+        },
+        {
+          "id": "1065:num_guides.strength_1",
+          "nodeId": "1065",
+          "key": "num_guides.strength_1",
+          "label": "初次重绘参考强度",
+          "node": "LTXVAddGuideMulti",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "1065",
+              "input": "num_guides.strength_1"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.01
+        },
+        {
+          "id": "988:num_guides.strength_1",
+          "nodeId": "988",
+          "key": "num_guides.strength_1",
+          "kind": "strength",
+          "type": "number",
+          "label": "精修参考强度",
+          "node": "LTXVAddGuideMulti",
+          "value": 1.0,
+          "min": 0,
+          "max": 10,
+          "step": 0.01,
+          "targets": [
+            {
+              "node": "988",
+              "input": "num_guides.strength_1"
+            }
+          ],
+          "help": "精修阶段参考约束",
+          "valueOrigin": "installed-selected-dynamic-option-default"
         }
       ],
       "texts": [
@@ -9125,9 +9607,16 @@
               "input": "values.a"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": "any"
+          "step": "any",
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         }
       ],
       "texts": [
@@ -9145,7 +9634,8 @@
           "node": "minimaxh3 ref",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -9517,9 +10007,16 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": 1
+          "step": 1,
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         },
         {
           "id": "161:seed",
@@ -9572,7 +10069,8 @@
           "node": "minimaxh3 ref",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -9695,7 +10193,7 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "至少5帧，时长按帧取整",
           "min": 0,
           "step": 1
         },
@@ -9782,9 +10280,16 @@
               "input": "value_1"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": 1
+          "step": 1,
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         },
         {
           "id": "133:value",
@@ -9903,9 +10408,16 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": 1
+          "step": 1,
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         },
         {
           "id": "21:value",
@@ -9962,6 +10474,23 @@
               ]
             }
           ]
+        },
+        {
+          "id": "56:switch",
+          "nodeId": "56",
+          "key": "switch",
+          "label": "使用尾帧",
+          "node": "ComfySwitchNode",
+          "value": false,
+          "type": "checkbox",
+          "kind": "toggle",
+          "targets": [
+            {
+              "node": "56",
+              "input": "switch"
+            }
+          ],
+          "help": "开启后才会使用尾帧图片"
         }
       ],
       "texts": [
@@ -9984,7 +10513,7 @@
         {
           "id": "24",
           "kind": "image",
-          "label": "尾帧",
+          "label": "尾帧（需启用）",
           "node": "LoadImage"
         }
       ],
@@ -10113,7 +10642,7 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "至少5帧，时长按帧取整",
           "min": 0,
           "step": 1
         }
@@ -10249,6 +10778,38 @@
           "help": "",
           "min": 0,
           "step": 1
+        },
+        {
+          "id": "272:scale_to_length",
+          "nodeId": "272",
+          "key": "output_long_side",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出最长边",
+          "value": 1024,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "unit": "px",
+          "targets": [
+            {
+              "node": "272",
+              "input": "scale_to_length"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "integer": true,
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ]
         }
       ],
       "texts": [
@@ -10391,7 +10952,7 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "依选段及原片长度补齐",
           "min": 0,
           "step": 1,
           "uiGroup": "clip"
@@ -10867,7 +11428,7 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "至少5帧，时长按帧取整",
           "min": 0,
           "step": 1
         }
@@ -10961,7 +11522,7 @@
               "input": "values.a"
             }
           ],
-          "help": "",
+          "help": "至少5帧，时长按帧取整",
           "min": 0,
           "step": 1
         },
@@ -11067,9 +11628,16 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": 1
+          "step": 1,
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         },
         {
           "id": "164:noise_seed",
@@ -12123,7 +12691,8 @@
           "node": "minimaxh3 ref",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -12218,9 +12787,16 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "模型会补齐到支持的长度",
           "min": 0,
-          "step": 1
+          "step": 1,
+          "effectiveDuration": {
+            "kind": "h3-frame-grid",
+            "fps": 24,
+            "minFrames": 5,
+            "stepFrames": 17,
+            "rounding": "python-round"
+          }
         },
         {
           "id": "11:seed",
@@ -12317,49 +12893,156 @@
       "sourceHash": "dbdae1e7e950bc3a00beaa9a50d9ab803ccad6403e30235c647ae453602beb33",
       "controls": [
         {
-          "id": "121:widget_0",
+          "id": "140:scale_to_length",
+          "nodeId": "140",
+          "key": "scale_to_length",
+          "kind": "resolution",
+          "type": "number",
+          "integer": true,
+          "label": "输出最长边",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "value": 1536,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "targets": [
+            {
+              "node": "140",
+              "input": "scale_to_length"
+            }
+          ],
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ],
+          "help": "沿用原比例，越大越慢"
+        },
+        {
+          "id": "108:widget_0",
           "key": "horizontal_angle",
-          "label": "视角 1 · 分支 1 · 水平视角",
+          "label": "视角 1 · 水平视角",
           "node": "QwenMultiangleCameraNode",
-          "nodeId": "121",
-          "value": 180,
+          "nodeId": "108",
+          "value": 315,
           "type": "number",
           "linked": false,
           "inactive": false,
           "kind": "camera",
           "targets": [
             {
-              "node": "121",
+              "node": "108",
               "input": "horizontal_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 1,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
-          "id": "121:widget_1",
+          "id": "108:widget_1",
           "key": "vertical_angle",
-          "label": "视角 1 · 分支 1 · 垂直视角",
+          "label": "视角 1 · 垂直视角",
           "node": "QwenMultiangleCameraNode",
-          "nodeId": "121",
-          "value": 43,
+          "nodeId": "108",
+          "value": 0,
           "type": "number",
           "linked": false,
           "inactive": false,
           "kind": "camera",
           "targets": [
             {
-              "node": "121",
+              "node": "108",
               "input": "vertical_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 1,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
-          "id": "121:widget_2",
+          "id": "108:widget_2",
           "key": "zoom",
-          "label": "视角 1 · 分支 1 · 镜头距离",
+          "label": "视角 1 · 镜头距离",
           "node": "QwenMultiangleCameraNode",
-          "nodeId": "121",
+          "nodeId": "108",
           "value": 5,
           "type": "number",
           "linked": false,
@@ -12367,11 +13050,49 @@
           "kind": "camera",
           "targets": [
             {
-              "node": "121",
+              "node": "108",
               "input": "zoom"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 1,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "65:seed",
@@ -12409,30 +13130,68 @@
           ]
         },
         {
-          "id": "108:widget_0",
+          "id": "109:widget_0",
           "key": "horizontal_angle",
-          "label": "视角 2 · 分支 2 · 水平视角",
+          "label": "视角 2 · 水平视角",
           "node": "QwenMultiangleCameraNode",
-          "nodeId": "108",
-          "value": 315,
+          "nodeId": "109",
+          "value": 270,
           "type": "number",
           "linked": false,
           "inactive": false,
           "kind": "camera",
           "targets": [
             {
-              "node": "108",
+              "node": "109",
               "input": "horizontal_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 2,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
-          "id": "108:widget_1",
+          "id": "109:widget_1",
           "key": "vertical_angle",
-          "label": "视角 2 · 分支 2 · 垂直视角",
+          "label": "视角 2 · 垂直视角",
           "node": "QwenMultiangleCameraNode",
-          "nodeId": "108",
+          "nodeId": "109",
           "value": 0,
           "type": "number",
           "linked": false,
@@ -12440,18 +13199,56 @@
           "kind": "camera",
           "targets": [
             {
-              "node": "108",
+              "node": "109",
               "input": "vertical_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 2,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
-          "id": "108:widget_2",
+          "id": "109:widget_2",
           "key": "zoom",
-          "label": "视角 2 · 分支 2 · 镜头距离",
+          "label": "视角 2 · 镜头距离",
           "node": "QwenMultiangleCameraNode",
-          "nodeId": "108",
+          "nodeId": "109",
           "value": 5,
           "type": "number",
           "linked": false,
@@ -12459,16 +13256,225 @@
           "kind": "camera",
           "targets": [
             {
-              "node": "108",
+              "node": "109",
               "input": "zoom"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 2,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "110:widget_0",
+          "key": "horizontal_angle",
+          "label": "视角 3 · 水平视角",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "110",
+          "value": 45,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "110",
+              "input": "horizontal_angle"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 3,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "110:widget_1",
+          "key": "vertical_angle",
+          "label": "视角 3 · 垂直视角",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "110",
+          "value": 0,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "110",
+              "input": "vertical_angle"
+            }
+          ],
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 3,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "110:widget_2",
+          "key": "zoom",
+          "label": "视角 3 · 镜头距离",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "110",
+          "value": 5,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "110",
+              "input": "zoom"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 3,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "111:widget_0",
           "key": "horizontal_angle",
-          "label": "视角 3 · 分支 3 · 水平视角",
+          "label": "视角 4 · 水平视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "111",
           "value": 180,
@@ -12482,12 +13488,50 @@
               "input": "horizontal_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 4,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "111:widget_1",
           "key": "vertical_angle",
-          "label": "视角 3 · 分支 3 · 垂直视角",
+          "label": "视角 4 · 垂直视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "111",
           "value": 0,
@@ -12501,12 +13545,50 @@
               "input": "vertical_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 4,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "111:widget_2",
           "key": "zoom",
-          "label": "视角 3 · 分支 3 · 镜头距离",
+          "label": "视角 4 · 镜头距离",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "111",
           "value": 5,
@@ -12520,69 +13602,50 @@
               "input": "zoom"
             }
           ],
-          "help": ""
-        },
-        {
-          "id": "109:widget_0",
-          "key": "horizontal_angle",
-          "label": "视角 4 · 分支 4 · 水平视角",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "109",
-          "value": 270,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "109",
-              "input": "horizontal_angle"
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 4,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
             }
-          ],
-          "help": ""
-        },
-        {
-          "id": "109:widget_1",
-          "key": "vertical_angle",
-          "label": "视角 4 · 分支 4 · 垂直视角",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "109",
-          "value": 0,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "109",
-              "input": "vertical_angle"
-            }
-          ],
-          "help": ""
-        },
-        {
-          "id": "109:widget_2",
-          "key": "zoom",
-          "label": "视角 4 · 分支 4 · 镜头距离",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "109",
-          "value": 5,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "109",
-              "input": "zoom"
-            }
-          ],
-          "help": ""
+          }
         },
         {
           "id": "112:widget_0",
           "key": "horizontal_angle",
-          "label": "视角 5 · 分支 5 · 水平视角",
+          "label": "视角 5 · 水平视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "112",
           "value": 0,
@@ -12596,12 +13659,50 @@
               "input": "horizontal_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 5,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "112:widget_1",
           "key": "vertical_angle",
-          "label": "视角 5 · 分支 5 · 垂直视角",
+          "label": "视角 5 · 垂直视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "112",
           "value": 45,
@@ -12615,12 +13716,50 @@
               "input": "vertical_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 5,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "112:widget_2",
           "key": "zoom",
-          "label": "视角 5 · 分支 5 · 镜头距离",
+          "label": "视角 5 · 镜头距离",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "112",
           "value": 5,
@@ -12634,126 +13773,50 @@
               "input": "zoom"
             }
           ],
-          "help": ""
-        },
-        {
-          "id": "122:widget_0",
-          "key": "horizontal_angle",
-          "label": "视角 6 · 分支 6 · 水平视角",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "122",
-          "value": 270,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "122",
-              "input": "horizontal_angle"
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 5,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
             }
-          ],
-          "help": ""
-        },
-        {
-          "id": "122:widget_1",
-          "key": "vertical_angle",
-          "label": "视角 6 · 分支 6 · 垂直视角",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "122",
-          "value": 40,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "122",
-              "input": "vertical_angle"
-            }
-          ],
-          "help": ""
-        },
-        {
-          "id": "122:widget_2",
-          "key": "zoom",
-          "label": "视角 6 · 分支 6 · 镜头距离",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "122",
-          "value": 5,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "122",
-              "input": "zoom"
-            }
-          ],
-          "help": ""
-        },
-        {
-          "id": "110:widget_0",
-          "key": "horizontal_angle",
-          "label": "视角 7 · 分支 7 · 水平视角",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "110",
-          "value": 45,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "110",
-              "input": "horizontal_angle"
-            }
-          ],
-          "help": ""
-        },
-        {
-          "id": "110:widget_1",
-          "key": "vertical_angle",
-          "label": "视角 7 · 分支 7 · 垂直视角",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "110",
-          "value": 0,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "110",
-              "input": "vertical_angle"
-            }
-          ],
-          "help": ""
-        },
-        {
-          "id": "110:widget_2",
-          "key": "zoom",
-          "label": "视角 7 · 分支 7 · 镜头距离",
-          "node": "QwenMultiangleCameraNode",
-          "nodeId": "110",
-          "value": 5,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
-          "kind": "camera",
-          "targets": [
-            {
-              "node": "110",
-              "input": "zoom"
-            }
-          ],
-          "help": ""
+          }
         },
         {
           "id": "119:widget_0",
           "key": "horizontal_angle",
-          "label": "视角 8 · 分支 8 · 水平视角",
+          "label": "视角 6 · 水平视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "119",
           "value": 0,
@@ -12767,12 +13830,50 @@
               "input": "horizontal_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 6,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "119:widget_1",
           "key": "vertical_angle",
-          "label": "视角 8 · 分支 8 · 垂直视角",
+          "label": "视角 6 · 垂直视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "119",
           "value": 0,
@@ -12796,12 +13897,52 @@
             "to": 0,
             "reason": "源图90°超出当前节点-30°至60°范围，采用节点默认0°",
             "source": "QwenMultiangleCameraNode object_info 2026-10-04"
+          },
+          "viewIndex": 6,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          },
+          "sourceDefaultRangeIssue": {
+            "value": 90,
+            "min": -30,
+            "max": 60
           }
         },
         {
           "id": "119:widget_2",
           "key": "zoom",
-          "label": "视角 8 · 分支 8 · 镜头距离",
+          "label": "视角 6 · 镜头距离",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "119",
           "value": 5,
@@ -12815,12 +13956,392 @@
               "input": "zoom"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 6,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "121:widget_0",
+          "key": "horizontal_angle",
+          "label": "视角 7 · 水平视角",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "121",
+          "value": 180,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "121",
+              "input": "horizontal_angle"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 7,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "121:widget_1",
+          "key": "vertical_angle",
+          "label": "视角 7 · 垂直视角",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "121",
+          "value": 43,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "121",
+              "input": "vertical_angle"
+            }
+          ],
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 7,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "121:widget_2",
+          "key": "zoom",
+          "label": "视角 7 · 镜头距离",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "121",
+          "value": 5,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "121",
+              "input": "zoom"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 7,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "122:widget_0",
+          "key": "horizontal_angle",
+          "label": "视角 8 · 水平视角",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "122",
+          "value": 270,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "122",
+              "input": "horizontal_angle"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 8,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "122:widget_1",
+          "key": "vertical_angle",
+          "label": "视角 8 · 垂直视角",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "122",
+          "value": 40,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "122",
+              "input": "vertical_angle"
+            }
+          ],
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 8,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
+        },
+        {
+          "id": "122:widget_2",
+          "key": "zoom",
+          "label": "视角 8 · 镜头距离",
+          "node": "QwenMultiangleCameraNode",
+          "nodeId": "122",
+          "value": 5,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "camera",
+          "targets": [
+            {
+              "node": "122",
+              "input": "zoom"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 8,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "120:widget_0",
           "key": "horizontal_angle",
-          "label": "视角 9 · 分支 9 · 水平视角",
+          "label": "视角 9 · 水平视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "120",
           "value": 90,
@@ -12834,12 +14355,50 @@
               "input": "horizontal_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 360,
+          "step": 1,
+          "viewIndex": 9,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "120:widget_1",
           "key": "vertical_angle",
-          "label": "视角 9 · 分支 9 · 垂直视角",
+          "label": "视角 9 · 垂直视角",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "120",
           "value": 45,
@@ -12853,12 +14412,50 @@
               "input": "vertical_angle"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": -30,
+          "max": 60,
+          "step": 1,
+          "viewIndex": 9,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         },
         {
           "id": "120:widget_2",
           "key": "zoom",
-          "label": "视角 9 · 分支 9 · 镜头距离",
+          "label": "视角 9 · 镜头距离",
           "node": "QwenMultiangleCameraNode",
           "nodeId": "120",
           "value": 5,
@@ -12872,7 +14469,45 @@
               "input": "zoom"
             }
           ],
-          "help": ""
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.1,
+          "viewIndex": 9,
+          "cameraSequence": {
+            "kind": "camera-prompt-list",
+            "firstList": {
+              "node": "137",
+              "cameraNodes": [
+                "108",
+                "109",
+                "110",
+                "111",
+                "112"
+              ]
+            },
+            "secondList": {
+              "node": "138",
+              "optionalList": [
+                "137",
+                0
+              ],
+              "cameraNodes": [
+                "119",
+                "121",
+                "122",
+                "120"
+              ]
+            },
+            "positivePrompt": {
+              "node": "68",
+              "input": "prompt",
+              "source": [
+                "138",
+                1
+              ]
+            }
+          }
         }
       ],
       "texts": [
@@ -12912,6 +14547,37 @@
     "local-card-73": {
       "sourceHash": "8d3c565d0a9503a9adb20cc5738b95c9fd21b8548be6658e4c061189227f5fc4",
       "controls": [
+        {
+          "id": "43:scale_to_length",
+          "nodeId": "43",
+          "key": "output_pixels",
+          "kind": "resolution",
+          "type": "number",
+          "integer": true,
+          "label": "输出总像素",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "value": 1024,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "targets": [
+            {
+              "node": "43",
+              "input": "scale_to_length"
+            }
+          ],
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ],
+          "help": "沿用原比例，越大越慢"
+        },
         {
           "id": "50:widget_0",
           "key": "widget_0",
@@ -13092,9 +14758,9 @@
           "id": "345:prompt",
           "key": "prompt",
           "node": "SDPoseOODProcessor",
-          "label": "图像修改描述",
+          "label": "姿势检测目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         }
       ],
       "media": [
@@ -13133,6 +14799,37 @@
     "local-card-75": {
       "sourceHash": "0eb7da0d8c7d97d59a093d361c0eb357222fbca0e1423eb9459137df960b7945",
       "controls": [
+        {
+          "id": "52:scale_to_length",
+          "nodeId": "52",
+          "key": "scale_to_length",
+          "kind": "resolution",
+          "type": "number",
+          "integer": true,
+          "label": "输出最长边",
+          "node": "LayerUtility: ImageScaleByAspectRatio V2",
+          "value": 1536,
+          "min": 512,
+          "max": 4096,
+          "step": 1,
+          "targets": [
+            {
+              "node": "52",
+              "input": "scale_to_length"
+            }
+          ],
+          "customRange": {
+            "min": 512,
+            "max": 4096,
+            "step": 1
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ],
+          "help": "沿用原比例，越大越慢"
+        },
         {
           "id": "8:seed",
           "key": "seed",
@@ -13754,26 +15451,56 @@
       "sourceHash": "6bb5b69b61828f91c8c90eea29725c8a9a2e6b175fa7580aa29f1efcf58d07b0",
       "controls": [
         {
-          "id": "14:seed",
-          "key": "seed",
-          "label": "图像生成种子",
-          "node": "KSampler",
-          "nodeId": "14",
-          "value": 1057166318720754,
+          "id": "89:resolution",
+          "nodeId": "89",
+          "key": "resolution",
+          "kind": "resolution",
           "type": "number",
-          "linked": false,
-          "inactive": false,
+          "label": "增强输出分辨率",
+          "node": "SeedVR2VideoUpscaler",
+          "value": 1536,
+          "min": 16,
+          "max": 16384,
+          "step": 2,
+          "integer": true,
+          "targets": [
+            {
+              "node": "89",
+              "input": "resolution"
+            }
+          ],
+          "customRange": {
+            "min": 16,
+            "max": 16384,
+            "step": 2
+          },
+          "options": [
+            1024,
+            1536,
+            2048
+          ],
+          "help": "短边像素，越大越慢"
+        },
+        {
+          "id": "14:seed",
+          "nodeId": "14",
+          "key": "seed",
+          "node": "KSampler",
           "kind": "seed",
+          "type": "number",
+          "value": 1057166318720754,
+          "label": "图像生成种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
           "targets": [
             {
               "node": "14",
               "input": "seed"
             }
           ],
-          "min": 0,
-          "max": 9007199254740991,
-          "step": 1,
-          "help": "",
           "members": [
             {
               "id": "14:seed",
@@ -13785,9 +15512,32 @@
                   "input": "seed"
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "id": "89:seed",
+          "nodeId": "89",
+          "key": "upscale_seed",
+          "node": "SeedVR2VideoUpscaler",
+          "kind": "seed",
+          "type": "number",
+          "value": 622687745,
+          "label": "增强种子",
+          "min": 0,
+          "max": 4294967295,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
             {
-              "id": "89:widget_0",
+              "node": "89",
+              "input": "seed"
+            }
+          ],
+          "members": [
+            {
+              "id": "89:seed",
               "nodeId": "89",
               "key": "seed",
               "targets": [
@@ -13883,6 +15633,39 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "39:megapixels",
+          "nodeId": "39",
+          "key": "megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "value": 1.5,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "39",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
           ]
         }
       ],
@@ -14029,6 +15812,34 @@
           "step": 1
         },
         {
+          "id": "485:switch",
+          "nodeId": "485",
+          "key": "switch",
+          "node": "8c8f6d85-63e2-4f16-b659-77e0c1f357d0",
+          "value": false,
+          "type": "checkbox",
+          "kind": "toggle",
+          "linked": false,
+          "inactive": false,
+          "targets": [
+            {
+              "node": "sub0/468",
+              "input": "switch"
+            }
+          ],
+          "label": "自定义输出尺寸",
+          "help": "关闭沿用参考图处理尺寸",
+          "dimensionSource": {
+            "kind": "qwen21-latent-choice",
+            "referenceInput": "36",
+            "customControls": [
+              "486:aspect_ratio",
+              "486:megapixels"
+            ],
+            "referenceLongestEdge": 1664
+          }
+        },
+        {
           "id": "486:aspect_ratio",
           "key": "aspect_ratio",
           "label": "画面比例",
@@ -14045,7 +15856,7 @@
               "input": "aspect_ratio"
             }
           ],
-          "help": "",
+          "help": "开启自定义尺寸后生效",
           "options": [
             "1024x1024",
             "1024x1536",
@@ -14078,7 +15889,7 @@
               "input": "megapixels"
             }
           ],
-          "help": "",
+          "help": "开启自定义尺寸后生效",
           "min": 0.01,
           "step": "any"
         }
@@ -14173,7 +15984,9 @@
           ],
           "help": "",
           "min": 1,
-          "step": 1
+          "step": 1,
+          "max": 1000,
+          "integer": true
         },
         {
           "id": "105:seed",
@@ -14294,7 +16107,7 @@
           "id": "146",
           "label": "提示词辅助 API",
           "baseUrl": "https://api.apilio.ai/v1",
-          "model": "grok-4-fast-reasoning",
+          "model": "grok-4.6",
           "bindings": {
             "baseUrl": {
               "node": "146",
@@ -14309,7 +16122,8 @@
               "input": "api_key"
             }
           },
-          "help": "需兼容节点协议"
+          "help": "需兼容节点协议",
+          "reviewedOwnerDefaultModel": "grok-4.6"
         }
       ],
       "annotation": null,
@@ -14846,7 +16660,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -14961,25 +16775,24 @@
         },
         {
           "id": "58:seed",
-          "key": "seed",
-          "label": "图像生成种子",
-          "node": "Seed (rgthree)",
           "nodeId": "58",
-          "value": 187155922071792,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
+          "key": "seed",
+          "node": "Seed (rgthree)",
           "kind": "seed",
+          "type": "number",
+          "value": 187155922071792,
+          "label": "基础生成种子",
+          "min": 0,
+          "max": 1125899906842624,
+          "step": 1,
+          "integer": true,
+          "help": "",
           "targets": [
             {
               "node": "58",
               "input": "seed"
             }
           ],
-          "min": 0,
-          "max": 9007199254740991,
-          "step": 1,
-          "help": "",
           "members": [
             {
               "id": "58:seed",
@@ -14991,7 +16804,30 @@
                   "input": "seed"
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "id": "63:seed",
+          "nodeId": "63",
+          "key": "refine_seed",
+          "node": "KSampler",
+          "kind": "seed",
+          "type": "number",
+          "value": 199739316831602,
+          "label": "放大重绘种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
+            {
+              "node": "63",
+              "input": "seed"
+            }
+          ],
+          "members": [
             {
               "id": "63:seed",
               "nodeId": "63",
@@ -15004,6 +16840,27 @@
               ]
             }
           ]
+        },
+        {
+          "id": "55:scale_by",
+          "nodeId": "55",
+          "key": "scale_by",
+          "node": "LatentUpscaleBy",
+          "kind": "number",
+          "type": "number",
+          "label": "放大重绘倍率",
+          "value": 1.5,
+          "min": 0.01,
+          "max": 8,
+          "step": 0.01,
+          "unit": "倍",
+          "targets": [
+            {
+              "node": "55",
+              "input": "scale_by"
+            }
+          ],
+          "help": "越大，放大重绘越慢"
         }
       ],
       "texts": [
@@ -15078,6 +16935,26 @@
               ]
             }
           ]
+        },
+        {
+          "id": "88:strength",
+          "nodeId": "88",
+          "key": "strength",
+          "label": "参考约束强度",
+          "node": "预处理 · Control to Image (Anima LLLite )",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "sub0/87",
+              "input": "strength"
+            }
+          ],
+          "help": "调整参考图约束",
+          "min": -10,
+          "max": 10,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -15102,7 +16979,9 @@
       "apiProfiles": [],
       "annotation": {
         "mode": "mask",
-        "help": "涂抹区域用于生成掩膜"
+        "help": "选中区域用于局部重绘，未选区域保留原图。",
+        "editor": "reference-region",
+        "required": true
       },
       "notes": [
         "原图未提供可独立编辑的输出尺寸；不能把预处理尺寸当成输出分辨率。"
@@ -15488,25 +17367,24 @@
         },
         {
           "id": "13:seed",
-          "key": "seed",
-          "label": "图像生成种子",
-          "node": "SeedVR2VideoUpscaler",
           "nodeId": "13",
-          "value": 622687745,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
+          "key": "seed",
+          "node": "SeedVR2VideoUpscaler",
           "kind": "seed",
+          "type": "number",
+          "value": 622687745,
+          "label": "原图直接增强种子",
+          "min": 0,
+          "max": 4294967295,
+          "step": 1,
+          "integer": true,
+          "help": "",
           "targets": [
             {
               "node": "13",
               "input": "seed"
             }
           ],
-          "min": 0,
-          "max": 9007199254740991,
-          "step": 1,
-          "help": "",
           "members": [
             {
               "id": "13:seed",
@@ -15518,18 +17396,30 @@
                   "input": "seed"
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "id": "91:seed",
+          "nodeId": "91",
+          "key": "seed",
+          "node": "KSampler",
+          "kind": "seed",
+          "type": "number",
+          "value": 547451245111443,
+          "label": "分块重绘种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
             {
-              "id": "126:seed",
-              "nodeId": "126",
-              "key": "seed",
-              "targets": [
-                {
-                  "node": "126",
-                  "input": "seed"
-                }
-              ]
-            },
+              "node": "91",
+              "input": "seed"
+            }
+          ],
+          "members": [
             {
               "id": "91:seed",
               "nodeId": "91",
@@ -15537,6 +17427,40 @@
               "targets": [
                 {
                   "node": "91",
+                  "input": "seed"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "126:seed",
+          "nodeId": "126",
+          "key": "seed",
+          "node": "SeedVR2VideoUpscaler",
+          "kind": "seed",
+          "type": "number",
+          "value": 622687745,
+          "label": "重绘后增强种子",
+          "min": 0,
+          "max": 4294967295,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
+            {
+              "node": "126",
+              "input": "seed"
+            }
+          ],
+          "members": [
+            {
+              "id": "126:seed",
+              "nodeId": "126",
+              "key": "seed",
+              "targets": [
+                {
+                  "node": "126",
                   "input": "seed"
                 }
               ]
@@ -15970,7 +17894,9 @@
             },
             {
               "value": 1,
-              "label": "手动画笔掩膜"
+              "label": "手动画笔掩膜",
+              "disabled": true,
+              "reason": "网站尚不支持手工掩膜桥接，请使用自动分割。"
             },
             {
               "value": 2,
@@ -15986,9 +17912,9 @@
           "id": "22:value",
           "key": "value",
           "node": "描述",
-          "label": "清理区域描述",
+          "label": "分割目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "64:text",
@@ -16017,10 +17943,7 @@
       ],
       "schemaVersion": 2,
       "apiProfiles": [],
-      "annotation": {
-        "mode": "visual",
-        "help": "掩膜需手动载入清理分支"
-      },
+      "annotation": null,
       "notes": [],
       "presentation": {
         "kind": "generic",
@@ -16071,6 +17994,37 @@
               ]
             }
           ]
+        },
+        {
+          "id": "76:from_translate",
+          "key": "from_translate",
+          "nodeId": "76",
+          "node": "DeepTranslatorTextNode",
+          "label": "描述语言",
+          "type": "text",
+          "kind": "choice",
+          "value": "auto",
+          "options": [
+            {
+              "value": "auto",
+              "label": "自动翻译"
+            },
+            {
+              "value": "english",
+              "label": "英文直接使用"
+            },
+            {
+              "value": "chinese (simplified)",
+              "label": "简体中文翻译"
+            }
+          ],
+          "targets": [
+            {
+              "node": "76",
+              "input": "from_translate"
+            }
+          ],
+          "help": "英文直接使用，不翻译"
         }
       ],
       "texts": [
@@ -16249,6 +18203,39 @@
               ]
             }
           ]
+        },
+        {
+          "id": "12:megapixels",
+          "nodeId": "12",
+          "key": "megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "value": 1.5,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "12",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
+          ]
         }
       ],
       "texts": [
@@ -16326,6 +18313,39 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "20:megapixels",
+          "nodeId": "20",
+          "key": "megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "value": 1.5,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "20",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
           ]
         }
       ],
@@ -16411,6 +18431,108 @@
               ]
             }
           ]
+        },
+        {
+          "id": "23:detect_hand",
+          "nodeId": "23",
+          "key": "detect_hand",
+          "label": "手部姿态",
+          "node": "OpenposePreprocessor",
+          "value": "enable",
+          "type": "text",
+          "kind": "choice",
+          "targets": [
+            {
+              "node": "23",
+              "input": "detect_hand"
+            }
+          ],
+          "help": "",
+          "options": [
+            {
+              "value": "enable",
+              "label": "启用"
+            },
+            {
+              "value": "disable",
+              "label": "忽略"
+            }
+          ]
+        },
+        {
+          "id": "23:detect_body",
+          "nodeId": "23",
+          "key": "detect_body",
+          "label": "身体姿态",
+          "node": "OpenposePreprocessor",
+          "value": "enable",
+          "type": "text",
+          "kind": "choice",
+          "targets": [
+            {
+              "node": "23",
+              "input": "detect_body"
+            }
+          ],
+          "help": "",
+          "options": [
+            {
+              "value": "enable",
+              "label": "启用"
+            },
+            {
+              "value": "disable",
+              "label": "忽略"
+            }
+          ]
+        },
+        {
+          "id": "23:detect_face",
+          "nodeId": "23",
+          "key": "detect_face",
+          "label": "面部姿态",
+          "node": "OpenposePreprocessor",
+          "value": "enable",
+          "type": "text",
+          "kind": "choice",
+          "targets": [
+            {
+              "node": "23",
+              "input": "detect_face"
+            }
+          ],
+          "help": "",
+          "options": [
+            {
+              "value": "enable",
+              "label": "启用"
+            },
+            {
+              "value": "disable",
+              "label": "忽略"
+            }
+          ]
+        },
+        {
+          "id": "18:megapixels",
+          "nodeId": "18",
+          "key": "megapixels",
+          "label": "输出总像素",
+          "node": "ImageScaleToTotalPixels",
+          "value": 1.5,
+          "type": "number",
+          "kind": "resolution",
+          "targets": [
+            {
+              "node": "18",
+              "input": "megapixels"
+            }
+          ],
+          "help": "越大，生成成本越高",
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP"
         }
       ],
       "texts": [
@@ -16427,13 +18549,13 @@
         {
           "id": "7",
           "kind": "image",
-          "label": "修改参考图 1",
+          "label": "人物原图",
           "node": "LoadImage"
         },
         {
           "id": "24",
           "kind": "image",
-          "label": "修改参考图 2",
+          "label": "姿势参考图",
           "node": "LoadImage"
         }
       ],
@@ -16542,7 +18664,11 @@
           "derived": {
             "operation": "audio-end",
             "startId": "15:offset_seconds",
-            "targetId": "15:duration_seconds"
+            "targetId": "15:duration_seconds",
+            "nativeBounds": {
+              "min": 0,
+              "max": 1e+17
+            }
           },
           "uiGroup": "clip"
         },
@@ -17678,7 +19804,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -18168,25 +20294,24 @@
         },
         {
           "id": "3:seed",
-          "key": "seed",
-          "label": "图像生成种子",
-          "node": "KSampler",
           "nodeId": "3",
-          "value": 998425033959259,
-          "type": "number",
-          "linked": false,
-          "inactive": false,
+          "key": "seed",
+          "node": "KSampler",
           "kind": "seed",
+          "type": "number",
+          "value": 998425033959259,
+          "label": "图像生成种子",
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "integer": true,
+          "help": "",
           "targets": [
             {
               "node": "3",
               "input": "seed"
             }
           ],
-          "min": 0,
-          "max": 9007199254740991,
-          "step": 1,
-          "help": "同时控制生成与增强",
           "members": [
             {
               "id": "3:seed",
@@ -18198,7 +20323,30 @@
                   "input": "seed"
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "id": "80:seed",
+          "nodeId": "80",
+          "key": "upscale_seed",
+          "node": "SeedVR2VideoUpscaler",
+          "kind": "seed",
+          "type": "number",
+          "value": 1375963829,
+          "label": "增强种子",
+          "min": 0,
+          "max": 4294967295,
+          "step": 1,
+          "integer": true,
+          "help": "",
+          "targets": [
+            {
+              "node": "80",
+              "input": "seed"
+            }
+          ],
+          "members": [
             {
               "id": "80:seed",
               "nodeId": "80",
@@ -18587,7 +20735,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -18956,7 +21104,7 @@
         {
           "id": "116:noise_seed",
           "key": "noise_seed",
-          "label": "图像生成种子",
+          "label": "去遮挡种子",
           "node": "RandomNoise",
           "nodeId": "116",
           "value": 324348895176675,
@@ -18985,7 +21133,31 @@
                   "input": "noise_seed"
                 }
               ]
-            },
+            }
+          ]
+        },
+        {
+          "id": "196:noise_seed",
+          "key": "noise_seed",
+          "label": "上色种子",
+          "node": "RandomNoise",
+          "nodeId": "196",
+          "value": 324348895176621,
+          "type": "number",
+          "linked": false,
+          "inactive": false,
+          "kind": "seed",
+          "targets": [
+            {
+              "node": "196",
+              "input": "noise_seed"
+            }
+          ],
+          "min": 0,
+          "max": 9007199254740991,
+          "step": 1,
+          "help": "",
+          "members": [
             {
               "id": "196:noise_seed",
               "nodeId": "196",
@@ -19003,24 +21175,34 @@
       "texts": [
         {
           "id": "118:text",
-          "label": "图像修改描述",
+          "label": "去遮挡描述",
           "node": "CLIP Text Encode (Positive Prompt)",
           "key": "text",
           "role": "prompt",
           "help": ""
+        },
+        {
+          "id": "203:string_b",
+          "key": "string_b",
+          "node": "StringConcatenate",
+          "role": "prompt",
+          "label": "上色补充说明",
+          "help": "留空沿用原上色设置",
+          "preserveWhenEmpty": true,
+          "required": false
         }
       ],
       "media": [
         {
-          "id": "205",
+          "id": "76",
           "kind": "image",
-          "label": "原图",
+          "label": "待去遮挡原图",
           "node": "LoadImage"
         },
         {
-          "id": "76",
+          "id": "205",
           "kind": "image",
-          "label": "修改参考图",
+          "label": "颜色参考图",
           "node": "LoadImage"
         }
       ],
@@ -19084,18 +21266,29 @@
           ]
         }
       ],
-      "texts": [],
+      "texts": [
+        {
+          "id": "171:string_b",
+          "key": "string_b",
+          "node": "StringConcatenate",
+          "role": "prompt",
+          "label": "上色补充说明",
+          "help": "留空沿用原上色设置",
+          "preserveWhenEmpty": true,
+          "required": false
+        }
+      ],
       "media": [
         {
           "id": "76",
           "kind": "image",
-          "label": "原图",
+          "label": "线稿原图",
           "node": "LoadImage"
         },
         {
           "id": "81",
           "kind": "image",
-          "label": "修改参考图",
+          "label": "颜色参考图",
           "node": "LoadImage"
         }
       ],
@@ -19156,6 +21349,39 @@
                 }
               ]
             }
+          ]
+        },
+        {
+          "id": "120:megapixels",
+          "nodeId": "120",
+          "key": "megapixels",
+          "node": "ImageScaleToTotalPixels",
+          "kind": "resolution",
+          "type": "number",
+          "label": "输出总像素",
+          "value": 1,
+          "min": 0.01,
+          "max": 16,
+          "step": 0.01,
+          "unit": "MP",
+          "targets": [
+            {
+              "node": "120",
+              "input": "megapixels"
+            }
+          ],
+          "help": "沿用原比例，越大越慢",
+          "customRange": {
+            "min": 0.01,
+            "max": 16,
+            "step": 0.01
+          },
+          "options": [
+            0.5,
+            1,
+            1.5,
+            2,
+            4
           ]
         }
       ],
@@ -19452,9 +21678,9 @@
           "id": "753:value",
           "key": "value",
           "node": "描述",
-          "label": "生成视频描述",
+          "label": "分割目标",
           "role": "prompt",
-          "help": ""
+          "help": "用简短词描述目标"
         },
         {
           "id": "650:negative_prompt",
@@ -19778,9 +22004,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "13:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "13:skip_first_frames",
@@ -19914,9 +22145,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "507:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "507:skip_first_frames",
@@ -19992,9 +22228,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "18:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "18:skip_first_frames",
@@ -20128,9 +22369,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "15:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "15:skip_first_frames",
@@ -20206,9 +22452,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "25:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "25:skip_first_frames",
@@ -20286,9 +22537,11 @@
             }
           ],
           "help": "",
-          "min": 1,
-          "step": 1,
-          "uiGroup": "output"
+          "min": 16,
+          "step": 2,
+          "uiGroup": "output",
+          "max": 16384,
+          "integer": true
         }
       ],
       "texts": [],
@@ -20400,9 +22653,14 @@
           "derived": {
             "operation": "frames",
             "targetId": "18:frame_load_cap",
-            "fps": 24
+            "fps": 24,
+            "nativeBounds": {
+              "min": 0,
+              "max": 9007199254740991
+            }
           },
-          "uiGroup": "clip"
+          "uiGroup": "clip",
+          "max": 375299968947541.25
         },
         {
           "id": "18:skip_first_frames",
@@ -20524,26 +22782,6 @@
           ]
         },
         {
-          "id": "44:middle_frame_ratio",
-          "nodeId": "44",
-          "key": "middle_frame_ratio",
-          "label": "中间帧位置",
-          "node": "WanFirstMiddleLastFrameToVideo",
-          "value": 0.5,
-          "type": "number",
-          "kind": "strength",
-          "targets": [
-            {
-              "node": "44",
-              "input": "middle_frame_ratio"
-            }
-          ],
-          "help": "0 开头，1 末尾",
-          "min": 0,
-          "max": 1,
-          "step": 0.01
-        },
-        {
           "id": "9:value",
           "nodeId": "9",
           "key": "value",
@@ -20597,13 +22835,13 @@
         {
           "id": "79",
           "kind": "image",
-          "label": "首帧 1",
+          "label": "尾帧",
           "node": "Load First Frame"
         },
         {
           "id": "78",
           "kind": "image",
-          "label": "首帧 2",
+          "label": "首帧",
           "node": "Load First Frame"
         }
       ],
@@ -20749,6 +22987,46 @@
               "input": "resize_type.height"
             }
           ]
+        },
+        {
+          "id": "216:strength",
+          "nodeId": "216",
+          "key": "strength",
+          "label": "首帧参考强度",
+          "node": "LTXVAddGuide",
+          "value": 0.7,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "216",
+              "input": "strength"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.01
+        },
+        {
+          "id": "214:strength",
+          "nodeId": "214",
+          "key": "strength",
+          "label": "尾帧参考强度",
+          "node": "LTXVAddGuide",
+          "value": 0.7,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "214",
+              "input": "strength"
+            }
+          ],
+          "help": "",
+          "min": 0,
+          "max": 10,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -20895,6 +23173,26 @@
               "input": "num_frames"
             }
           ]
+        },
+        {
+          "id": "28:strength",
+          "nodeId": "28",
+          "key": "strength",
+          "label": "参考素材强度",
+          "node": "T2V=Strength 0, I2V=Strength 1",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "28",
+              "input": "strength"
+            }
+          ],
+          "help": "调整首尾帧约束",
+          "min": 0,
+          "max": 1000,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -21054,7 +23352,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -21164,7 +23462,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -21286,7 +23584,7 @@
             }
           ],
           "min": 0,
-          "max": 9007199254740991,
+          "max": 1125899906842624,
           "step": 1,
           "help": "",
           "members": [
@@ -21441,6 +23739,26 @@
           "min": 0,
           "max": 1,
           "step": 0.01
+        },
+        {
+          "id": "136:strength",
+          "nodeId": "136",
+          "key": "strength",
+          "label": "参考约束强度",
+          "node": "ZImageFunControlnet",
+          "value": 1,
+          "type": "number",
+          "kind": "strength",
+          "targets": [
+            {
+              "node": "136",
+              "input": "strength"
+            }
+          ],
+          "help": "调整对原图的依赖",
+          "min": -10,
+          "max": 10,
+          "step": 0.01
         }
       ],
       "texts": [
@@ -21465,7 +23783,9 @@
       "apiProfiles": [],
       "annotation": {
         "mode": "mask",
-        "help": "涂抹区域用于生成掩膜"
+        "help": "选中区域用于局部重绘，未选区域保留原图。",
+        "editor": "reference-region",
+        "required": true
       },
       "notes": [
         "原图未提供可独立编辑的输出尺寸；不能把预处理尺寸当成输出分辨率。"
@@ -21490,16 +23810,13 @@
         {
           "id": "12",
           "kind": "image",
-          "label": "原图（含蒙版）",
+          "label": "原图",
           "node": "LoadImage"
         }
       ],
       "schemaVersion": 2,
       "apiProfiles": [],
-      "annotation": {
-        "mode": "mask",
-        "help": "涂抹区域用于生成掩膜"
-      },
+      "annotation": null,
       "notes": [],
       "presentation": {
         "kind": "generic",
@@ -21657,6 +23974,54 @@
           "help": "",
           "min": 0,
           "step": 1,
+          "uiGroup": "read"
+        },
+        {
+          "id": "12:sort_method",
+          "key": "sort_method",
+          "nodeId": "12",
+          "node": "LoadImageListFromDir //Inspire",
+          "label": "图片排列顺序",
+          "type": "text",
+          "kind": "choice",
+          "value": "Alphabetical (ASC)",
+          "options": [
+            {
+              "value": "None",
+              "label": "原目录顺序"
+            },
+            {
+              "value": "Alphabetical (ASC)",
+              "label": "文件名升序"
+            },
+            {
+              "value": "Alphabetical (DESC)",
+              "label": "文件名降序"
+            },
+            {
+              "value": "Numerical (ASC)",
+              "label": "数字升序"
+            },
+            {
+              "value": "Numerical (DESC)",
+              "label": "数字降序"
+            },
+            {
+              "value": "Datetime (ASC)",
+              "label": "修改时间升序"
+            },
+            {
+              "value": "Datetime (DESC)",
+              "label": "修改时间降序"
+            }
+          ],
+          "targets": [
+            {
+              "node": "12",
+              "input": "sort_method"
+            }
+          ],
+          "help": "连续帧按001命名",
           "uiGroup": "read"
         }
       ],
@@ -23464,7 +25829,8 @@
           "node": "API提示词工程（系统指令）",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -23944,7 +26310,8 @@
           "node": "API提示词工程（系统指令）",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -24221,7 +26588,8 @@
           "node": "API提示词工程（系统指令）",
           "role": "prompt",
           "label": "生成视频描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -25013,7 +27381,8 @@
           "node": "API提示词工程（四域统一单提示词 v1.0）",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -25290,7 +27659,8 @@
           "node": "API提示词工程（四域统一单提示词 v1.1）",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -25578,7 +27948,8 @@
           "node": "新增｜替换域路由规则",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [
@@ -25887,7 +28258,8 @@
           "node": "新增｜替换域路由规则",
           "role": "prompt",
           "label": "创作描述",
-          "help": ""
+          "help": "",
+          "preserveWhenEmpty": true
         }
       ],
       "media": [

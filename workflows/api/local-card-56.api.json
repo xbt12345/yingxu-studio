@@ -54,7 +54,7 @@
       "tau": 1.2,
       "start_percent": 0.2,
       "end_percent": 0.9,
-      "min_tokens": "",
+      "min_tokens": 12288,
       "int8_qk": false,
       "sink_conditioning": "exact_kv",
       "morton": false,
@@ -274,9 +274,9 @@
       "enabled": true,
       "alpha": 0.1,
       "magnitude_match": "per_token",
-      "token_scope": "",
+      "token_scope": "all_tokens",
       "device": "auto",
-      "chunk_tokens": ""
+      "chunk_tokens": 256
     },
     "_meta": {
       "title": "MiniMaxH3SemanticBridgeConfigT8"

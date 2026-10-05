@@ -729,72 +729,6 @@
       "title": "AddLabel"
     }
   },
-  "480": {
-    "class_type": "ImageConcatMulti",
-    "inputs": {
-      "inputcount": 3,
-      "image_1": [
-        "481",
-        0
-      ],
-      "direction": "right",
-      "match_image_size": true,
-      "image_2": [
-        "482",
-        0
-      ]
-    },
-    "_meta": {
-      "title": "ImageConcatMulti"
-    }
-  },
-  "600": {
-    "class_type": "AddLabel",
-    "inputs": {
-      "image": [
-        "480",
-        0
-      ],
-      "text_x": 10,
-      "text_y": 2,
-      "height": 128,
-      "font_size": 14,
-      "font_color": "white",
-      "label_color": "black",
-      "font": "FreeMono.ttf",
-      "text": [
-        "694",
-        0
-      ],
-      "direction": "down",
-      "caption": ""
-    },
-    "_meta": {
-      "title": "AddLabel"
-    }
-  },
-  "491": {
-    "class_type": "VHS_VideoCombine",
-    "inputs": {
-      "images": [
-        "600",
-        0
-      ],
-      "frame_rate": 24,
-      "loop_count": 0,
-      "filename_prefix": "yingxu/result",
-      "format": "video/h264-mp4",
-      "pingpong": false,
-      "save_output": true,
-      "audio": [
-        "460",
-        2
-      ]
-    },
-    "_meta": {
-      "title": "VHS_VideoCombine"
-    }
-  },
   "432": {
     "class_type": "RandomNoise",
     "inputs": {
@@ -997,6 +931,98 @@
     },
     "_meta": {
       "title": "VAEDecodeTiled"
+    }
+  },
+  "483": {
+    "class_type": "AddLabel",
+    "inputs": {
+      "image": [
+        "439",
+        0
+      ],
+      "text_x": 10,
+      "text_y": 2,
+      "height": 48,
+      "font_size": 20,
+      "font_color": "white",
+      "label_color": "black",
+      "font": "FreeMono.ttf",
+      "text": "2. Pass (upscaled)",
+      "direction": "up",
+      "caption": ""
+    },
+    "_meta": {
+      "title": "AddLabel"
+    }
+  },
+  "480": {
+    "class_type": "ImageConcatMulti",
+    "inputs": {
+      "inputcount": 3,
+      "image_1": [
+        "481",
+        0
+      ],
+      "direction": "right",
+      "match_image_size": true,
+      "image_2": [
+        "482",
+        0
+      ],
+      "image_3": [
+        "483",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "ImageConcatMulti"
+    }
+  },
+  "600": {
+    "class_type": "AddLabel",
+    "inputs": {
+      "image": [
+        "480",
+        0
+      ],
+      "text_x": 10,
+      "text_y": 2,
+      "height": 128,
+      "font_size": 14,
+      "font_color": "white",
+      "label_color": "black",
+      "font": "FreeMono.ttf",
+      "text": [
+        "694",
+        0
+      ],
+      "direction": "down",
+      "caption": ""
+    },
+    "_meta": {
+      "title": "AddLabel"
+    }
+  },
+  "491": {
+    "class_type": "VHS_VideoCombine",
+    "inputs": {
+      "images": [
+        "600",
+        0
+      ],
+      "frame_rate": 24,
+      "loop_count": 0,
+      "filename_prefix": "yingxu/result",
+      "format": "video/h264-mp4",
+      "pingpong": false,
+      "save_output": true,
+      "audio": [
+        "460",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "VHS_VideoCombine"
     }
   },
   "441": {

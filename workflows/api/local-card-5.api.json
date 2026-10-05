@@ -462,7 +462,10 @@
         "393",
         0
       ],
-      "frame_rate": 8,
+      "frame_rate": [
+        "368",
+        0
+      ],
       "loop_count": 0,
       "filename_prefix": "yingxu/result",
       "format": "video/h264-mp4",
@@ -474,7 +477,19 @@
       ]
     },
     "_meta": {
-      "title": "VHS_VideoCombine"
+      "title": "VHS_VideoCombine",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-preserve-bernini-video-playback-rate",
+          "node": "395",
+          "input": "frame_rate",
+          "from": 8,
+          "to": [
+            "368",
+            0
+          ]
+        }
+      ]
     }
   }
 }

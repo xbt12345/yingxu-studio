@@ -329,12 +329,13 @@
 .region-brush-size input[type=range]:focus-visible{outline:2px solid #e9c9ff;outline-offset:6px}
 @media(max-width:720px){.asset-dialog[open]{max-height:calc(100dvh - 20px)}.asset-dialog .asset-library-content{max-height:none}.production .catalog-image-edit .catalog-media{min-height:150px}.production .catalog-image-edit .catalog-media img,.production .catalog-image-edit .catalog-media video{height:150px;max-height:150px}.production .catalog-image-edit .catalog-slot{grid-template-columns:repeat(2,minmax(0,1fr))}.production .catalog-image-edit .catalog-annotate{grid-column:1/-1;grid-row:3}.production .catalog-image-edit .catalog-pick{grid-column:1;grid-row:4}.production .catalog-image-edit .catalog-upload{grid-column:2;grid-row:4}.production .catalog-image-edit .catalog-slot:not(:has(.catalog-media)) .catalog-pick{grid-column:1;grid-row:2}.production .catalog-image-edit .catalog-slot:not(:has(.catalog-media)) .catalog-upload{grid-column:2;grid-row:2}}
 
-/* Both creation surfaces use the same rail; expanding it overlays the workspace. */
+/* Reserve the rail's full width while it is open so workspace controls stay clickable. */
 @media(min-width:721px){
  body.production{--side:244px;padding-left:var(--side)}
- body.production.workflow-focus,body.production.workflow-focus.wf-nav-expanded{--side:80px;padding-left:var(--side)}
+ body.production.workflow-focus{--side:80px;padding-left:var(--side)}
+ body.production.workflow-focus.wf-nav-expanded,body.production.workflow-focus:has(.sidebar:hover,.sidebar :focus-visible){--side:256px}
  .production .sidebar{left:10px;top:10px;bottom:10px;width:220px;padding:20px 12px 14px;transform:none;opacity:1;pointer-events:auto;transition:none}
- .production.workflow-focus .sidebar{width:56px;padding:18px 7px 12px;transform:none;opacity:1;pointer-events:auto;box-shadow:none}
+ .production.workflow-focus .sidebar{width:56px;padding:18px 7px 12px;transform:none;opacity:1;pointer-events:auto;box-shadow:none;transition:none}
  .production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)),.production.workflow-focus.wf-nav-expanded .sidebar{width:232px;padding:18px 7px 12px;box-shadow:14px 0 40px #0006}
  .production.workflow-focus.wf-nav-expanded .nav-curtain{display:none}
 }

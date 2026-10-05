@@ -1,10 +1,11 @@
 // Catalog IDs are the binding identity. Display keys may repeat across branches.
 import {normalizeObjectIndices} from './object-indices.js?v=70.1';
+import {referenceProvenance} from './live-history.js?v=75.1';
 export function effectiveCatalogInterface(w){
  const cfg=w?.interface||{controls:[],texts:[],media:[]},connection=w?.catalogConnection;
  if(connection?.adapter!=='generic'||catalogConnectionState(w).blocked)return cfg;
  const select=(items,ids)=>Array.isArray(ids)?items.filter(item=>ids.includes(item.id)):items;
- const merge=(items,overrides)=>items.map(item=>({...item,...(overrides||[]).find(other=>other.id===item.id)}));
+ const merge=(items,overrides)=>items.map(item=>{const merged={...item,...(overrides||[]).find(other=>other.id===item.id)};if(merged.options&&item.options)merged.options=merged.options.map(option=>{const policy=item.options.find(old=>String(old?.value??old)===String(option?.value??option));return policy?.disabled?{...(typeof option==='object'?option:{value:option}),disabled:true,reason:policy.reason||''}:option;});return merged;});
  const media=select(cfg.media,connection.mediaIds??connection.supportedMediaIds).map(slot=>{
   const remote=connection.media?.find(m=>m.id===slot.id);
   const required=remote?.required??(remote?.optional===true?false:slot.required??(slot.optional===true?false:undefined));
@@ -33,18 +34,51 @@ export function validateCatalogConstraints(w,d){
  }
 }
 
+export function validateCatalogOptions(cfg,d){
+ for(const field of cfg.controls||[]){const value=d.catalogValues?.[field.id]??field.value,option=field.options?.find(option=>String(option?.value??option)===String(value));if(option?.disabled===true)throw new Error(option.reason||`${field.label}的此选项暂不可用，请选择其他方式。`);}
+}
+
+function catalogTextValues(cfg,d){
+ const primary=cfg.texts.find(t=>t.role==='prompt');
+ return Object.fromEntries(cfg.texts.map(t=>[t.id,t.id===primary?.id?(d.prompt??d.catalogTexts?.[t.id]??t.value??''):(d.catalogTexts?.[t.id]??t.value??'')]));
+}
+
+export function catalogPromptProblem(w,d){
+ const cfg=effectiveCatalogInterface(w),primary=cfg.texts.find(t=>t.role==='prompt'),texts=catalogTextValues(cfg,d);
+ const missing=cfg.texts.find(t=>(t.required===true||t===primary&&!t.preserveWhenEmpty)&&!String(texts[t.id]).trim());
+ return missing?{id:missing.id,message:`请先填写${missing.label||'创作描述'}。`}:null;
+}
+
 export function catalogSubmission(w,d,assetMap={}){
  validateCatalogConstraints(w,d);
- const cfg=effectiveCatalogInterface(w),primary=cfg.texts.find(t=>t.role==='prompt');
+ const cfg=effectiveCatalogInterface(w);
+ validateCatalogOptions(cfg,d);
  const values=Object.fromEntries(cfg.controls.map(f=>{const value=d.catalogValues?.[f.id]??f.value;return [f.id,f.kind==='indices'?normalizeObjectIndices(value):value];}));
- const texts=Object.fromEntries(cfg.texts.map(t=>[t.id,t.id===primary?.id?(d.prompt??d.catalogTexts?.[t.id]??t.value??''):(d.catalogTexts?.[t.id]??t.value??'')]));
+ const texts=catalogTextValues(cfg,d);
  const assets=Object.fromEntries(cfg.media.filter(slot=>assetMap[slot.id]).map(slot=>[slot.id,assetMap[slot.id]]));
  return {catalog_values:values,catalog_texts:texts,catalog_assets:assets};
 }
 
 export function catalogHistorySnapshot(w,r){
  const values={...(r.catalog_values||{})},texts={...(r.catalog_texts||{})},assets={...(r.catalog_assets||{})};
- for(const f of w?.interface?.controls||[])if(f.kind==='seed'&&values[f.id]!==undefined)for(const member of f.members||[f])values[member.id]=values[f.id];
+ if(r.catalog_values===undefined&&r.settings){
+  const sharedSeed=['local-card-11','local-card-15','local-card-16','local-card-17','local-card-18','local-card-20'].includes(w?.id);
+  for(const f of w?.interface?.controls||[]){
+   const key=f.kind==='seed'&&sharedSeed?'seed':f.key;
+   if(!Object.hasOwn(r.settings,key)||r.settings[key]===undefined)continue;
+   if(f.kind==='seed')for(const member of f.members||[f])values[member.id]=r.settings[key];
+   else values[f.id]=r.settings[key];
+  }
+  const primary=w?.interface?.texts?.find(t=>t.role==='prompt'),negative=w?.interface?.texts?.find(t=>t.role==='negative');
+  if(primary&&typeof r.prompt==='string')texts[primary.id]=r.prompt;
+  if(negative&&typeof r.negative==='string')texts[negative.id]=r.negative;
+  if(w?.id==='local-card-12')for(const [id,key]of [['171:text','prompt_turn2real'],['180:text','prompt_semireal']])if(Object.hasOwn(r.settings,key)&&typeof r.settings[key]==='string')texts[id]=r.settings[key];
+ }
+ for(const f of w?.interface?.controls||[])if(f.kind==='seed'){
+  const executed=r.catalog_seed_values?.[f.id];
+  if(!Object.hasOwn(values,f.id)&&Number.isSafeInteger(executed)&&executed>=Math.max(0,f.min??0)&&executed<=Math.min(f.max??Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER))values[f.id]=executed;
+  if(values[f.id]!==undefined)for(const member of f.members||[f])values[member.id]=values[f.id];
+ }
  return {catalogValues:values,catalogTexts:texts,catalogAssets:assets};
 }
 
@@ -53,7 +87,7 @@ export function catalogReferenceSnapshots(w,r){
  return (r.references||[]).map((a,index)=>{
   const catalogSlot=a.catalog_slot||a.catalogSlot||slots.find(([,id])=>id===a.id)?.[0]||(w?.catalogConnection?.adapter!=='generic'?w?.interface?.media?.[index]?.id:undefined);
   const kind=Object.hasOwn(counts,a.kind)?a.kind:w?.interface?.media?.find(slot=>slot.id===catalogSlot)?.kind||'image';
-  return {id:({image:'图片',video:'视频',audio:'音频'})[kind]+(++counts[kind]),kind,name:a.name,src:a.src,serverAssetId:a.id,available:a.available,catalogSlot};
+  return {id:({image:'图片',video:'视频',audio:'音频'})[kind]+(++counts[kind]),kind,name:a.name,src:a.src,serverAssetId:a.id,available:a.available,catalogSlot,...referenceProvenance(a)};
  });
 }
 

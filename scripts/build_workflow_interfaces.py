@@ -7,10 +7,12 @@ import ast
 import hashlib
 import json
 import re
+import sys
 from collections import defaultdict, Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 
 
 def edges(graph):
@@ -405,12 +407,14 @@ def build():
         texts.sort(key=lambda t: (t['role'] != 'prompt', t['id'].startswith('sub'),
                                  not bool(re.search(r'Prompt Text|Manual|正向|正面|描述|PrimitiveString', t['node'], re.I))))
         from workflow_customization import customize
-        controls, texts, media, metadata = customize(w, graph, controls, texts, media)
+        controls, texts, media, metadata = customize(w, graph, controls, texts, media, source_hash=hashlib.sha256(raw_bytes).hexdigest())
         config = {'sourceHash': hashlib.sha256(raw_bytes).hexdigest(), 'controls': controls,
                   'texts': texts, 'media': media, 'schemaVersion': 2, **metadata}
-        # Connected graph forms are manually reviewed contracts. Keep that review
-        # across catalog rebuilds only while the exact source graph is unchanged.
-        if (ROOT / 'private/platform-compiled' / f"{w['id']}.api.json").exists() and w['id'] in curated:
+        # Published forms keep their reviewed labels, field order and bindings
+        # across rebuilds while the exact source is unchanged. This also covers
+        # generic compiled forms; rebuilding must not relabel a background slot
+        # as a second character reference. Refresh only explicit reviewed fixes.
+        if w['id'] in curated:
             if curated[w['id']]['sourceHash'] != config['sourceHash']:
                 raise RuntimeError(f"{w['id']}: source changed; review connected controls before rebuilding")
             from workflow_customization import refresh_curated_controls

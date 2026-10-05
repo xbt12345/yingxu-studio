@@ -4,6 +4,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY *.py ./
+COPY scripts/reviewed_native_seed_limits.py scripts/review75_generation_sizes.py ./scripts/
 COPY public ./public
 COPY workflows ./workflows
 EXPOSE 8770

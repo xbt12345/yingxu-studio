@@ -116,7 +116,7 @@
     "class_type": "easy compare",
     "inputs": {
       "a": [
-        "20",
+        "yingxu_review73_upscale_longest_side",
         0
       ],
       "b": [
@@ -126,7 +126,22 @@
       "comparison": "a >= b"
     },
     "_meta": {
-      "title": "easy compare"
+      "title": "easy compare",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-scalar-upscale-batch-condition",
+          "node": "14",
+          "input": "a",
+          "from": [
+            "20",
+            0
+          ],
+          "to": [
+            "yingxu_review73_upscale_longest_side",
+            0
+          ]
+        }
+      ]
     }
   },
   "6": {
@@ -197,15 +212,50 @@
         "5",
         0
       ],
-      "frame_rate": 8,
+      "frame_rate": 24,
       "loop_count": 0,
       "filename_prefix": "yingxu/result",
       "format": "video/h264-mp4",
       "pingpong": false,
-      "save_output": true
+      "save_output": true,
+      "audio": [
+        "15",
+        2
+      ]
     },
     "_meta": {
-      "title": "VHS_VideoCombine"
+      "title": "VHS_VideoCombine",
+      "yingxu_execution_repairs": [
+        {
+          "id": "review73-preserve-video-playback-rate",
+          "node": "9",
+          "input": "frame_rate",
+          "from": 8,
+          "to": 24
+        },
+        {
+          "id": "review73-preserve-upscaled-video-audio",
+          "node": "9",
+          "input": "audio",
+          "from": null,
+          "to": [
+            "15",
+            2
+          ]
+        }
+      ]
+    }
+  },
+  "yingxu_review73_upscale_longest_side": {
+    "class_type": "easy imageSizeByLongerSide",
+    "inputs": {
+      "image": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "待放大帧实际最长边"
     }
   }
 }
