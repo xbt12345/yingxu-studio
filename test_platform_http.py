@@ -170,6 +170,94 @@ class PlatformHTTP(unittest.TestCase):
         self.assertEqual(secure.status_code,200,secure.text)
         self.assertIn('secure',secure.headers['set-cookie'].lower())
 
+    def proxy_client(self,origin):
+        """Simulate either side of TLS termination without proxy middleware."""
+        client=TestClient(self.backend.app,base_url=origin,raise_server_exceptions=False)
+        self.addCleanup(client.close)
+        return client
+
+    def proxy_environment(self,domain='studio-fixture.up.railway.app'):
+        return patch.dict(os.environ,{'RAILWAY_PUBLIC_DOMAIN':domain,
+            'RAILWAY_ENVIRONMENT_ID':'fixture-environment',
+            'YINGXU_ACCESS_PASSWORD':'',
+            # Admit these at the outer CORS gate to exercise the stricter account
+            # boundary; a proxy header must never select the trusted origin.
+            'YINGXU_ALLOWED_ORIGINS':'https://testserver https://evil.example'})
+
+    def test_railway_internal_http_accepts_canonical_https_login_and_secure_session(self):
+        public='https://studio-fixture.up.railway.app'
+        internal=self.proxy_client('http://studio-fixture.up.railway.app')
+        with self.proxy_environment():
+            login=internal.post('/api/account/login',json={'username':'alice-user','password':PASSWORD},headers={'Origin':public})
+            self.assertEqual(login.request.url.scheme,'http')
+            self.assertEqual(login.status_code,200,login.text)
+            cookie=login.headers['set-cookie'].lower()
+            self.assertIn('secure',cookie);self.assertIn('httponly',cookie)
+            self.assertIn('samesite=lax',cookie)
+            self.assertEqual(self.alice['id'],login.json()['user']['id'])
+            # Secure cookies are returned over the browser's external HTTPS URL.
+            external=self.proxy_client(public)
+            external.cookies.update(internal.cookies)
+            external.headers.update({'Origin':public,'X-Platform-Account':self.alice['id']})
+            me=external.get('/api/account/me')
+            self.assertEqual(me.status_code,200,me.text)
+            self.assertEqual(self.alice['id'],me.json()['user']['id'])
+            body={'model':'Seedream 4.5','kind':'image','quality':'1K','count':1,'duration':None}
+            denied=external.post('/api/account/creation-quote',json=body,headers={'X-CSRF-Token':'wrong'})
+            self.assertEqual(denied.status_code,403)
+            allowed=external.post('/api/account/creation-quote',json=body,headers={'X-CSRF-Token':me.json()['csrf_token']})
+            self.assertEqual(allowed.status_code,200,allowed.text)
+        self.network_get.assert_not_called();self.network_post.assert_not_called()
+
+    def test_railway_rejects_same_http_host_origin_and_other_https_origin(self):
+        before=self.count('platform_sessions')
+        with self.proxy_environment():
+            for base,origin in [('http://studio-fixture.up.railway.app','http://studio-fixture.up.railway.app'),
+                    ('http://evil.example','http://evil.example'),
+                    ('https://evil.example','https://evil.example')]:
+                with self.subTest(base=base,origin=origin):
+                    response=self.proxy_client(base).post('/api/account/login',
+                        json={'username':'alice-user','password':PASSWORD},headers={'Origin':origin})
+                    self.assertEqual(response.status_code,403,response.text)
+                    self.assertEqual(response.json().get('code'),'invalid_origin')
+                    self.assertNotIn('set-cookie',response.headers)
+        self.assertEqual(before,self.count('platform_sessions'))
+
+    def test_forged_forwarded_headers_cannot_override_configured_canonical_origin(self):
+        with self.proxy_environment():
+            client=self.proxy_client('http://evil.example')
+            response=client.post('/api/account/login',json={'username':'alice-user','password':PASSWORD},headers={
+                'Origin':'https://evil.example',
+                'Forwarded':'for=127.0.0.1;proto=https;host=evil.example',
+                'X-Forwarded-Proto':'https','X-Forwarded-Host':'evil.example',
+                'X-Forwarded-Port':'443'})
+            self.assertEqual(response.status_code,403,response.text)
+            self.assertEqual(response.json().get('code'),'invalid_origin')
+            self.assertNotIn('set-cookie',response.headers)
+
+    def test_missing_or_invalid_railway_domain_cannot_promote_forged_https_origin(self):
+        for domain in ('','https://evil.example','evil.example/path','user@evil.example',
+                       'evil.example:443','evil.example?query=1','evil.example#fragment'):
+            with self.subTest(domain=domain),self.proxy_environment(domain):
+                client=self.proxy_client('http://evil.example')
+                response=client.post('/api/account/login',json={'username':'alice-user','password':PASSWORD},headers={
+                    'Origin':'https://evil.example','Forwarded':'proto=https;host=evil.example',
+                    'X-Forwarded-Proto':'https','X-Forwarded-Host':'evil.example'})
+                self.assertEqual(response.status_code,403,response.text)
+                self.assertEqual(response.json().get('code'),'invalid_origin')
+                self.assertNotIn('set-cookie',response.headers)
+
+    def test_local_origin_still_works_without_railway_and_does_not_trust_forwarded_proto(self):
+        with patch.dict(os.environ,{'RAILWAY_PUBLIC_DOMAIN':'','RAILWAY_ENVIRONMENT_ID':'',
+                'YINGXU_ACCESS_PASSWORD':'','YINGXU_ACCESS_USERNAME':'yingxu'}):
+            login=self.anon.post('/api/account/login',json={'username':'alice-user','password':PASSWORD},headers={
+                'Origin':ORIGIN,'Forwarded':'proto=https;host=evil.example',
+                'X-Forwarded-Proto':'https','X-Forwarded-Host':'evil.example'})
+            self.assertEqual(login.status_code,200,login.text)
+            cookie=login.headers['set-cookie'].lower()
+            self.assertIn('httponly',cookie);self.assertNotIn('secure',cookie)
+            self.assertEqual(self.anon.get('/api/account/me').status_code,200)
+
     def test_mutations_require_matching_origin_and_csrf(self):
         payload={'package_id':'test-package','idempotency_key':'csrf-test-key','method':'admin_contact'}
         for headers in ({'Origin':'https://evil.example'}, {'X-CSRF-Token':'wrong'}, {'Origin':''},{'X-CSRF-Token':''}):

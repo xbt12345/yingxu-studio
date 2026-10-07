@@ -19,6 +19,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from platform_accounts import PlatformAccounts, AccountError
 from payment_gateway import PaymentGateway, PaymentError
 from platform_pricing import load_pricing_policy, creation_quote, enrich_workflow_quote, PricingValidationError
+from deployment_access import railway_origin
 
 CURRENT_USER = ContextVar('yingxu_account', default=None)
 SUBMISSION_IDENTITY = ContextVar('yingxu_submission_identity', default=None)
@@ -316,7 +317,11 @@ class PlatformIntegration:
                 return await call_next(request)
             origin = request.headers.get('origin')
             unsafe = request.method not in ('GET', 'HEAD', 'OPTIONS')
-            if unsafe and (not origin or origin.rstrip('/') != str(request.base_url).rstrip('/')):
+            # Railway terminates HTTPS before forwarding to the internal HTTP
+            # listener. Use its configured domain, never caller-supplied proxy
+            # headers, as the public origin for account and CSRF checks.
+            expected_origin = railway_origin() or str(request.base_url).rstrip('/')
+            if unsafe and (not origin or origin.rstrip('/') != expected_origin):
                 return JSONResponse({'detail':'请从当前网站进行此操作。', 'code':'invalid_origin'}, 403)
             if path in public_api:
                 if path == '/api/account/register':
@@ -373,7 +378,8 @@ class PlatformIntegration:
         def login_response(session, request):
             response = JSONResponse({'user':public_user(session['user']), 'csrf_token':session['csrf_token']})
             response.set_cookie(COOKIE, session['token'], httponly=True, samesite='lax',
-                secure=request.url.scheme == 'https', max_age=self.accounts().SESSION_SECONDS, path='/')
+                secure=bool(railway_origin()) or request.url.scheme == 'https',
+                max_age=self.accounts().SESSION_SECONDS, path='/')
             response.headers['Cache-Control'] = 'no-store'
             return response
 
