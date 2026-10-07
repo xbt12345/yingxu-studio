@@ -5,13 +5,13 @@ if (-not (Test-Path -LiteralPath $pythonPath)) { $pythonPath = (Get-Command pyth
 $dataPath = Join-Path $projectPath 'private'
 New-Item -ItemType Directory -Path $dataPath -Force | Out-Null
 try {
-    $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/api/health' -TimeoutSec 3
-    if ($null -ne $status.online) { Write-Host '映序已经运行：http://127.0.0.1:8770/studio.html'; exit 0 }
+    $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/healthz' -TimeoutSec 3
+    if ($status.status -eq 'ok') { Write-Host '映序已经运行：http://127.0.0.1:8770/studio.html'; exit 0 }
 } catch {}
 Start-Process -FilePath $pythonPath -ArgumentList @('-X','utf8','server.py') -WorkingDirectory $projectPath -WindowStyle Hidden -RedirectStandardOutput (Join-Path $dataPath 'server.stdout.log') -RedirectStandardError (Join-Path $dataPath 'server.stderr.log')
 for ($attempt = 0; $attempt -lt 40; $attempt++) {
     try {
-        $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/api/health' -TimeoutSec 2
+        $status = Invoke-RestMethod -Uri 'http://127.0.0.1:8770/healthz' -TimeoutSec 2
         Write-Host '映序已启动：http://127.0.0.1:8770/studio.html'
         exit 0
     } catch { Start-Sleep -Milliseconds 250 }

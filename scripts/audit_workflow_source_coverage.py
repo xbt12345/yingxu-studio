@@ -18,7 +18,14 @@ from workflow_customization import INTERNAL
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from adapters import CATALOG_WORKFLOWS  # noqa: E402
-CONNECTED_IDS = {item['id'] for item in CATALOG_WORKFLOWS}
+from configuration import workflow_path  # noqa: E402
+import schema_adapters  # noqa: E402
+from workflow_customization import dance_ratio_protocol_form  # noqa: E402
+GENERIC = schema_adapters.registry()
+MANIFEST_IDS = {item['id'] for item in json.loads((ROOT / 'workflows/manifest.json').read_text('utf-8'))['workflows']}
+LEGACY_IDS = {item['id'] for item in CATALOG_WORKFLOWS}
+CONNECTED_IDS = MANIFEST_IDS & (LEGACY_IDS | {
+    key for key, spec in GENERIC.items() if spec.get('validation') == 'structural-verified'})
 
 
 def field_candidates(workflow, graph):
@@ -104,7 +111,7 @@ def media_candidates(graph):
                   if node_id in graph.reachable and graph.enabled(node_id) and pattern.search(node['type']))
 
 
-def text_coverage(workflow_id, text_id, graph, config):
+def text_coverage(workflow_id, text_id, graph, config, source_hash=None):
     if any(item['id'] == text_id for item in config['texts']):
         return 'direct'
     node_id, key = text_id.rsplit(':', 1)
@@ -113,6 +120,14 @@ def text_coverage(workflow_id, text_id, graph, config):
         return 'merged-prompt'
     if any(item['id'] == text_id and item['kind'] == 'segment' for item in config['controls']):
         return 'typed-timecode'
+    if workflow_id == 'local-card-30' and text_id in ('156:text', '157:text'):
+        # These two exact source-pinned constants drive the portrait/landscape
+        # switch. Reuse the contract's topology checks; never ignore arbitrary
+        # omitted CR Text inputs or a later changed source graph.
+        import copy
+        dance_ratio_protocol_form(copy.deepcopy(config['controls']), config['texts'],
+                                  graph=graph, source_hash=source_hash)
+        return 'reviewed-orientation-protocol-constant'
     index = int(workflow_id.split('-')[-1]) if workflow_id.startswith('local-card-') else -1
     if node_id in INTERNAL.get(index, set()):
         return 'internal-template'
@@ -164,11 +179,13 @@ def main():
         findings = [{**candidate, 'coverage': classify(candidate, config['controls'])} for candidate in candidates]
         source_texts = text_candidates(workflow, graph)
         source_media = media_candidates(graph)
-        compiled_path = ROOT / 'private/platform-compiled' / f'{workflow_id}.api.json'
-        compiled = json.loads(compiled_path.read_text(encoding='utf-8')) if workflow_id in CONNECTED_IDS and compiled_path.exists() else None
+        spec = GENERIC.get(workflow_id)
+        compiled_path = (workflow_path(workflow_id) if workflow_id in LEGACY_IDS else
+                         schema_adapters.template_path(spec) if workflow_id in CONNECTED_IDS else None)
+        compiled = json.loads(compiled_path.read_text(encoding='utf-8')) if compiled_path is not None and compiled_path.exists() else None
         if workflow_id in CONNECTED_IDS and compiled is None:
             raise AssertionError(f'{workflow_id}: connected manifest has no compiled graph')
-        text_findings = [{'id': text_id, 'coverage': text_coverage(workflow_id, text_id, graph, config)}
+        text_findings = [{'id': text_id, 'coverage': text_coverage(workflow_id, text_id, graph, config, actual_hash)}
                          for text_id in source_texts]
         media_findings = [{'id': node_id, 'nodeType': graph.nodes[node_id]['type'],
                            'coverage': media_coverage(workflow, node_id, graph, config, compiled)}

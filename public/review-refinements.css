@@ -8,22 +8,7 @@ body.production{--side:250px;padding-left:var(--side)}
 .production .sidebar .session-nav{display:flex;flex-direction:column}
 .production .sidebar .nav-item{display:flex;justify-content:flex-start}
 .production .sidebar .nav-item span{display:inline}
-body.production.workflow-focus{--side:72px;padding-left:72px}
-.production.workflow-focus .sidebar{width:52px;padding:20px 8px 16px;transform:none;opacity:1;pointer-events:auto;z-index:70;transition:width .22s ease,padding .22s ease;box-shadow:none}
-.production.workflow-focus .sidebar .brand{justify-content:center;margin:0 0 24px}
-.production.workflow-focus .sidebar .brand-name,.production.workflow-focus .sidebar .nav-item span,.production.workflow-focus .sidebar .session-nav{display:none}
-.production.workflow-focus .sidebar .nav-item{justify-content:center;padding:10px 8px}
-.production.workflow-focus .sidebar .new-session{font-size:0;padding:0;width:34px;min-height:34px;gap:0;margin-bottom:20px}
-.production.workflow-focus .sidebar .new-session .icon{width:17px;height:17px;flex:none}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)),.production.workflow-focus.wf-nav-expanded .sidebar{width:227px;padding:24px 14px 18px;box-shadow:12px 0 36px #0006;background:#151419f5}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .brand,.production.workflow-focus.wf-nav-expanded .sidebar .brand{justify-content:flex-start;margin:0 8px 24px}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .brand-name,.production.workflow-focus.wf-nav-expanded .sidebar .brand-name{display:block}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-item span,.production.workflow-focus.wf-nav-expanded .sidebar .nav-item span{display:inline}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .session-nav,.production.workflow-focus.wf-nav-expanded .sidebar .session-nav{display:flex}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-item,.production.workflow-focus.wf-nav-expanded .sidebar .nav-item{justify-content:flex-start}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .new-session,.production.workflow-focus.wf-nav-expanded .sidebar .new-session{display:flex;font-size:12px;width:100%;min-height:40px;gap:8px;padding:0 12px}
-.production.workflow-focus .wf-nav-toggle{display:none}
-.production.workflow-focus.wf-nav-expanded .nav-curtain{display:none}
+/* Editor navigation is maintained in interface-polish.css. */
 .session-item{display:flex;align-items:center;min-width:0;border-radius:9px}
 .session-item:hover,.session-item:focus-within{background:#ffffff07}
 .session-item .session-link{flex:1;min-width:0}.session-item .session-link span{min-width:0}

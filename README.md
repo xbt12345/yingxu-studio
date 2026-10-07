@@ -1,5 +1,7 @@
 # 映序 YINGXU Studio
 
+当前发布版本：**0.81.0（2026-10-07）**。版本标记位于 `public/version.json`；工作流参数及发布检查见 [本轮审查](docs/workflow-release-review-2026-10-07.md)。
+
 将复杂工作流转换为素材、描述和参数组成的创作界面。包含前端、Python 后端、交互组件库和 **151 个目录工作流的界面配置**；界面数量不等于逐图真实生成通过。当前指定算力卡有 **127 个 ready 工作流、6 个 blocked**，另有 1 个空文件和 3 个同图别名。2 个外部命名模板另计，当前 manifest 注册 **129 份 API 模板**（34 份既有适配器、95 份通用执行合同）。ready 表示可构造任务，模型加载与真实输出仍需验收。逐图输入与阻碍见 [参数审查](docs/card-workflow-parameter-audit.md)。
 
 [在线演示](https://xbt12345.github.io/yingxu-studio/) · [组件库](https://xbt12345.github.io/yingxu-studio/workflow-control-library.html) · [真实生成接入说明](workflows/README.md)
@@ -32,6 +34,8 @@ cp .env.example .env
 
 打开 **http://127.0.0.1:8770/studio.html**；组件库位于 **http://127.0.0.1:8770/workflow-control-library.html**。`Ctrl+C` 停止服务。Windows 也可在安装后运行 `启动映序.ps1`，它优先使用项目的 `.venv`。
 
+正式创作台需要登录。首次启动会在数据目录生成 `admin-bootstrap.json`，管理员用户名和随机初始密码只保存在该私有文件中。旧作品和素材归初始管理员，新注册用户使用独立账户。登录后可在“我的账号”修改密码；文件不可上传到公开仓库。具体操作见 [账户、权限与积分](docs/platform-accounts-and-credits.md)。
+
 `.env` 保持默认即可演示，不需要密钥。启用真实生成，在 `.env` 中填写自己的 `CHENYU_CARD_URL`，按 [接入说明](workflows/README.md) 安装模型和节点，再重启服务。
 
 ## Docker 搭建
@@ -50,7 +54,7 @@ docker compose up --build --wait
 
 | 功能 | 当前能力 | 条件 / 边界 |
 | --- | --- | --- |
-| 自由创作 | 图像/视频演示生成、参考图编辑、结果操作 | 内置模型列表尚未接入真实 API |
+| 自由创作 | 图像/视频创作输入、费用预估、参考图编辑与结果操作 | 内置模型列表尚未接入真实 API，正常环境暂不可生成 |
 | 创作工具目录 | 151 个工作流的素材、参数、种子、草稿与演示 | 未接入条目仍明确显示演示 |
 | 已接入工具 | 127 个 ready 卡工作流 + 2 个外部命名模板；可选素材、独立描述分支和主体点选 | 自己的 ComfyUI、模型和自定义节点；6 个卡工作流 blocked；95 份通用合同完成结构检查，尚未逐图生成 |
 | 参考图编辑 | 框选、圈选、画笔、擦除、本地自动抠图、撤销、保存 | 自动抠图需要 Python 后端；参考强度目前只保存偏好，尚未影响生成 |
@@ -58,6 +62,9 @@ docker compose up --build --wait
 | 灵感库 | 图片/视频保存到素材、带配方进入创作 | 发布只保存到当前浏览器，尚无跨用户共享 |
 | 本机目录选择 | 原生选择器 + 手填运行端目录 | 桌面 Python 的 Tkinter；不会自动上传文件夹 |
 | 工作流导入 | 尚未实现 | 使用仓库提供的目录和模板 |
+| 账户与权限 | 注册、登录、退出、修改密码、普通用户与管理员、任务和媒体归属校验 | 草稿与素材浏览器存储也按账户分开；跨设备草稿同步未实现 |
+| 管理员后台 | 独立 `admin.html`，用户搜索/分页、权限、停用/恢复、积分调整、账本与操作记录 | 入口收在账号菜单，仅管理员可用；积分调整填写原因，保留冻结积分 |
+| 积分与充值 | 套餐、订单、积分账本、生成冻结/结算、管理员核对 | 真实工具费用须由管理员配置；支付宝/微信需商户配置，银行卡/管理员走人工到账；尚未实收验收 |
 
 演示结果使用内置素材，不消费算力，也不代表模型实时生成。**GitHub Pages 只有静态前端**，不能运行本地自动抠图、文件夹选择或真实生成；体验这些功能请本地搭建。
 
@@ -74,14 +81,13 @@ docker compose up --build --wait
 | `YINGXU_DATA_DIR` | 项目 `private/`；SQLite、上传、作品和回执 |
 | `YINGXU_WORKFLOW_DIR` | 项目 `workflows/api/`；可使用自己的模板目录 |
 | `YINGXU_ALLOWED_ORIGINS` | 可选反向代理的完整 Origin，多个以逗号分隔 |
-| `YINGXU_ACCESS_USERNAME` | 对外共享创作台的访问账号，默认 `yingxu` |
-| `YINGXU_ACCESS_PASSWORD` | 对外访问的随机密码，至少 16 位；Railway 未配置时拒绝网站访问 |
+| 支付渠道变量 | 支付宝、微信商户及银行卡收款配置，见 [充值配置](docs/payment-configuration.md)；默认不开自动收款 |
 
 新克隆直接使用公开模板，不依赖作者电脑的配置。已有所有者环境继续优先使用 `private/*.api.json`、`private/platform-compiled/*.api.json`、新增通用图的 `private/card-compiled/*.api.json` 和 `private/backend.json`。公开模板已清理密钥、个人输入提示词、素材名和素材选点，保留模型和节点绑定；详见模板清单。
 
-浏览器素材、草稿、作品列表使用 IndexedDB / 本地状态；真实生成文件及任务另存后端数据目录。备份需要同时保留浏览器数据与后端数据。清除站点数据、换浏览器或删除数据目录会影响对应记录。
+浏览器素材、草稿、作品列表使用每账户独立的 IndexedDB / 本地状态；真实生成文件、任务、账户、订单和积分账本另存后端数据目录。备份需要同时保留浏览器数据与后端数据。清除站点数据、换浏览器或删除数据目录会影响对应记录。旧浏览器数据首次登录初始管理员时复制迁移，保留原数据库。
 
-当前是个人创作台，没有多人账号与数据隔离，默认只监听本机；共享体验建议每人独立搭建。对外共享可设置上述访问账号与密码（HTTP Basic，须使用 HTTPS），只向受邀用户开放。Railway 的自动域名会自动放行对应 HTTPS Origin，健康检查使用不依赖 GPU 的 `/healthz`。访问密码不能代替多人数据隔离，不能直接当成公共多人服务。
+创作台现使用账户会话、来源与 CSRF 校验、资源归属及管理员权限，旧共享 HTTP Basic 入口已被账户系统替代。默认只监听本机。对外部署须使用 HTTPS、持久卷和单服务进程，并另做实际部署、用户隔离、模型生成和支付对账验收；本地测试不代表公开商业运行已验收。健康检查继续使用不依赖 GPU 的 `/healthz`。
 
 Railway 的费用、变量、持久卷、预算与逐步操作见 [Railway 部署指南](docs/railway-deployment.md)。
 
@@ -108,6 +114,9 @@ server.py          FastAPI、素材上传、任务和结果保存
 adapters.py        工作流节点绑定与参数校验
 schema_adapters.py 通用执行合同、字段绑定、音频/文字结果与主体选点
 configuration.py  环境配置与模板回退加载
+platform_accounts.py  账户、归属、积分账本与订单事务
+platform_api.py       登录会话、权限及账户/管理接口
+payment_gateway.py    支付宝/微信签名收款与可信支付证据
 local_cutout.py    CPU 本地抠图
 workflows/         公开 API 模板、模型/节点清单、接入说明
 scripts/           测试、配置检查、目录维护工具

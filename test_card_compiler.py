@@ -24,6 +24,30 @@ def ui_graph_from_api(api):
 
 
 class CompilerTests(unittest.TestCase):
+    def test_dance_machine_ratio_public_contract_preserves_orientation_links(self):
+        root=Path(__file__).parent
+        path=root/'workflows/api/local-card-30.api.json'
+        original=path.read_bytes();graph=json.loads(original)
+        public=json.loads((root/'public/workflow-interfaces.json').read_text('utf-8'))['workflows']['local-card-30']
+        texts=copy.deepcopy(public['texts'])+[
+            {'id':nid+':text','key':'text','targets':[{'node':nid,'input':'text'}]}
+            for nid in ('156','157')]
+        controls,texts=dance_ratio_protocol_form(copy.deepcopy(public['controls']),texts,graph=graph)
+        self.assertEqual({t['id']for t in texts},{'75:prompt','95:negative_prompt'})
+        self.assertEqual(next(c for c in controls if c['id']=='159:widget_0')['targets'],
+                         [{'node':'161','input':'scale_to_length'}])
+        bound_texts=[{**t,'targets':[{'node':t['id'].rsplit(':',1)[0],'input':t['key']}]}for t in texts]
+        compiled=sanitize(graph,bound_texts,[])
+        self.assertEqual(compiled['156']['inputs']['text'],'16:9')
+        self.assertEqual(compiled['157']['inputs']['text'],'9:16')
+        self.assertEqual(compiled['160']['inputs'],{'boolean':['158',0],'ON_TRUE':['156',0],'ON_FALSE':['157',0]})
+        self.assertEqual(compiled['161']['inputs']['aspect_ratio'],['160',0])
+        self.assertEqual(path.read_bytes(),original)
+
+    @unittest.skipUnless(
+        (Path(__file__).parent/'private/research/card-20261004/graph-030.json').is_file()
+        and (Path(__file__).parent/'private/review72/object_info.json').is_file(),
+        'Original private dance graph and registered-node snapshot are not shipped.')
     def test_dance_machine_ratios_are_not_creative_prompts_and_source_survives_compilation(self):
         from build_workflow_interfaces import Graph
         root=Path(__file__).parent
@@ -50,7 +74,7 @@ class CompilerTests(unittest.TestCase):
 
     def test_dance_protocol_rejects_unknown_source_or_changed_ratio_consumers(self):
         root=Path(__file__).parent
-        graph=json.loads((root/'private/card-compiled/local-card-30.api.json').read_text('utf-8'))
+        graph=json.loads((root/'workflows/api/local-card-30.api.json').read_text('utf-8'))
         for nid,key,value in (('156','text','new creative text'),('161','aspect_ratio',['75',0]),
                               ('160','ON_FALSE',['156',0]),('161','scale_to_side','longest')):
             with self.subTest(node=nid,key=key):

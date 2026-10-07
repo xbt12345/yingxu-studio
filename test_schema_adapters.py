@@ -10,11 +10,22 @@ from pathlib import Path
 from fractions import Fraction
 from unittest.mock import Mock, patch
 
-from fastapi.testclient import TestClient
-
+from test_server_helpers import load_server, TestAccounts, authenticated_client
+import platform_api
 import schema_adapters
-import server
 from reviewed_repairs import apply_reviewed_repairs, ReviewedRepairError, VIDEO_CHAINS, SOURCE_HASHES
+
+server=None
+_server_import=None
+
+def setUpModule():
+    global server,_server_import
+    server,_server_import=load_server('yingxu_isolated_schema_backend')
+
+def tearDownModule():
+    import sys
+    sys.modules.pop(server.__name__,None)
+    _server_import.cleanup()
 
 
 def fixture():
@@ -332,21 +343,34 @@ class SchemaServerContracts(unittest.TestCase):
         (root/'uploads').mkdir();(root/'outputs').mkdir();(root/'receipts').mkdir()
         self.patches=[patch.object(server,'DB',root/'test.sqlite3'),patch.object(server,'PRIVATE',root),
                       patch.object(server,'BASE','http://synthetic-comfy.invalid'),
+                      patch.object(platform_api,'PlatformAccounts',TestAccounts),
                       patch.object(schema_adapters,'WORKFLOW_DIR',root),
                       patch.object(schema_adapters,'registry',side_effect=lambda:{self.spec['id']:self.spec})]
         for p in self.patches:p.start()
         with server.database() as db:
             db.execute('CREATE TABLE jobs (id TEXT PRIMARY KEY, token TEXT UNIQUE, data TEXT NOT NULL)')
             db.execute('CREATE TABLE assets (id TEXT PRIMARY KEY, data TEXT NOT NULL)')
-        self.client=TestClient(server.app)
+        self.accounts=server.platform_bridge.accounts()
+        self.owner=self.accounts.bootstrap_admin()
+        self.accounts.configure_pricing(self.owner['id'],self.spec['id'],0)
+        self.client=authenticated_client(server,self.accounts,self.owner)
         self.body={'workflow_id':self.spec['id'],'source_hash':self.spec['source_hash'],'token':'schema-submit-once',
                    'catalog_values':{'first:strength':0.2,'second:strength':0.9,'first:seed':123},
                    'catalog_texts':{},'catalog_assets':{}}
         self.remote=Mock(status_code=200);self.remote.json.return_value={'prompt_id':'synthetic-remote-job'}
 
     def tearDown(self):
+        self.client.close()
         for p in reversed(self.patches):p.stop()
         self.tmp.cleanup()
+
+    def save_fixture(self,record):
+        server.save(record)
+        self.accounts.grant_resource(self.owner['id'],'job',record['id'])
+
+    def own_asset_fixture(self,record):
+        self.accounts.grant_resource(self.owner['id'],'asset',record['id'])
+        self.accounts.remember_asset(self.owner['id'],record)
 
     def video_fixture(self,with_audio=False):
         path=server.PRIVATE/'uploads'/'fixture.mp4'
@@ -369,6 +393,7 @@ class SchemaServerContracts(unittest.TestCase):
         data=path.read_bytes();key=hashlib.sha256(data).hexdigest();path.replace(path.parent/(key+'.mp4'))
         record=dict(id=key,kind='video',name='source.mp4',bytes=len(data),remote='source.mp4')
         with server.database()as db:db.execute('INSERT OR REPLACE INTO assets VALUES (?,?)',(key,json.dumps(record)))
+        self.own_asset_fixture(record)
         return record
 
     def vhs_fixture(self):
@@ -411,7 +436,7 @@ class SchemaServerContracts(unittest.TestCase):
         with patch.object(server,'ensure_remote',side_effect=lambda record:{**record,'remote':'remote-'+record['id']+'.mp4'})as transfer,patch.object(server.requests,'post',return_value=self.remote)as post:
             response=self.client.post('/api/jobs',json=body)
             self.assertEqual(response.status_code,200,response.text)
-            original=server.job(response.json()['id']);original['status']='done';server.save(original)
+            original=server.job(response.json()['id']);original['status']='done';self.save_fixture(original)
             rerun=self.client.post('/api/jobs/'+original['id']+'/rerun',json={'token':'vhs-schema-rerun'})
             self.assertEqual(rerun.status_code,200,rerun.text);self.assertEqual(post.call_count,2)
         derivative=server.asset(source['id'])['vhs_silent_asset']
@@ -466,6 +491,7 @@ class SchemaServerContracts(unittest.TestCase):
     def test_seedvr2_invalid_short_edge_rejected_before_asset_lookup_or_remote_call(self):
         spec=json.loads((Path(__file__).parent/'workflows/compiled-registry.json').read_text('utf-8'))['workflows']['local-card-122']
         self.spec=copy.deepcopy(spec)
+        self.accounts.configure_pricing(self.owner['id'],self.spec['id'],0)
         for value in (1,15,17,16385,16386,1080.5):
             with self.subTest(short_edge=value),patch.object(server,'asset')as asset,patch.object(server,'ensure_remote')as upload,patch.object(server.requests,'post')as post:
                 response=self.client.post('/api/jobs',json={
@@ -499,6 +525,7 @@ class SchemaServerContracts(unittest.TestCase):
                     record={'id':key,'kind':'image','name':'source.png','bytes':file.stat().st_size,'remote':'source.png'}
                     with server.database()as db:
                         db.execute('INSERT OR REPLACE INTO assets VALUES (?,?)',(key,json.dumps(record)))
+                    self.own_asset_fixture(record)
                     body={**self.body,'token':f'mask-{consumer}-{marked}','catalog_assets':{'source':key}}
                     with patch.object(server,'ensure_remote',side_effect=lambda a:a)as transfer,patch.object(server.requests,'post',return_value=self.remote)as post:
                         response=self.client.post('/api/jobs',json=body)
@@ -519,6 +546,7 @@ class SchemaServerContracts(unittest.TestCase):
         server.Image.new('RGB',(32,32),(80,120,160)).save(file)
         record={'id':key,'kind':'image','name':'source.png','bytes':file.stat().st_size,'remote':'source.png'}
         with server.database()as db:db.execute('INSERT INTO assets VALUES (?,?)',(key,json.dumps(record)))
+        self.own_asset_fixture(record)
         body={**self.body,'catalog_assets':{'source':key}}
         with patch.object(server,'ensure_remote',side_effect=lambda a:a),patch.object(server.requests,'post',return_value=self.remote)as post:
             response=self.client.post('/api/jobs',json=body)
@@ -575,7 +603,7 @@ class SchemaServerContracts(unittest.TestCase):
         with patch.object(server.requests,'post',return_value=self.remote):
             first=self.client.post('/api/jobs',json=self.body).json()
         original=server.job(first['id']);original['status']='done'
-        original['graph']['first']['inputs']['api_key']='private-credential';server.save(original)
+        original['graph']['first']['inputs']['api_key']='private-credential';self.save_fixture(original)
         self.spec['controls']=[];self.spec['validation']='blocked'
         with patch.object(server.requests,'post',return_value=self.remote) as post:
             rerun=self.client.post('/api/jobs/'+first['id']+'/rerun',json={'token':'schema-rerun-once'})
@@ -590,7 +618,7 @@ class SchemaServerContracts(unittest.TestCase):
     def test_retry_preserves_actual_seeds_and_graph_while_redraw_still_randomizes(self):
         with patch.object(server.requests,'post',return_value=self.remote):
             first=self.client.post('/api/jobs',json=self.body).json()
-        original=server.job(first['id']);original['status']='failed';server.save(original)
+        original=server.job(first['id']);original['status']='failed';self.save_fixture(original)
         with patch.object(schema_adapters,'_random_seed')as random,patch.object(server.requests,'post',return_value=self.remote)as post:
             retry=self.client.post('/api/jobs/'+original['id']+'/rerun',json={'token':'exact-schema-retry','randomize_seed':False})
             self.assertEqual(retry.status_code,200,retry.text);self.assertEqual(post.call_count,1);random.assert_not_called()
@@ -683,7 +711,7 @@ class SchemaServerContracts(unittest.TestCase):
         self.assertNotIn('remote',paired);self.assertNotIn('private-input-path',json.dumps(paired))
         saved={'id':'paired-reference-job','token':'paired-reference-token','workflow_id':self.spec['id'],
                'asset_ids':[paired['id']],'schema_spec':{**self.spec,'media':[{'id':'source'}]}}
-        server.save(saved);reference=self.client.get('/api/jobs/'+saved['id']).json()['references'][0]
+        self.save_fixture(saved);reference=self.client.get('/api/jobs/'+saved['id']).json()['references'][0]
         for key in ('original_asset_id','original_src','original_available','annotation_mode'):
             self.assertEqual(reference[key],paired[key])
         # The unmasked original has no remote copy yet; direct reuse uploads it
@@ -711,7 +739,7 @@ class SchemaServerContracts(unittest.TestCase):
         graph=copy.deepcopy(self.graph)
         j={'id':'text-result','token':'text-result-token','workflow_id':self.spec['id'],'status':'running',
            'graph':graph,'schema_spec':{**self.spec,'output':'text','outputs':['save']},'settings':{},'asset_ids':[]}
-        server.save(j)
+        self.save_fixture(j)
         with patch.object(server.requests,'get') as get:
             server.collect(j,{'outputs':{'save':{'text':['第一段','第二段']}},'status':{'completed':True}})
             get.assert_not_called()
@@ -746,7 +774,7 @@ class SchemaServerContracts(unittest.TestCase):
         return j,history
 
     def test_card51_collection_presents_main_results_before_labeled_previews(self):
-        j,history=self.card51_output_fixture();server.save(j)
+        j,history=self.card51_output_fixture();self.save_fixture(j)
         data=server.asset_file(self.video_fixture()).read_bytes()
         remote=Mock(status_code=200);remote.__enter__=Mock(return_value=remote);remote.__exit__=Mock(return_value=False)
         remote.iter_content.return_value=[data]
@@ -989,17 +1017,25 @@ class ReviewedExecutionRepairs(unittest.TestCase):
         spec=json.loads((root/'workflows/compiled-registry.json').read_text('utf-8'))['workflows'][wid]
         return graph,spec
 
-    def test_outpaint_omits_unbound_target_defaults_preserving_user_padding_and_source(self):
+    @unittest.skipUnless(
+        (Path(__file__).parent/'private/research/card-20261004/graph-046.json').is_file(),
+        'Original private outpaint graph is not shipped.')
+    def test_outpaint_original_target_sockets_are_unbound_and_source_bytes_preserved(self):
         root=Path(__file__).parent
-        paths=[root/'workflows/api/local-card-46.api.json',root/'private/research/card-20261004/graph-046.json']
-        original={path:path.read_bytes() for path in paths}
-        raw=json.loads(original[paths[1]])
+        path=root/'private/research/card-20261004/graph-046.json'
+        original=path.read_bytes()
+        raw=json.loads(original)
         raw_nodes=raw.get('nodes',raw.get('graph',{}).get('nodes',[]))
         source_pad=next(n for n in raw_nodes if str(n['id'])=='5149')
         for key in ('target_width','target_height'):
             socket=next(i for i in source_pad['inputs'] if i['name']==key)
             self.assertIsNone(socket['link'])
             self.assertNotIn('widget',socket,'these are optional source sockets, not authored target sizes')
+        self.assertEqual(path.read_bytes(),original)
+
+    def test_outpaint_omits_unbound_target_defaults_preserving_user_padding_and_source(self):
+        path=Path(__file__).parent/'workflows/api/local-card-46.api.json'
+        original=path.read_bytes()
         for targets in ({'target_width':512,'target_height':512},
                         {'target_width':None,'target_height':None},{}):
             graph,spec=self.source(46)
@@ -1017,7 +1053,7 @@ class ReviewedExecutionRepairs(unittest.TestCase):
                 if nid!='5149':self.assertEqual(graph[nid],value)
             after=copy.deepcopy(graph);apply_reviewed_repairs(graph,spec)
             self.assertEqual(graph,after,'saved job repair is idempotent')
-        for path,data in original.items():self.assertEqual(path.read_bytes(),data)
+        self.assertEqual(path.read_bytes(),original)
 
     def test_outpaint_unknown_size_source_and_link_drift_reject_atomically(self):
         mutations=(('5149','target_width',640),('5149','target_height',['unreviewed',0]),

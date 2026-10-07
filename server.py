@@ -1,6 +1,7 @@
 """Personal studio: persistent jobs, real ComfyUI execution and retained videos."""
 import asyncio
 import copy
+import errno
 import secrets
 import mimetypes
 import math
@@ -49,6 +50,7 @@ PRIVATE = DATA_DIR
 for folder in ['uploads','outputs','receipts']:(PRIVATE/folder).mkdir(parents=True,exist_ok=True)
 DB = PRIVATE/'workspace.sqlite3'
 lock=threading.RLock()
+collecting=set()
 stopping=threading.Event()
 @contextmanager
 def database():
@@ -62,14 +64,25 @@ with database() as db:
     db.execute('CREATE TABLE IF NOT EXISTS assets (id TEXT PRIMARY KEY, data TEXT NOT NULL)')
 
 def jobs():
-    with lock,database() as db:return [json.loads(r[0]) for r in db.execute('SELECT data FROM jobs ORDER BY rowid')]
+    with lock,database() as db:records=[json.loads(r[0]) for r in db.execute('SELECT data FROM jobs ORDER BY rowid')]
+    bridge=globals().get('platform_bridge')
+    return bridge.visible_jobs(records) if bridge else records
 def job(id):
+    bridge=globals().get('platform_bridge')
+    if bridge:bridge.check_resource('job',id)
     with lock,database() as db:
         r=db.execute('SELECT data FROM jobs WHERE id=?',(id,)).fetchone()
     if not r:raise HTTPException(404,'找不到任务。')
     return json.loads(r[0])
 def save(j):
-    with lock,database() as db:db.execute('INSERT INTO jobs VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET token=excluded.token,data=excluded.data',(j['id'],j['token'],json.dumps(j,ensure_ascii=False)))
+    bridge=globals().get('platform_bridge')
+    if bridge:bridge.accounts()
+    with lock,database() as db:
+        db.execute('INSERT INTO jobs(id,token,data) VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET token=excluded.token,data=excluded.data',(j['id'],j['token'],json.dumps(j,ensure_ascii=False)))
+        if bridge:bridge.track_saved_job(j,db)
+
+def persist_new_job(j):
+    return platform_bridge.persist_job(j)
 def update(id,**values):
     with lock:
         j=job(id)
@@ -77,9 +90,12 @@ def update(id,**values):
         j.update(values);save(j)
     return j
 def asset(id):
+    bridge=globals().get('platform_bridge')
+    if bridge:bridge.check_resource('asset',id)
     with lock,database() as db:r=db.execute('SELECT data FROM assets WHERE id=?',(id,)).fetchone()
     if not r:raise HTTPException(400,'参考素材未上传成功，请重新选择素材后提交。')
-    return json.loads(r[0])
+    record=json.loads(r[0])
+    return bridge.asset_details(record) if bridge else record
 def asset_file(a):
     # The hash, rather than a caller-supplied filename, owns the disk path.
     if len(a['id']) != 64 or any(c not in '0123456789abcdef' for c in a['id']):
@@ -229,6 +245,8 @@ def vhs_audio_asset(source):
             existing=db.execute('SELECT data FROM assets WHERE id=?',(key,)).fetchone()
             if existing:record=json.loads(existing[0])
             else:db.execute('INSERT INTO assets VALUES (?,?)',(key,json.dumps(record,ensure_ascii=False)))
+            bridge=globals().get('platform_bridge')
+            if bridge:bridge.remember_asset({**record,'name':Path(source['name']).stem+'（静音兼容）.mp4'},connection=db)
             original_record=json.loads(db.execute('SELECT data FROM assets WHERE id=?',(source['id'],)).fetchone()[0])
             original_record['vhs_silent_asset']=key
             db.execute('UPDATE assets SET data=? WHERE id=?',(json.dumps(original_record,ensure_ascii=False),source['id']))
@@ -345,7 +363,7 @@ def public(j):
         if index<len(catalog_slots):reference['catalogSlot']=catalog_slots[index]
         references.append(reference)
     recovered=history_seed_values(j)
-    return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items','schema_spec']},'outputs':historical_output_presentation(j),'request_token':j['token'],'references':references,**({'catalog_seed_values':recovered}if recovered else{})}
+    return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items','schema_spec','owner_id','client_token','request_fingerprint','_platform_replay']},'outputs':historical_output_presentation(j),'request_token':j.get('client_token',j['token']),'references':references,**({'catalog_seed_values':recovered}if recovered else{})}
 
 def public_graph(graph):
     """Keep execution credentials out of workflow downloads and video metadata."""
@@ -979,7 +997,54 @@ def reviewed_compiler_failure(j,h):
     return None
 
 
+@contextmanager
+def output_collection(id):
+    # Reserve one task, never hold the database lock across remote/file I/O.
+    with lock:
+        acquired=id not in collecting
+        if acquired:collecting.add(id)
+    try:yield acquired
+    finally:
+        if acquired:
+            with lock:collecting.discard(id)
+
+
+def output_failure(j,error):
+    message=str(error)
+    ffmpeg_error=isinstance(error,av.error.FFmpegError)
+    storage_error=error if isinstance(error,OSError) and not ffmpeg_error else None
+    cause=error.__cause__
+    if storage_error is None and isinstance(cause,OSError) and cause.errno in (errno.ENOSPC,errno.EDQUOT,errno.EACCES,errno.EPERM,errno.EROFS):
+        storage_error=cause
+    if storage_error is not None:
+        if storage_error.errno in (errno.ENOSPC,errno.EDQUOT):
+            code,reason='storage_full','本地存储空间不足'
+        elif storage_error.errno in (errno.EACCES,errno.EPERM,errno.EROFS):
+            code,reason='storage_unwritable','本地保存目录不可读写'
+        else:code,reason='storage_error','本地保存读写失败'
+    elif '超过允许大小' in message or isinstance(error,Image.DecompressionBombError):
+        code,reason='output_too_large','作品超过本站取回大小上限'
+    elif ffmpeg_error or isinstance(error,UnicodeError) or any(text in message for text in ('无法读取算力卡返回的作品','不是有效 MP4','媒体格式不正确')):
+        code,reason='invalid_output','返回的作品损坏或格式不正确'
+    else:code,reason='output_processing_error','作品信息处理失败'
+    return update(j['id'],status='failed',stage='作品取回或保存失败',failure_phase='output',output_failure_code=code,
+                  error=f'生成已结束，但{reason}。已保存文件与原任务保留；请处理原因后重新取回作品，该操作不会重新生成。',
+                  connection_error=None,ended=time.time()*1000)
+
+
+def finish_output_collection(j,h):
+    try:_collect_outputs(j,h)
+    except requests.RequestException:raise
+    except (ValueError,OSError,av.error.FFmpegError,Image.DecompressionBombError) as error:
+        output_failure(j,error)
+
+
 def collect(j,h):
+    with output_collection(j['id']) as acquired:
+        if acquired:finish_output_collection(j,h)
+
+
+def _collect_outputs(j,h):
     spec=j.get('schema_spec') or manifest(j['workflow_id']) or schema_adapters.manifest(j['workflow_id']) or {}
     kind=spec.get('output','video')
     items=output_items(h,kind,spec.get('outputs') if j.get('schema_spec') else None)
@@ -988,9 +1053,9 @@ def collect(j,h):
         if compiler_error:
             receipt={k:h.get(k) for k in ['outputs','status']}
             (PRIVATE/'receipts'/f'{j["id"]}.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),'utf-8')
-        update(j['id'],status='failed',stage=('视频编辑描述编译失败' if j['workflow_id']=='local-card-117' else '姿势描述编译失败') if compiler_error else '没有作品输出',error=compiler_error or '工作流已结束，但没有返回可保存的作品。请检查输出节点。',ended=time.time()*1000)
+        update(j['id'],status='failed',stage=('视频编辑描述编译失败' if j['workflow_id']=='local-card-117' else '姿势描述编译失败') if compiler_error else '没有作品输出',error=compiler_error or '工作流已结束，但没有返回可保存的作品。请检查输出节点。',ended=time.time()*1000,failure_phase=None,output_failure_code=None,connection_error=None)
         return
-    update(j['id'],status='downloading',stage='正在取回作品',error=None)
+    update(j['id'],status='downloading',stage='正在取回作品',error=None,connection_error=None,failure_phase=None,output_failure_code=None,ended=None)
     folder=PRIVATE/'outputs'/j['id'];folder.mkdir(exist_ok=True)
     outputs=[]
     for i,item in enumerate(items):
@@ -1030,24 +1095,38 @@ def collect(j,h):
                 if name in item.get('subfolder','').split('/') or item.get('filename','').startswith(name+'_'):
                     branch_name=display;break
         outputs.append(dict(workflow_embedded=embedded,id=j['id']+'o'+str(i),type=kind,src=f'/api/media/{j["id"]}/{i}{suffix}',poster='',duration=j.get('settings',{}).get('duration') if kind in ('video','audio') else None,bytes=dest.stat().st_size,label=branch_name or (label[i] if i<len(label) else None),**({'text':dest.read_text('utf-8')} if kind=='text' else {})))
+        update(j['id'],outputs=present_outputs(j,items,outputs))
     receipt={k:h.get(k) for k in ['outputs','status']}
     (PRIVATE/'receipts'/f'{j["id"]}.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),'utf-8')
     translation_error=reviewed_translation_failure(j,h)
     compiler_error=reviewed_compiler_failure(j,h)
     update(j['id'],status='failed' if translation_error or compiler_error else 'done',
            stage='描述翻译失败' if translation_error else ('视频编辑描述编译失败' if j['workflow_id']=='local-card-117' else '姿势描述编译失败') if compiler_error else '已保存作品',
-           outputs=present_outputs(j,items,outputs),ended=time.time()*1000,error=translation_error or compiler_error)
+           outputs=present_outputs(j,items,outputs),ended=time.time()*1000,error=translation_error or compiler_error,
+           failure_phase=None,output_failure_code=None,connection_error=None)
 
 def reconcile_unknown(j,q):
     candidates=[x for values in q.values() for x in values]
     for x in candidates:
         if len(x)>3 and x[3].get('yingxu_job_id')==j['id']:
             return update(j['id'],prompt_id=x[1],status='queued',stage='已找回任务',error=None)
-    response=requests.get(BASE+'/history',params={'max_items':100},timeout=30);response.raise_for_status();h=response.json()
-    for pid,v in h.items():
-        p=v.get('prompt',[])
-        if len(p)>3 and p[3].get('yingxu_job_id')==j['id']:
-            return update(j['id'],prompt_id=pid,status='queued',stage='已找回任务',error=None)
+    # ComfyUI supports a nonnegative offset from the oldest history entry.
+    # Check the recent page first, then bounded older pages. Older servers that
+    # ignore offset are detected by repeated prompt IDs; never submit again.
+    seen=set()
+    for offset in [None,*range(0,1000,100)]:
+        params={'max_items':100}
+        if offset is not None:params['offset']=offset
+        response=requests.get(BASE+'/history',params=params,timeout=30);response.raise_for_status();h=response.json()
+        if not isinstance(h,dict):raise ValueError('Invalid remote history response')
+        page=tuple(sorted(str(pid) for pid in h))
+        if not h or page in seen:break
+        seen.add(page)
+        for pid,v in h.items():
+            p=v.get('prompt',[]) if isinstance(v,dict) else []
+            if isinstance(p,(list,tuple)) and len(p)>3 and isinstance(p[3],dict) and p[3].get('yingxu_job_id')==j['id']:
+                return update(j['id'],prompt_id=pid,status='queued',stage='已找回任务',error=None)
+        if offset is not None and len(h)<100:break
     return j
 
 def poll_once():
@@ -1087,7 +1166,7 @@ def poll_once():
                 try:attempt_cancel(current,q)
                 except HTTPException as e:update(j['id'],cancel_error=str(e.detail),stage='取消待确认',status='cancelling')
         except (requests.RequestException,ValueError) as e:
-            update(j['id'],connection_error='视频尚未取回，连接恢复后自动重试。' if j['status']=='downloading' else '连接暂时中断，正在重连；任务不会重复提交。')
+            update(j['id'],connection_error='作品尚未取回，连接恢复后自动重试。' if job(j['id'])['status']=='downloading' else '连接暂时中断，正在重连；任务不会重复提交。')
 
 def monitor():
     while not stopping.is_set():
@@ -1147,7 +1226,8 @@ def local_directory(request:Request,body:DirectorySelection):
 
 @app.middleware('http')
 async def local_origin(request:Request,call_next):
-    denied=access_denied(request.url.path,request.headers.get('authorization'))
+    # Account sessions replace the former shared-password gate once installed.
+    denied=None if globals().get('platform_bridge') else access_denied(request.url.path,request.headers.get('authorization'))
     if denied is not None:return denied
     # Authentication and the origin guard serve different purposes.
     origin=request.headers.get('origin')
@@ -1162,7 +1242,7 @@ async def local_origin(request:Request,call_next):
         if parsed.scheme=='https' and (parsed.hostname or '').endswith('.ts.net') and parsed.path in ('','/') and not parsed.query and not parsed.fragment and not parsed.username:
             allowed.add(private_origin.rstrip('/'))
     except (OSError,ValueError,AttributeError):pass
-    if request.url.path.startswith('/api') and origin and origin not in allowed:
+    if request.url.path.startswith('/api') and not request.url.path.startswith('/api/payments/webhooks/') and origin and origin not in allowed:
         from fastapi.responses import JSONResponse
         return JSONResponse({'detail':'不允许跨站调用。'},403)
     response=await call_next(request)
@@ -1196,6 +1276,15 @@ def catalog_connections():
 def public_schema(spec):
     def control(field):
         visible={key:copy.deepcopy(field[key]) for key in ('id','kind','key','value','type','label','nodeId','min','max','step','integer','options','customRange','derived','help','uiGroup','unit','guidanceRange','mediaSlotId') if key in field}
+        # A native INT64 bound becomes rounded when parsed as a browser Number.
+        # Narrow only the editable projection, preserving the execution contract
+        # and fractional seconds accepted by duration controls.
+        if visible.get('type') == 'number':
+            for bounds in (visible, visible.get('customRange', {}), visible.get('guidanceRange', {})):
+                for key, limit in (('max', 9007199254740991), ('min', -9007199254740991)):
+                    value = bounds.get(key)
+                    if type(value) is int and (value > limit if key == 'max' else value < limit):
+                        bounds[key] = limit
         if field.get('previewRecipe'):
             visible['previewRecipe']={key:copy.deepcopy(field['previewRecipe'][key]) for key in ('longSideControlId','longSide','multiple','sourceMultiple','postScale','fit','frameRate','skipControlId','skipFrames') if key in field['previewRecipe']}
         if field.get('members'):visible['members']=[{key:member[key] for key in ('id','key','nodeId') if key in member} for member in field['members']]
@@ -1258,6 +1347,8 @@ def retain_unmasked_image(data,ext,name):
     original=dict(id=key,kind='image',name=name,bytes=len(data))
     with lock,database() as db:
         db.execute('INSERT OR IGNORE INTO assets VALUES (?,?)',(key,json.dumps(original,ensure_ascii=False)))
+        bridge=globals().get('platform_bridge')
+        if bridge:bridge.remember_asset(original,connection=db)
     return key
 
 
@@ -1303,9 +1394,11 @@ async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None)):
         name=(Path(name).stem or '标注原图')+'.png'
     id=hashlib.sha256(data).hexdigest()
     local=PRIVATE/'uploads'/(id+ext);local.write_bytes(data)
-    try:cached=asset(id)
-    except HTTPException:cached=None
+    with lock,database() as db:row=db.execute('SELECT data FROM assets WHERE id=?',(id,)).fetchone()
+    cached=json.loads(row[0]) if row else None
     if cached:
+        # Identical uploaded bytes prove ownership; names/provenance remain per account.
+        cached={**cached,'name':name,'original_asset_id':None,'annotation_mode':None,**provenance}
         if provenance:
             cached={**cached,**provenance}
             with lock,database() as db:
@@ -1317,7 +1410,9 @@ async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None)):
                 with requests.get(BASE+'/view',params={'filename':remote.name,'subfolder':str(remote.parent).replace('\\','/') if str(remote.parent)!='.' else '', 'type':'input'},headers={'Range':'bytes=0-63'},stream=True,timeout=15) as r:
                     return r.status_code in [200,206]
             except requests.RequestException:return False
-        if await asyncio.to_thread(still_available):return public_asset(cached)
+        if await asyncio.to_thread(still_available):
+            platform_bridge.remember_asset(cached)
+            return public_asset(cached)
     def transfer():
         try:
             with local.open('rb') as stream:
@@ -1325,7 +1420,9 @@ async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None)):
             r.raise_for_status();out=r.json()
         except (requests.RequestException,ValueError):raise HTTPException(502,'素材未能上传到算力卡，请检查卡是否在线后重试。')
         a=dict(id=id,kind=kind,name=name,bytes=size,remote=(out.get('subfolder','')+'/'+out['name']).lstrip('/'),**provenance)
-        with lock,database() as db:db.execute('INSERT OR REPLACE INTO assets VALUES (?,?)',(id,json.dumps(a,ensure_ascii=False)))
+        with lock,database() as db:
+            db.execute('INSERT OR REPLACE INTO assets(id,data) VALUES (?,?)',(id,json.dumps(a,ensure_ascii=False)))
+            platform_bridge.remember_asset(a,connection=db)
         return public_asset(a)
     return await asyncio.to_thread(transfer)
 
@@ -1380,17 +1477,18 @@ def bind_api_profiles(workflow_id,graph,profiles):
 @app.post('/api/jobs')
 def submit(body:Submission):
     if not BASE:raise HTTPException(503,'尚未配置算力服务，请在 .env 中设置 CHENYU_CARD_URL；演示生成仍可使用。')
+    platform_bridge.prepare_submission(body)
     if manifest(body.workflow_id) is None:
         spec=schema_adapters.manifest(body.workflow_id)
         if spec:
-            with lock,database() as db:
+            with database() as db:
                 old=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
-                if old:return public(json.loads(old[0]))
+                if old:return public(platform_bridge.checked_replay(old[0]))
                 j=prepare_schema_submission(body,spec,db)
             return dispatch(j)
-    with lock,database() as db:
+    with database() as db:
         old=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
-        if old:return public(json.loads(old[0]))
+        if old:return public(platform_bridge.checked_replay(old[0]))
         w=manifest(body.workflow_id)
         if not w:raise HTTPException(400,'此工作流尚未接入。')
         if body.catalog_values or body.catalog_texts or body.catalog_assets:raise HTTPException(400,'此工作流仍使用原有参数接口，请刷新页面后重试。')
@@ -1428,7 +1526,7 @@ def submit(body:Submission):
             if isinstance(key,str) and not key.strip():
                 raise HTTPException(400,'此工作流需要自己的 API key，请在自有 API 配置中填写，或配置私有工作流模板。')
         j=dict(id=id,token=body.token,workflow_id=w['id'],prompt=body.prompt,negative=body.negative,settings=s,asset_ids=body.asset_ids,status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None)
-        db.execute('INSERT INTO jobs VALUES (?,?,?)',(id,body.token,json.dumps(j,ensure_ascii=False)))
+        j=persist_new_job(j)
     return dispatch(j)
 
 def require_api_keys(graph,spec=None):
@@ -1493,23 +1591,39 @@ def prepare_schema_submission(body,spec,db):
            status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None)
     if region_adaptation:j['execution_adaptations']=[region_adaptation]
     if audio_adaptation:j.setdefault('execution_adaptations',[]).append(audio_adaptation)
-    db.execute('INSERT INTO jobs VALUES (?,?,?)',(id,body.token,json.dumps(j,ensure_ascii=False)))
+    j=persist_new_job(j)
     return j
 
 def dispatch(j):
+    if j.pop('_platform_replay',False):return public(j)
     id=j['id'];graph=j['graph']
+    def receipt(suffix,fields):
+        # Diagnostic files must never decide whether the durable task advances.
+        # Keep only structural evidence: upstream payloads may contain API keys.
+        try:
+            (PRIVATE/'receipts'/f'{id}-{suffix}.json').write_text(json.dumps(fields,ensure_ascii=False,indent=2),'utf-8')
+        except OSError as error:
+            import logging
+            logging.getLogger('yingxu.dispatch').warning('Submission receipt unavailable for job %s (%s, errno=%s)',id,type(error).__name__,error.errno)
     try:
         r=requests.post(BASE+'/prompt',json={'prompt':graph,'client_id':CLIENT,'extra_data':{'yingxu_job_id':id}},timeout=(15,60))
         if r.status_code>=400:
             try:detail=r.json()
-            except ValueError:detail={'http_status':r.status_code,'message':r.text[:1000]}
-            (PRIVATE/'receipts'/f'{id}-validation.json').write_text(json.dumps(detail,ensure_ascii=False,indent=2),'utf-8')
-            return public(update(id,status='failed',stage='工作流校验失败',error=friendly(json.dumps(detail.get('node_errors',detail),ensure_ascii=False)[:500]),ended=time.time()*1000))
+            except ValueError:detail={}
+            if not isinstance(detail,dict):detail={}
+            message=friendly(json.dumps(detail.get('node_errors',detail),ensure_ascii=False)[:500])
+            if message.startswith('工作流执行失败：'):
+                message='算力卡拒绝此工作流，请检查节点配置或联系管理员。'
+            current=update(id,status='failed',stage='工作流校验失败',error=message,ended=time.time()*1000)
+            node_errors=detail.get('node_errors',{})
+            receipt('validation',{'http_status':r.status_code,'node_ids':[str(node) for node in node_errors if str(node) in graph][:64] if isinstance(node_errors,dict) else []})
+            return public(current)
         out=r.json()
         return public(update(id,prompt_id=out['prompt_id'],status='queued',stage='等待算力卡执行',error=None,connection_error=None))
     except (requests.RequestException,ValueError,KeyError) as error:
-        (PRIVATE/'receipts'/f'{id}-transport.json').write_text(json.dumps({'type':type(error).__name__,'message':str(error)[:1000]},ensure_ascii=False,indent=2),'utf-8')
-        return public(update(id,status='unknown',stage='正在确认提交状态',error='连接中断，正在核对任务，暂不重复提交。'))
+        current=update(id,status='unknown',stage='正在确认提交状态',error='连接中断，正在核对任务，暂不重复提交。')
+        receipt('transport',{'type':type(error).__name__})
+        return public(current)
 
 def redraw_legacy_refinement_seed(workflow_id,graph,settings):
     """Record the independently redrawn refinement seed in the saved settings.
@@ -1539,11 +1653,14 @@ class Rerun(BaseModel):
 @app.post('/api/jobs/{id}/rerun')
 def rerun(id:str,body:Rerun):
     original=job(id)
+    if original.get('failure_phase')=='output':
+        raise HTTPException(409,'生成已结束，请重新取回作品；如需重新生成，请恢复本次输入后明确提交。')
+    platform_bridge.prepare_submission(body,id)
     if original.get('schema_spec'):
         return rerun_schema(id,body)
-    with lock,database() as db:
+    with database() as db:
         previous=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
-        if previous:return public(json.loads(previous[0]))
+        if previous:return public(platform_bridge.checked_replay(previous[0]))
         original=job(id)
         if original['status'] not in ['done','failed','cancelled','abandoned']:
             raise HTTPException(409,'原任务尚未结束，请等待结果后再试。')
@@ -1653,12 +1770,12 @@ def rerun(id:str,body:Rerun):
             graph['425']['inputs']['video']=next(a['remote'] for a in aa if a['kind']=='video')
         bind_vhs_audio(graph,aa)
         j=dict(id=new_id,token=body.token,workflow_id=original['workflow_id'],prompt=original['prompt'],negative=original['negative'],settings=settings,asset_ids=list(original['asset_ids']),status='submitting',stage='正在提交到算力卡',started=time.time()*1000,ended=None,outputs=[],graph=graph,prompt_id=None,error=None,rerun_of=id)
-        db.execute('INSERT INTO jobs VALUES (?,?,?)',(new_id,body.token,json.dumps(j,ensure_ascii=False)))
+        j=persist_new_job(j)
     return dispatch(j)
 
 def rerun_schema(id,body):
     if not BASE:raise HTTPException(503,'尚未配置算力服务。')
-    with lock,database() as db:
+    with database() as db:
         previous=db.execute('SELECT data FROM jobs WHERE token=?',(body.token,)).fetchone()
         if previous:return public(json.loads(previous[0]))
         original=job(id)
@@ -1682,7 +1799,7 @@ def rerun_schema(id,body):
         if audio_adaptation:
             j['execution_adaptations']=[a for a in j.get('execution_adaptations',[]) if a.get('id')!=audio_adaptation['id']]+[audio_adaptation]
         for key in ('cancel_requested','cancel_sent','cancel_error','connection_error','progress'):j.pop(key,None)
-        db.execute('INSERT INTO jobs VALUES (?,?,?)',(new_id,body.token,json.dumps(j,ensure_ascii=False)))
+        j=persist_new_job(j)
     return dispatch(j)
 
 @app.get('/api/assets/{id}/file')
@@ -1714,6 +1831,33 @@ def workflow_download(id:str):
 def get_jobs():return [public(j) for j in jobs()]
 @app.get('/api/jobs/{id}')
 def get_job(id:str):return public(job(id))
+
+@app.post('/api/jobs/{id}/retrieve')
+def retrieve(id:str):
+    if not BASE:raise HTTPException(503,'尚未配置算力服务，无法重新取回作品。')
+    with output_collection(id) as acquired:
+        if not acquired:raise HTTPException(409,'作品正在取回，请等待当前操作完成。')
+        with lock:
+            j=job(id)
+            if j['status']!='failed' or j.get('failure_phase')!='output':
+                raise HTTPException(409,'只有作品取回或保存失败的原任务可以重新取回。')
+            if not j.get('prompt_id'):raise HTTPException(409,'原任务缺少远端编号，不能重新取回，请先核对任务记录。')
+            j=update(id,status='downloading',stage='正在重新取回作品',error=None,connection_error=None,ended=None)
+        try:
+            response=requests.get(BASE+'/history/'+j['prompt_id'],timeout=20);response.raise_for_status()
+            history=response.json()
+            if not isinstance(history,dict):raise ValueError('Invalid remote history response')
+            h=history.get(j['prompt_id'])
+            status=h.get('status',{}) if isinstance(h,dict) else {}
+            if not isinstance(status,dict) or not status.get('completed') or status.get('status_str')=='error':
+                update(id,status='failed',stage='原任务结果未能确认',failure_phase='output',output_failure_code='remote_result_unavailable',
+                       error='远端没有返回原任务的已完成记录。已保存文件与原任务保留；请在算力端核对后重新取回，不会自动重新生成。',
+                       connection_error=None,ended=time.time()*1000)
+            else:finish_output_collection(j,h)
+        except (requests.RequestException,ValueError):
+            update(id,connection_error='作品尚未取回，连接恢复后自动重试；不会重新生成。')
+        return public(job(id))
+
 def attempt_cancel(j,q=None):
     """Retry a persisted intent using only the task-scoped remote API."""
     id=j['id'];pid=j.get('prompt_id')
@@ -1801,6 +1945,8 @@ async def image_cutout(file:UploadFile=File(...),bounds:str=Form('{}')):
     except (ValueError,OSError,Image.DecompressionBombError) as error:raise HTTPException(400,str(error) or '无法读取图片。')
     return Response(png,media_type='image/png',headers={'Cache-Control':'no-store'})
 
+from platform_api import install_platform
+platform_bridge=install_platform(app,sys.modules[__name__])
 app.mount('/',StaticFiles(directory=ROOT/'public',html=True),name='site')
 
 if __name__=='__main__':

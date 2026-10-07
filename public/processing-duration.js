@@ -1,5 +1,5 @@
 import {esc} from './data.js';
-import {selectControl} from './workflow-select.js?v=75.1';
+import {selectControl} from './workflow-select.js?v=81.0';
 
 export const isProcessingDuration=f=>f.kind==='duration'&&f.type==='number'&&f.min===0&&f.label.includes('0 为全部');
 export const durationDescription=value=>Number(value)===0?'处理全部剩余视频':`从起点处理 ${Number(Number(value).toFixed(3))} 秒`;

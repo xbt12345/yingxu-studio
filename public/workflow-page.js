@@ -1,7 +1,7 @@
 import {rangeHint} from './control-guidance.js?v=60.1';
 import {megapixelControl} from './parameter-controls.js?v=75.1';
 import {I,esc} from './data.js';
-import {controlSection,dimensionOptions} from './workflow-controls.js?v=75.1';
+import {controlSection,dimensionOptions} from './workflow-controls.js?v=81.0';
 
 const options=(key,items,value,format=x=>x)=>`<div class="wf-options" role="group">${items.map(x=>`<button type="button" data-wf-choice="${key}" data-value="${esc(x)}" aria-pressed="${String(value)===String(x)}">${format(x)}</button>`).join('')}</div>`;
 const section=(title,body,sub='')=>`<section class="wf-section"><div class="wf-section-title"><strong>${title}</strong>${sub?`<span>${sub}</span>`:''}</div>${body}</section>`;

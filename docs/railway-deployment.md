@@ -1,6 +1,6 @@
 # Railway 部署映序：费用与操作
 
-核对日期：2026-10-03。目标是把现有前端、Python 后端和作品存储放在 Railway，继续调用自己的远程算力。网站服务器不安装 GPU 模型。以下步骤是部署指南，不代表云端已经创建或真实生成已经验收。
+核对日期：2026-10-03。目标是把现有前端、Python 后端和作品存储放在 Railway，继续调用自己的远程算力。网站服务器不安装 GPU 模型。现有服务更新沿用持久卷和自动部署；以下费用是此前核对值，实际以控制台为准。部署成功不代表所有工作流真实生成已经验收。
 
 ## 钱花在哪里
 
@@ -27,7 +27,7 @@
 3. 分支选择 `main`，Root Directory 保持仓库根目录。GitHub 仓库根目录已经包含 `Dockerfile`，不要填写作者本机的 `mvp-v0.7` 路径。
 4. 确认构建使用 `Dockerfile`。无需 `npm install`，无需前端构建命令，启动命令使用镜像自带的 `python server.py`。
 
-暂时不要生成公网域名。先完成数据卷和访问密码设置，避免开放未保护的生成入口。没有配置密码时，本项目在 Railway 会拒绝网站访问，仍允许健康检查。
+先完成数据卷、首次管理员登录和真实工具积分配置，再开放生成入口。2026-10-07 起使用账户系统，旧共享 Basic 密码设置已取消；未登录的私有 API 返回 401，`/healthz` 保持公开。
 
 ## 2. 设置变量
 
@@ -38,13 +38,11 @@
 | `HOST` | `0.0.0.0` |
 | `PORT` | `8770` |
 | `YINGXU_DATA_DIR` | `/app/private` |
-| `YINGXU_ACCESS_USERNAME` | `yingxu`，或自己选择的账号名，不含冒号 |
-| `YINGXU_ACCESS_PASSWORD` | 自己生成并保管的随机密码，至少 16 位；只填 Railway 变量，不提交到 GitHub |
 | `CHENYU_CARD_URL` | 算力平台给出的 ComfyUI HTTP(S) 接口地址，不是管理后台页面 |
 
 `CHENYU_CARD_URL` 可先留空验证网站和抠图，之后填写再重新部署，以接通真实工作流。远程服务必须在运行，并能从 Railway 访问；不要填 `127.0.0.1` 或你电脑的内网 IP。算力地址如自带凭据，也只保存在服务端。
 
-用 Railway 自动域名时，服务读取平台的 `RAILWAY_PUBLIC_DOMAIN` 自动放行对应 HTTPS Origin，无需手工追加。自定义域名则另设 `YINGXU_ALLOWED_ORIGINS=https://你的实际域名`。Origin 设置用于防止别的网站调用，网站访问密码用于认证，两者不能替代。
+用 Railway 自动域名时，服务读取平台的 `RAILWAY_PUBLIC_DOMAIN` 自动放行对应 HTTPS Origin，无需手工追加。自定义域名则另设 `YINGXU_ALLOWED_ORIGINS=https://你的实际域名`。Origin 设置用于防止别的网站调用，账户会话用于认证，两者不能替代。
 
 ## 3. 添加持久卷
 
@@ -74,9 +72,9 @@
 
 服务 `Settings` → `Networking` → `Public Networking` → `Generate Domain`，目标端口填 `8770`。
 
-如果域名创建后才增加 `RAILWAY_PUBLIC_DOMAIN`，重新部署一次，让进程读取新值。打开实际域名后的 `/studio.html`，输入第 2 步的网站账号、密码。访问组件库用 `/workflow-control-library.html`。
+如果域名创建后才增加 `RAILWAY_PUBLIC_DOMAIN`，重新部署一次，让进程读取新值。打开实际域名后的 `/studio.html`，使用私有持久卷 `/app/private/admin-bootstrap.json` 中的首次管理员凭据登录，随后自行修改密码。不要在公开日志或仓库中展示凭据。访问组件库用 `/workflow-control-library.html`。
 
-这是一个有密码的共享创作台，不是多人独立账号系统。知道密码的人可以访问这个实例的后端任务与作品，只分享给受邀体验者。要让不同用户的内容保密，须增加用户与资源归属校验。
+现使用独立账户和资源归属校验，管理员可配置充值套餐和工具计价。真实支付需商户资质、可信 HTTPS 通知及小额支付验收。部署后必须实测普通账户互相不可访问任务、媒体和订单；本地回归不能代替此验证。操作见 [账户、权限与积分](platform-accounts-and-credits.md)。
 
 ## 6. 接通真实工作流
 
@@ -102,4 +100,12 @@ Workspace → `Usage` → `Set Usage Limits`，在 **Compute Usage** 设置邮�
 4. 没有运行任务时重启网站服务，验证旧任务和生成文件仍在。
 5. 查看 Usage 里的实际费用预测和磁盘占用。
 
-自由创作内置模型仍是演示、参考强度尚未参与真实生成、任意工作流导入尚未实现，部署不会自动补齐。详情见 [在线工作流接入](online-workflows.md)。
+自由创作内置模型尚未接入，正常环境已停止模拟生成；参考强度尚未参与真实生成、任意工作流导入尚未实现，部署不会自动补齐。详情见 [在线工作流接入](online-workflows.md)。
+
+## 0.81.0 升级说明
+
+新版包含独立管理员后台、账户权限及积分账本，使用账户登录。首次管理员凭据只在持久卷 `/app/private/admin-bootstrap.json`；可在受控 Railway 服务终端或卷文件浏览器中读取，勿贴入日志、公开仓库或聊天。登录后自行修改初始密码。现有账户不会被替换。
+
+首启仅补缺已确认的 93 个工作流报价和 6 个人民币充值套餐，采用 `workflows/platform-pricing-seed.json` 的脱敏发布计划。既有管理员配置优先；本机已经执行的 `review79_pricing_seed` 标记会阻止重复写入。没有可靠历史耗时的 36 个工具仍不设价。初始化有事务、审计和私有数据库备份，不迁移作者的账户、余额、素材或任务。
+
+校验实际站点 `/version.json` 返回 0.81.0，`/healthz` 正常，匿名 `/api/jobs` 返回 401。生成验证需要登录且确认目标算力可用；真实收款仍需商户配置。

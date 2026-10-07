@@ -11,25 +11,50 @@ import hashlib
 import struct
 import zlib
 import av
-import server
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parent/'private/runtime'))
 from fastapi.testclient import TestClient
 from adapters import CATALOG_WORKFLOWS, manifest, settings_for, build_graph
 from PIL import Image
+import platform_api
+from test_server_helpers import load_server, TestAccounts, ORIGIN, authenticated_client
+
+server=None
 
 class MVPContracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Reuse the isolated import fixture; never bootstrap into the real DB.
+        global server
+        server,temporary=load_server('yingxu_isolated_mvp_backend')
+        cls.addClassCleanup(temporary.cleanup)
+        cls.addClassCleanup(lambda:sys.modules.pop(server.__name__,None))
+
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory()
-        self.patches=[patch.object(server,'DB',Path(self.tmp.name)/'test.sqlite3'),patch.object(server,'PRIVATE',Path(self.tmp.name)),patch.object(server,'BASE','http://comfy.example.test')]
+        self.patches=[patch.object(server,'DB',Path(self.tmp.name)/'test.sqlite3'),patch.object(server,'PRIVATE',Path(self.tmp.name)),patch.object(server,'BASE','http://comfy.example.test'),patch.object(platform_api,'PlatformAccounts',TestAccounts)]
         for p in self.patches:p.start()
         (server.PRIVATE/'receipts').mkdir()
         with server.database() as db:
             db.execute('CREATE TABLE jobs (id TEXT PRIMARY KEY, token TEXT UNIQUE, data TEXT NOT NULL)')
             db.execute('CREATE TABLE assets (id TEXT PRIMARY KEY, data TEXT NOT NULL)')
-        self.client=TestClient(server.app)
+        self.accounts=server.platform_bridge.accounts()
+        self.owner=self.accounts.bootstrap_admin()
+        for workflow_id in ('h3-reference','bernini-edit','local-card-2'):
+            self.accounts.configure_pricing(self.owner['id'],workflow_id,0)
+        self.client=authenticated_client(server,self.accounts,self.owner)
         self.body=dict(workflow_id='h3-reference',prompt='Ocean waves at sunrise.',token='test-idempotency-key',settings={})
     def tearDown(self):
+        self.client.close()
         for p in reversed(self.patches):p.stop()
         self.tmp.cleanup()
+    def save_fixture(self,record):
+        server.save(record)
+        self.accounts.grant_resource(self.owner['id'],'job',record['id'])
+        return record
+    def own_asset_fixture(self,record):
+        self.accounts.grant_resource(self.owner['id'],'asset',record['id'])
+        self.accounts.remember_asset(self.owner['id'],record)
     @staticmethod
     def png_delivery_fixture():
         # Only synthetic credentials: exercise plain, compressed and Unicode text.
@@ -78,7 +103,7 @@ class MVPContracts(unittest.TestCase):
         saved={'id':'fake-png-job','token':'fake-png-token','status':'done','graph':graph,
                'outputs':[{'id':'original-output-id','src':'/api/media/fake-png-job/0.png',
                            'bytes':len(original),'type':'image','output_node':'182'}]}
-        server.save(saved)
+        self.save_fixture(saved)
         with server.database() as db:before=db.execute('SELECT id,token,data FROM jobs').fetchall()
         source_sha=hashlib.sha256(original).hexdigest();url=saved['outputs'][0]['src']
         with patch.object(server,'poll_once') as poll,patch.object(server.requests.sessions.Session,'request',
@@ -106,6 +131,7 @@ class MVPContracts(unittest.TestCase):
         with server.database() as db:
             db.execute('INSERT INTO assets VALUES (?,?)',(id,json.dumps(saved)))
             before=db.execute('SELECT id,data FROM assets').fetchall()
+        self.own_asset_fixture(saved)
         with patch.object(server,'poll_once') as poll,patch.object(server.requests.sessions.Session,'request',
                 side_effect=AssertionError('PNG asset route must not contact a remote service')) as remote:
             full=self.client.get('/api/assets/'+id+'/file');self.assertEqual(full.status_code,200,full.text)
@@ -136,11 +162,12 @@ class MVPContracts(unittest.TestCase):
                     asset_source=upload_dir/(id+'.png');asset_source.write_bytes(original)
                     saved={'id':job_id,'token':job_id,'status':'done','graph':{'fake_key':secret.decode()},
                            'outputs':[{'id':'unchanged-'+str(index),'src':f'/api/media/{job_id}/0.png','bytes':len(original)}]}
-                    server.save(saved)
+                    self.save_fixture(saved)
                     with server.database() as db:
                         db.execute('INSERT INTO assets VALUES (?,?)',(id,json.dumps({'id':id,'name':'invalid.png','bytes':len(original)})))
                         jobs_before=db.execute('SELECT id,token,data FROM jobs').fetchall()
                         assets_before=db.execute('SELECT id,data FROM assets').fetchall()
+                    self.own_asset_fixture({'id':id,'name':'invalid.png','bytes':len(original)})
                     for url in (saved['outputs'][0]['src'],'/api/assets/'+id+'/file'):
                         for headers in ({},{'Range':'bytes=0-63'}):
                             response=self.client.get(url,headers=headers)
@@ -186,6 +213,7 @@ class MVPContracts(unittest.TestCase):
              'schema_spec':spec,'graph':graph,'status':'queued'}
         with server.database() as db:
             db.execute('INSERT INTO jobs VALUES (?,?,?)',(job['id'],job['token'],json.dumps(job)))
+        self.accounts.grant_resource(self.owner['id'],'job',job['id'])
         folder=server.PRIVATE/'outputs'/job['id'];folder.mkdir(parents=True)
         Image.new('RGB',(16,16),'blue').save(folder/'0.png')
         before=hashlib.sha256((folder/'0.png').read_bytes()).hexdigest()
@@ -599,6 +627,7 @@ class MVPContracts(unittest.TestCase):
                 path=server.PRIVATE/'receipts'/(job_id+'.json');path.write_text(json.dumps(receipt),'utf-8')
                 before_receipt=path.read_bytes();before=copy.deepcopy(job)
                 with server.database()as db:db.execute('INSERT INTO jobs VALUES (?,?,?)',(job_id,job['token'],json.dumps(job)))
+                self.accounts.grant_resource(self.owner['id'],'job',job_id)
                 with patch.object(server.requests,'get')as get,patch.object(server.requests,'post')as post:
                     response=self.client.get('/api/jobs/'+job_id)
                     get.assert_not_called();post.assert_not_called()
@@ -914,6 +943,7 @@ class MVPContracts(unittest.TestCase):
         record=dict(id=identity,kind='video',name='short.mp4',remote='short.mp4')
         with server.database() as db:
             db.execute('INSERT INTO assets VALUES (?,?)',(identity,json.dumps(record)))
+        self.own_asset_fixture(record)
         body=dict(workflow_id='bernini-edit',prompt='EDIT',token='trim-out-of-range',settings={'trim_start':1,'duration':2},asset_ids=[identity])
         with patch.object(server.requests,'post') as post:
             response=self.client.post('/api/jobs',json=body)
@@ -939,7 +969,7 @@ class MVPContracts(unittest.TestCase):
             b=self.client.post('/api/jobs',json=self.body).json()
             self.assertEqual(a['status'],'unknown');self.assertEqual(a['id'],b['id']);self.assertEqual(post.call_count,1)
     def test_cannot_cancel_another_running_job(self):
-        j=dict(id='own',token='own-token',status='running',prompt_id='own-remote');server.save(j)
+        j=dict(id='own',token='own-token',status='running',prompt_id='own-remote');self.save_fixture(j)
         response=Mock();response.json.return_value={'queue_running':[[1,'other-remote']], 'queue_pending':[]}
         with patch.object(server.requests,'get',return_value=response),patch.object(server.requests,'post') as post:
             self.assertEqual(self.client.post('/api/jobs/own/cancel').status_code,409)
@@ -949,7 +979,7 @@ class MVPContracts(unittest.TestCase):
         self.assertEqual(self.client.post('/api/jobs',headers={'Origin':'https://example.com'},json=self.body).status_code,403)
 
     def test_running_cancel_is_targeted_and_waits_for_remote_confirmation(self):
-        server.save(dict(id='own',token='own-token',status='running',prompt_id='own-remote',started=1))
+        self.save_fixture(dict(id='own',token='own-token',status='running',prompt_id='own-remote',started=1))
         queue=Mock();queue.json.return_value={'queue_running':[[1,'own-remote']],'queue_pending':[]}
         accepted=Mock(status_code=200);accepted.json.return_value={'cancelled':True}
         with patch.object(server.requests,'get',return_value=queue),patch.object(server.requests,'post',return_value=accepted) as post:
@@ -964,7 +994,7 @@ class MVPContracts(unittest.TestCase):
         self.assertEqual(server.job('own')['status'],'cancelled')
 
     def test_cancel_does_not_report_success_on_transport_error(self):
-        server.save(dict(id='own',token='own-token',status='running',prompt_id='own-remote'))
+        self.save_fixture(dict(id='own',token='own-token',status='running',prompt_id='own-remote'))
         queue=Mock();queue.json.return_value={'queue_running':[[1,'own-remote']],'queue_pending':[]}
         with patch.object(server.requests,'get',return_value=queue),patch.object(server.requests,'post',side_effect=requests.Timeout):
             self.assertEqual(self.client.post('/api/jobs/own/cancel').status_code,200)
@@ -972,14 +1002,14 @@ class MVPContracts(unittest.TestCase):
         self.assertTrue(server.job('own')['cancel_requested'])
 
     def test_unknown_cancel_is_persisted_and_idempotent(self):
-        server.save(dict(id='lost',token='lost-token',status='unknown',prompt_id=None,started=0))
+        self.save_fixture(dict(id='lost',token='lost-token',status='unknown',prompt_id=None,started=0))
         with patch.object(server.requests,'post') as post:
             a=self.client.post('/api/jobs/lost/cancel');b=self.client.post('/api/jobs/lost/cancel')
         self.assertEqual(a.status_code,200);self.assertEqual(b.status_code,200)
         self.assertEqual(a.json()['status'],'cancelling');self.assertTrue(server.job('lost')['cancel_requested']);post.assert_not_called()
 
     def test_cancel_recovers_id_then_retries_scoped_cancel(self):
-        server.save(dict(id='lost',token='lost-token',status='cancelling',cancel_requested=True,prompt_id=None,started=0))
+        self.save_fixture(dict(id='lost',token='lost-token',status='cancelling',cancel_requested=True,prompt_id=None,started=0))
         queue=Mock();queue.json.return_value={'queue_pending':[[1,'remote',{}, {'yingxu_job_id':'lost'}]],'queue_running':[]}
         history=Mock();history.json.return_value={}
         empty=Mock();empty.json.return_value={'queue_pending':[],'queue_running':[]}
@@ -990,7 +1020,7 @@ class MVPContracts(unittest.TestCase):
         self.assertTrue(post.call_args.args[0].endswith('/api/jobs/remote/cancel'))
 
     def test_abandon_is_not_remote_cancel_and_cannot_resurrect(self):
-        server.save(dict(id='lost',token='lost-token',status='cancelling',cancel_requested=True,prompt_id=None,started=0))
+        self.save_fixture(dict(id='lost',token='lost-token',status='cancelling',cancel_requested=True,prompt_id=None,started=0))
         with patch.object(server.requests,'post') as post:
             r=self.client.post('/api/jobs/lost/abandon')
         self.assertEqual(r.json()['status'],'abandoned');post.assert_not_called()
@@ -999,7 +1029,7 @@ class MVPContracts(unittest.TestCase):
         with patch.object(server.requests,'get') as get:server.poll_once();get.assert_not_called()
 
     def test_unknown_cancel_survives_offline_then_local_abandon(self):
-        server.save(dict(id='offline',token='offline-token',status='unknown',prompt_id=None,started=0))
+        self.save_fixture(dict(id='offline',token='offline-token',status='unknown',prompt_id=None,started=0))
         self.client.post('/api/jobs/offline/cancel')
         with patch.object(server.requests,'get',side_effect=requests.Timeout):
             with self.assertRaises(requests.Timeout):server.poll_once()
@@ -1009,7 +1039,7 @@ class MVPContracts(unittest.TestCase):
         self.assertEqual(response.json()['status'],'abandoned')
 
     def test_unknown_cancel_without_match_stays_unconfirmed(self):
-        server.save(dict(id='lost',token='lost-token',status='cancelling',cancel_requested=True,prompt_id=None,started=0))
+        self.save_fixture(dict(id='lost',token='lost-token',status='cancelling',cancel_requested=True,prompt_id=None,started=0))
         queue=Mock();queue.json.return_value={'queue_pending':[],'queue_running':[]}
         history=Mock();history.json.return_value={}
         with patch.object(server.requests,'get',side_effect=[queue,history]),patch.object(server.requests,'post') as post:
@@ -1018,7 +1048,7 @@ class MVPContracts(unittest.TestCase):
         self.assertIsNone(server.job('lost')['prompt_id'])
 
     def test_old_remote_never_receives_global_interrupt(self):
-        server.save(dict(id='own',token='own-token',status='running',prompt_id='own-remote'))
+        self.save_fixture(dict(id='own',token='own-token',status='running',prompt_id='own-remote'))
         queue=Mock();queue.json.return_value={'queue_running':[[1,'own-remote']],'queue_pending':[]}
         unsupported=Mock(status_code=404)
         with patch.object(server.requests,'get',return_value=queue),patch.object(server.requests,'post',return_value=unsupported) as post:
@@ -1049,8 +1079,9 @@ class MVPContracts(unittest.TestCase):
             (server.PRIVATE/'uploads'/(id+ext)).write_bytes(data)
             a=dict(id=id,kind=kind,name='参考'+ext,bytes=len(data),remote='private/'+id+ext)
             with server.database() as db:db.execute('INSERT INTO assets VALUES (?,?)',(id,json.dumps(a)))
+            self.own_asset_fixture(a)
         j=dict(id='restore',token='restore-token',asset_ids=ids,prompt='图片1中的人物，参考视频1的动作',negative='闪烁',settings={'seed':123},graph={})
-        server.save(j)
+        self.save_fixture(j)
         restored=self.client.get('/api/jobs/restore').json()
         self.assertEqual([r['id'] for r in restored['references']],ids)
         self.assertNotIn('remote',restored['references'][0])
@@ -1066,7 +1097,7 @@ class MVPContracts(unittest.TestCase):
         graph=build_graph('bernini-edit','original prompt','original negative',settings,aa,'original')
         graph['385']['inputs']['denoise']=0.85  # Must survive even if not an exposed setting.
         original=dict(id='original',token='original-token',status='done',workflow_id='bernini-edit',prompt='original prompt',negative='original negative',settings=settings,asset_ids=['video-id'],graph=graph)
-        server.save(original)
+        self.save_fixture(original)
         response=Mock(status_code=200);response.json.return_value={'prompt_id':'new-remote'}
         with patch.object(server,'asset',return_value=aa[0]),patch.object(server,'ensure_remote',side_effect=lambda a:a),patch.object(server,'vhs_audio_asset',side_effect=lambda a:a),patch.object(server,'public_asset',side_effect=lambda a:a),patch.object(server.requests,'post',return_value=response) as post:
             body={'token':'rerun-once-token'}
@@ -1094,7 +1125,7 @@ class MVPContracts(unittest.TestCase):
         settings=settings_for(manifest('local-card-2'),{'seed':123,'aspect_ratio':'4:3 (Standard)','megapixels':1.2})
         graph=build_graph('local-card-2','prompt','negative',settings,assets,'original-edit')
         original=dict(id='original-edit',token='original-edit-token',status='done',workflow_id='local-card-2',prompt='prompt',negative='negative',settings=settings,asset_ids=['first','second'],graph=graph)
-        server.save(original)
+        self.save_fixture(original)
         response=Mock(status_code=200);response.json.return_value={'prompt_id':'new-remote'}
         with patch.object(server,'asset',side_effect=lambda key:next(a for a in assets if a['id']==key)),patch.object(server,'ensure_remote',side_effect=lambda a:a),patch.object(server,'public_asset',side_effect=lambda a:a),patch.object(server.requests,'post',return_value=response):
             submitted=self.client.post('/api/jobs/original-edit/rerun',json={'token':'qwen-edit-rerun'})

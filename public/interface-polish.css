@@ -1,5 +1,5 @@
 /* Only neutralize the repeated catalog/inspiration/history text; keep other title accents. */
-.production .session-link span,.production .workflow-page :is(h1,h2,h3),.production .workflow-info h2,.production .workflow-top h1,.production .catalog-overview h2,.production .inspiration-page :is(h1,h2,h3,strong),.production .featured-caption strong{background:none!important;-webkit-text-fill-color:currentColor!important;color:#e5e1eb!important}
+.production .session-link span,.production .workflow-page :is(h1,h2,h3),.production .workflow-info h2,.production .workflow-top h1,.production .catalog-overview h2,.production .inspiration-card :is(h1,h2,h3,strong),.production .featured-caption strong{background:none!important;-webkit-text-fill-color:currentColor!important;color:#e5e1eb!important}
 .job-references{display:flex;gap:8px;align-items:center;overflow-x:auto;flex-wrap:nowrap;padding:0 0 12px;scrollbar-width:thin;max-width:100%}
 .job-reference{flex:none;position:relative;width:62px;height:51px;overflow:hidden;padding:0;border:1px solid #ffffff20;border-radius:8px;background:#16131c;color:#d7cfdf}
 .job-reference img,.job-reference video{width:100%;height:100%;object-fit:cover;display:block}.job-reference>.icon{width:22px;height:22px;margin-top:4px}
@@ -64,20 +64,19 @@
 .production .sidebar .session-nav{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;margin-top:24px;scrollbar-width:thin;scrollbar-color:#655d7280 transparent}.production .sidebar .session-nav>p{position:sticky;top:0;background:#141318;padding:8px 10px;z-index:1}.production .sidebar .session-item{flex:none}
 .production .sidebar .sidebar-end{flex:none;margin-top:auto;padding-top:12px;background:#141318;border-top:1px solid var(--studio-line)}
 .nav-pin{position:absolute;right:0;top:6px;width:28px;height:28px;padding:6px;background:none;border:0;box-shadow:none;color:#aaa0bd}
-.production.workflow-focus .sidebar{width:56px;padding:18px 7px 12px;background:#141318;transition:width .18s ease;overflow:hidden}
-.production.workflow-focus .sidebar-head{margin-bottom:18px}.production.workflow-focus .sidebar-head .brand{justify-content:flex-start;margin:0 4px}
-.production.workflow-focus .sidebar .new-session{height:38px;min-height:38px;width:40px;margin:0 0 18px;padding:0 10px;justify-content:flex-start;gap:12px;overflow:hidden}
-.production.workflow-focus .sidebar .nav-item{height:42px;padding:10px 11px;justify-content:flex-start;overflow:hidden}
-.production.workflow-focus .sidebar .nav-item span{display:inline;visibility:hidden;opacity:0;transition:opacity .12s}.production.workflow-focus .sidebar-head .brand-name{display:block;visibility:hidden;opacity:0;white-space:nowrap}
-.production.workflow-focus .sidebar .session-nav{display:none}.production.workflow-focus .nav-pin{opacity:0;pointer-events:none}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)),.production.workflow-focus.wf-nav-expanded .sidebar{width:232px;padding:18px 7px 12px;box-shadow:14px 0 40px #0006;background:#141318}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .brand,.production.workflow-focus.wf-nav-expanded .sidebar .brand{justify-content:flex-start;margin:0 4px}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .brand-name,.production.workflow-focus.wf-nav-expanded .sidebar .brand-name{visibility:visible;opacity:1}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-item span,.production.workflow-focus.wf-nav-expanded .sidebar .nav-item span{visibility:visible;opacity:1}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .new-session,.production.workflow-focus.wf-nav-expanded .sidebar .new-session{width:100%;height:38px;min-height:38px;padding:0 10px;font-size:12px;justify-content:flex-start;gap:12px}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-item,.production.workflow-focus.wf-nav-expanded .sidebar .nav-item{justify-content:flex-start;padding:10px 11px}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .session-nav,.production.workflow-focus.wf-nav-expanded .sidebar .session-nav{display:flex}
-.production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)) .nav-pin,.production.workflow-focus.wf-nav-expanded .sidebar .nav-pin{opacity:1;pointer-events:auto}
+.production .sidebar .nav-toggle{display:none}
+.production.workflow-focus .sidebar{width:56px;padding:18px 7px 12px;background:#141318;overflow:hidden}
+.production.workflow-focus .sidebar-head{margin-bottom:18px}
+.production.workflow-focus .sidebar-head .brand{justify-content:flex-start;margin:0 4px}
+.production.workflow-focus .sidebar .new-session{display:flex;flex:none;height:38px;min-height:38px;width:100%;margin:0 0 18px;padding:0 10px;justify-content:flex-start;gap:12px;font-size:12px;overflow:hidden;white-space:nowrap}
+.production.workflow-focus .sidebar .new-session .icon{flex:none}
+.production.workflow-focus .sidebar .nav-item{width:100%;height:42px;padding:10px 11px;justify-content:flex-start;overflow:hidden;white-space:nowrap}
+.production.workflow-focus .sidebar :is(.nav-item span,.new-session span,.brand-name){display:block;visibility:hidden;opacity:0;white-space:nowrap;transition:opacity .16s ease,visibility .16s ease}
+.production.workflow-focus .sidebar .session-nav{display:flex;width:216px;visibility:hidden;opacity:0;transition:opacity .16s ease,visibility .16s ease}
+.production.workflow-focus .sidebar .sidebar-end{min-width:0}
+.production.workflow-focus .sidebar .nav-toggle{display:flex;margin-bottom:4px}
+.production.workflow-focus:is(.wf-nav-peek,.wf-nav-expanded) .sidebar{width:232px;box-shadow:14px 0 40px #0006}
+.production.workflow-focus:is(.wf-nav-peek,.wf-nav-expanded) .sidebar :is(.brand-name,.nav-item span,.new-session span,.session-nav){visibility:visible;opacity:1;transition-delay:.06s}
 .production .nav-pin[aria-expanded=true]{background:#b49bda1c;color:#e0cef6}
 .production #main:has(.workflow-detail){overflow:hidden}
 .production .workflow-detail{height:100%;min-height:0;padding:20px 24px;max-width:1920px;overflow:hidden}
@@ -329,17 +328,7 @@
 .region-brush-size input[type=range]:focus-visible{outline:2px solid #e9c9ff;outline-offset:6px}
 @media(max-width:720px){.asset-dialog[open]{max-height:calc(100dvh - 20px)}.asset-dialog .asset-library-content{max-height:none}.production .catalog-image-edit .catalog-media{min-height:150px}.production .catalog-image-edit .catalog-media img,.production .catalog-image-edit .catalog-media video{height:150px;max-height:150px}.production .catalog-image-edit .catalog-slot{grid-template-columns:repeat(2,minmax(0,1fr))}.production .catalog-image-edit .catalog-annotate{grid-column:1/-1;grid-row:3}.production .catalog-image-edit .catalog-pick{grid-column:1;grid-row:4}.production .catalog-image-edit .catalog-upload{grid-column:2;grid-row:4}.production .catalog-image-edit .catalog-slot:not(:has(.catalog-media)) .catalog-pick{grid-column:1;grid-row:2}.production .catalog-image-edit .catalog-slot:not(:has(.catalog-media)) .catalog-upload{grid-column:2;grid-row:2}}
 
-/* Reserve the rail's full width while it is open so workspace controls stay clickable. */
-@media(min-width:721px){
- body.production{--side:244px;padding-left:var(--side)}
- body.production.workflow-focus{--side:80px;padding-left:var(--side)}
- body.production.workflow-focus.wf-nav-expanded,body.production.workflow-focus:has(.sidebar:hover,.sidebar :focus-visible){--side:256px}
- .production .sidebar{left:10px;top:10px;bottom:10px;width:220px;padding:20px 12px 14px;transform:none;opacity:1;pointer-events:auto;transition:none}
- .production.workflow-focus .sidebar{width:56px;padding:18px 7px 12px;transform:none;opacity:1;pointer-events:auto;box-shadow:none;transition:none}
- .production.workflow-focus .sidebar:is(:hover,:has(:focus-visible)),.production.workflow-focus.wf-nav-expanded .sidebar{width:232px;padding:18px 7px 12px;box-shadow:14px 0 40px #0006}
- .production.workflow-focus.wf-nav-expanded .nav-curtain{display:none}
-}
-@media(max-width:720px){body.production,body.production.workflow-focus{--side:0px;padding-left:0}}
+
 
 /* A short hover delay reveals a larger preview without an extra magnify icon. */
 .hover-media-preview{position:fixed;z-index:180;display:grid;place-items:center;max-height:min(44vh,360px);padding:7px;border:1px solid #ffffff35;border-radius:12px;background:#211b29;box-shadow:0 18px 48px #000b;opacity:0;transform:translateY(5px) scale(.97);transition:opacity .16s ease,transform .16s ease;pointer-events:none;visibility:hidden}
@@ -485,3 +474,54 @@
 .production .workflow-visible-references .ref-note{grid-column:1/-1;font-size:10px;color:#978ba1}
 .production .workflow-visible-references .pair-strip{grid-template-columns:repeat(2,minmax(0,1fr))}
 .production .workflow-visible-references .pair-cell>span{position:absolute;left:8px;bottom:7px;font-size:11px;color:#eee;background:#16101999;padding:3px 6px;border-radius:4px}
+
+/* Navigation overlays a fixed editor rail; the work area never changes width. */
+@media(min-width:721px){
+ body.production{--side:244px;padding-left:var(--side)}
+ body.production.workflow-focus,body.production.workflow-focus.wf-nav-expanded{--side:80px;padding-left:var(--side)}
+ .production .sidebar{display:flex;left:10px;top:10px;bottom:10px;width:220px;padding:20px 12px 14px;transform:none;opacity:1;pointer-events:auto;transition:none}
+ .production.workflow-focus .sidebar{z-index:70;width:56px;padding:18px 7px 12px;transform:none;opacity:1;pointer-events:auto;box-shadow:none;transition:width .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s ease}
+ .production.workflow-focus:is(.wf-nav-peek,.wf-nav-expanded) .sidebar{width:232px;box-shadow:14px 0 40px #0006}
+ .production.workflow-focus .nav-curtain{display:block;position:fixed;inset:0 0 0 80px;z-index:65;background:#09080d33!important;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
+ .production.workflow-focus:is(.wf-nav-peek,.wf-nav-expanded) .nav-curtain{display:block;opacity:1;visibility:visible}
+ .production.workflow-focus.wf-nav-expanded .nav-curtain{pointer-events:auto}
+}
+@media(max-width:720px){
+ body.production,body.production.workflow-focus{--side:0px;padding-left:0}
+ .production .sidebar{transition:transform .28s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+ .production.nav-open .sidebar{visibility:visible}
+ .production:not(.nav-open) .sidebar *{visibility:hidden}
+ .production.workflow-focus .sidebar{width:232px;transform:translateX(-110%);pointer-events:none}
+ .production.workflow-focus.nav-open .sidebar{width:232px;transform:none;pointer-events:auto}
+ .production.workflow-focus .sidebar :is(.brand-name,.nav-item span,.new-session span,.session-nav){visibility:visible;opacity:1;transition:none}
+ .production .nav-curtain{display:block;position:fixed;inset:0;z-index:65;background:#09080d55!important;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .22s ease,visibility .22s ease}
+ .production.nav-open .nav-curtain{opacity:1;visibility:visible;pointer-events:auto}
+}
+@media(prefers-reduced-motion:reduce){.production .sidebar,.production .nav-curtain,.production.workflow-focus .sidebar :is(.brand-name,.nav-item span,.new-session span,.session-nav){transition:none!important}}
+
+/* Resume existing sessions before discovering a new tool. */
+.home-resume{margin-top:34px}
+.home-resume .section-heading{margin:0 0 16px}
+.home-resume .section-heading h2{font-size:18px}
+.home-resume-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.home-resume-card{display:flex;align-items:center;gap:16px;min-width:0;padding:14px;border:1px solid #ffffff12;border-radius:16px;background:#19181d;transition:background .18s ease,border-color .18s ease}
+.home-resume-card:hover{background:#211e29;border-color:#b79bdb45}
+.home-resume-thumb{position:relative;display:grid;place-items:center;flex:none;width:76px;height:76px;border-radius:12px;overflow:hidden;background:#28242f;color:#bda7d5}
+.home-resume-thumb :is(img,video){position:relative;display:block;width:100%;height:100%;object-fit:cover}
+.home-resume-thumb :is(img,video)[hidden]{display:none}
+.home-resume-thumb>.icon{position:absolute;width:28px;height:28px}
+.home-resume-copy{display:grid;min-width:0;gap:8px}
+.home-resume-copy strong{color:#e9e4f0;font-size:14px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-resume-copy small{color:#a59aad;font-size:11px;line-height:1.6}
+.home-resume-card>.icon{flex:none;width:14px;margin-left:auto;color:#a18dac;opacity:0;transition:opacity .18s ease}
+.home-resume-card:is(:hover,:focus-visible)>.icon{opacity:1}
+.home-resume-empty{padding:20px 0;color:#978c9f;font-size:13px}
+.studio-home:has(.home-resume) .discovery{margin-top:34px}
+@media(max-width:1100px){.home-resume-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.home-resume-card:last-child{grid-column:1/-1}.home-resume-thumb{width:62px;height:62px}}
+@media(max-width:720px){.home-resume{margin-top:28px}.home-resume-grid{grid-template-columns:1fr;gap:10px}.home-resume-card{padding:12px;gap:12px}.home-resume-card:last-child{grid-column:auto}.home-resume .section-heading h2{font-size:17px}.home-resume-copy small{font-size:11px}}
+
+/* Search focus follows the rounded container, including its icon. */
+body.production .searchbox{border-radius:12px}
+.production .searchbox:focus-within,
+.production .collection-page .collection-page-tools .searchbox:focus-within{border-color:var(--accent);box-shadow:0 0 0 2px rgba(var(--accent-rgb),.15)}
+.production .searchbox input:is(:focus,:focus-visible){outline:none;box-shadow:none}

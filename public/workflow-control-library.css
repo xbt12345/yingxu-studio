@@ -21,3 +21,11 @@ body.production.control-library{height:auto;min-height:100vh;overflow:auto;paddi
 @media(max-width:640px){#library-index{max-height:none;overflow:visible}}
 
 .component-reminders{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}.component-reminders span{font-size:11px;color:#b39ac6;background:#ba99db0b;border:1px solid #ba99db22;padding:5px 9px;border-radius:6px}
+
+/* Focused view shares production components; only the display width is adjustable. */
+.component-refinement{--library-preview-width:420px}
+.component-refinement .library-demo{width:100%;max-width:var(--library-preview-width)}
+.component-refinement .component-reminders a{padding:5px 0;font-size:12px;color:#c0a3dc}
+.library-width-controls{display:flex;align-items:center;gap:8px;margin-top:18px;color:#ab9eb6;font-size:12px;flex-wrap:wrap}
+.library-width-controls button{padding:7px 12px;border:1px solid #ffffff20;border-radius:8px;background:#ffffff04;color:#bcb0c9;font:inherit;cursor:pointer}
+.library-width-controls button[aria-pressed=true]{background:#baa0d21a;border-color:#baa0d26b;color:#e4d1f6}

@@ -1,9 +1,11 @@
 // Catalog IDs are the binding identity. Display keys may repeat across branches.
-import {normalizeObjectIndices} from './object-indices.js?v=70.1';
-import {referenceProvenance} from './live-history.js?v=75.1';
+import {normalizeObjectIndices} from './object-indices.js?v=81.0';
+import {referenceProvenance} from './live-history.js?v=81.0';
+import {browserNumericControl,validateBrowserNumbers} from './numeric-contract.js?v=81.0';
+const browserInterface=cfg=>({...cfg,controls:(cfg.controls||[]).map(browserNumericControl)});
 export function effectiveCatalogInterface(w){
  const cfg=w?.interface||{controls:[],texts:[],media:[]},connection=w?.catalogConnection;
- if(connection?.adapter!=='generic'||catalogConnectionState(w).blocked)return cfg;
+ if(connection?.adapter!=='generic'||catalogConnectionState(w).blocked)return browserInterface(cfg);
  const select=(items,ids)=>Array.isArray(ids)?items.filter(item=>ids.includes(item.id)):items;
  const merge=(items,overrides)=>items.map(item=>{const merged={...item,...(overrides||[]).find(other=>other.id===item.id)};if(merged.options&&item.options)merged.options=merged.options.map(option=>{const policy=item.options.find(old=>String(old?.value??old)===String(option?.value??option));return policy?.disabled?{...(typeof option==='object'?option:{value:option}),disabled:true,reason:policy.reason||''}:option;});return merged;});
  const media=select(cfg.media,connection.mediaIds??connection.supportedMediaIds).map(slot=>{
@@ -12,7 +14,7 @@ export function effectiveCatalogInterface(w){
   return {...slot,...remote,...(required===undefined?{}:{required})};
  });
  const profiles=Array.isArray(connection.apiProfiles)?(cfg.apiProfiles||[]).filter(profile=>connection.apiProfiles.some(item=>item.id===profile.id)):cfg.apiProfiles||[];
- return {...cfg,controls:merge(select(cfg.controls,connection.supportedControlIds),connection.controls),texts:merge(select(cfg.texts,connection.textIds??connection.supportedTextIds),connection.texts),media,apiProfiles:merge(profiles,connection.apiProfiles)};
+ return browserInterface({...cfg,controls:merge(select(cfg.controls,connection.supportedControlIds),connection.controls),texts:merge(select(cfg.texts,connection.textIds??connection.supportedTextIds),connection.texts),media,apiProfiles:merge(profiles,connection.apiProfiles)});
 }
 
 export function catalogConnectionState(w){
@@ -52,6 +54,7 @@ export function catalogPromptProblem(w,d){
 export function catalogSubmission(w,d,assetMap={}){
  validateCatalogConstraints(w,d);
  const cfg=effectiveCatalogInterface(w);
+ validateBrowserNumbers(cfg,d);
  validateCatalogOptions(cfg,d);
  const values=Object.fromEntries(cfg.controls.map(f=>{const value=d.catalogValues?.[f.id]??f.value;return [f.id,f.kind==='indices'?normalizeObjectIndices(value):value];}));
  const texts=catalogTextValues(cfg,d);

@@ -29,22 +29,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker compose up --build --wait --wait-timeout 90
-      - name: Check demo backend and shipped interface
+      - name: Check public health and shipped interface
         run: |
-          curl --retry 20 --retry-connrefused --retry-delay 2 --fail http://127.0.0.1:8770/api/health
+          curl --retry 20 --retry-connrefused --retry-delay 2 --fail http://127.0.0.1:8770/healthz
           curl --fail http://127.0.0.1:8770/studio.html > /dev/null
           curl --fail http://127.0.0.1:8770/workflow-control-library.html > /dev/null
       - name: Exercise local cutout inside the container
         run: |
           docker compose exec -T yingxu python - <<'PY'
           import io
+          import json
+          from pathlib import Path
           import requests
           from PIL import Image, ImageDraw
+          base = 'http://127.0.0.1:8770'
+          session = requests.Session()
+          session.headers['Origin'] = base
+          # The disposable CI volume is the only source of these credentials.
+          # Never print the bootstrap file, login payload, cookies or response body.
+          credentials = json.loads(Path('/app/private/admin-bootstrap.json').read_text('utf-8'))
+          login = session.post(base + '/api/account/login', json={
+              'username': credentials['username'], 'password': credentials['password']}, timeout=20)
+          login.raise_for_status()
+          account = login.json()
+          session.headers.update({'X-CSRF-Token': account['csrf_token'],
+                                  'X-Platform-Account': account['user']['id']})
+          anonymous = requests.post(base + '/api/image/cutout', headers={'Origin': base}, timeout=20)
+          assert anonymous.status_code == 401, 'Anonymous cutout must require an account.'
           image = Image.new('RGB', (128, 128), 'white')
           ImageDraw.Draw(image).ellipse((28, 20, 100, 110), fill=(230, 70, 40))
           data = io.BytesIO()
           image.save(data, 'PNG')
-          result = requests.post('http://127.0.0.1:8770/api/image/cutout', files={'file': ('sample.png', data.getvalue(), 'image/png')}, timeout=20)
+          result = session.post(base + '/api/image/cutout', files={'file': ('sample.png', data.getvalue(), 'image/png')}, timeout=20)
           result.raise_for_status()
           output = Image.open(io.BytesIO(result.content))
           assert output.mode == 'RGBA'

@@ -9,8 +9,6 @@ services:
       CHENYU_CARD_URL: ${CHENYU_CARD_URL:-}
       YINGXU_DATA_DIR: /app/private
       YINGXU_ALLOWED_ORIGINS: ${YINGXU_ALLOWED_ORIGINS:-}
-      YINGXU_ACCESS_USERNAME: ${YINGXU_ACCESS_USERNAME:-yingxu}
-      YINGXU_ACCESS_PASSWORD: ${YINGXU_ACCESS_PASSWORD:-}
     volumes:
       - yingxu-data:/app/private
     extra_hosts:

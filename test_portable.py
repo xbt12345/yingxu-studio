@@ -4,15 +4,24 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from fastapi.testclient import TestClient
+from test_server_helpers import load_server, authenticated_client
 import configuration
-import server
 import schema_adapters
 from adapters import build_graph, settings_for
 from scripts.check_setup import check_files
 
+server=None
+
 
 class PortableContracts(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        global server
+        server,temporary=load_server('yingxu_isolated_portable_backend')
+        cls.addClassCleanup(temporary.cleanup)
+        import sys
+        cls.addClassCleanup(lambda:sys.modules.pop(server.__name__,None))
+
     def test_shipped_files_and_template_hashes(self):
         shipped = {entry['id'] for entry in check_files()}
         ready = {entry['id'] for entry in schema_adapters.registry().values() if entry['validation'] == 'structural-verified'}
@@ -20,7 +29,9 @@ class PortableContracts(unittest.TestCase):
 
     def test_demo_never_advertises_remote_generation(self):
         with patch.object(server, 'BASE', ''), patch.object(server.requests, 'get') as remote:
-            client = TestClient(server.app)
+            accounts=server.platform_bridge.accounts()
+            client=authenticated_client(server,accounts,accounts.bootstrap_admin())
+            self.addCleanup(client.close)
             self.assertFalse(client.get('/api/health').json()['configured'])
             self.assertEqual(client.get('/api/workflows').json(), [])
             self.assertEqual(client.get('/api/catalog-connections').json(), [])

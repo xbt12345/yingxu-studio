@@ -94,6 +94,38 @@ class DerivedUnitBoundsTests(unittest.TestCase):
             with self.subTest(fps=fps),self.assertRaises(CompileError):
                 bind_derived_native_bounds(field,[['INT',{'min':0,'max':9007199254740991}]])
 
+    def test_all_ten_public_contracts_keep_reviewed_units_targets_and_limits(self):
+        interfaces=json.loads((ROOT/'public/workflow-interfaces.json').read_text('utf-8'))['workflows']
+        registry=json.loads((ROOT/'workflows/compiled-registry.json').read_text('utf-8'))['workflows']
+        for idx,(expected,nid,key,typ,minimum,maximum)in DERIVED_NATIVE_LIMITS.items():
+            wid=f'local-card-{idx}'
+            path=ROOT/'workflows/api'/f'{wid}.api.json'
+            before=path.read_bytes();api=json.loads(before)
+            graph=Graph(api)
+            original=next(c for c in interfaces[wid]['controls']if(c.get('derived')or{}).get('targetId')==nid+':'+key)
+            compiled=next(c for c in registry[wid]['controls']if c['id']==original['id'])
+            with self.subTest(workflow=wid):
+                self.assertEqual(registry[wid]['source_hash'],expected)
+                self.assertEqual(api[nid]['class_type'],typ)
+                self.assertIn(key,api[nid]['inputs'])
+                controls=reviewed_derived_unit_bounds({'id':wid},[copy.deepcopy(original)],graph=graph,source_hash=expected)
+                self.assertEqual(controls[0]['derived']['nativeBounds'],{'min':minimum,'max':maximum})
+                self.assertEqual(compiled['transform'],{k:v for k,v in controls[0]['derived'].items()if k!='targetId'})
+                self.assertEqual(compiled['targets'],[{'node':nid,'input':key}])
+                self.assertEqual(compiled['transform']['operation'],'audio-end'if idx==98 else'frames')
+                if idx==98:self.assertNotIn('max',compiled)
+                else:self.assertLessEqual(round(compiled['max']*compiled['transform']['fps']),maximum)
+                self.assertEqual(path.read_bytes(),before)
+                with self.assertRaises(ValueError):
+                    reviewed_derived_unit_bounds({'id':wid},[copy.deepcopy(original)],graph=graph,source_hash='0'*64)
+                changed=SimpleNamespace(nodes=copy.deepcopy(graph.nodes));changed.nodes[nid]['type']='wrong-class'
+                with self.assertRaises(ValueError):
+                    reviewed_derived_unit_bounds({'id':wid},[copy.deepcopy(original)],graph=changed,source_hash=expected)
+
+    @unittest.skipUnless(
+        (ROOT/'verification/catalog-audit.json').is_file()
+        and (ROOT/'private/research/card-20261004/object_info.json').is_file(),
+        'Private original-source audit and registered-node snapshot are not shipped.')
     def test_all_ten_source_contracts_match_original_bytes_and_registered_sockets(self):
         sources=json.loads((ROOT/'verification/catalog-audit.json').read_text('utf-8'))
         schemas=json.loads((ROOT/'private/research/card-20261004/object_info.json').read_text('utf-8'))

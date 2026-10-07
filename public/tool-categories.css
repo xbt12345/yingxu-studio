@@ -1,0 +1,25 @@
+.production .workflow-page .tool-category-nav{position:relative;max-width:1600px;margin:0 auto 20px}
+.production .workflow-page .tool-category-nav>summary{display:flex;align-items:center;gap:14px;width:fit-content;max-width:100%;min-height:38px;padding:8px 12px;border:1px solid #bca1df26;border-radius:11px;background:#17141d;color:#9d90ac;font-size:12px;cursor:pointer;list-style:none}
+.production .workflow-page .tool-category-nav>summary::-webkit-details-marker{display:none}
+.production .workflow-page .tool-category-nav>summary strong{min-width:64px;max-width:240px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;font-weight:500;color:#e1d4ef;background:none;-webkit-text-fill-color:currentColor}
+.production .workflow-page .tool-category-nav>summary>.icon{flex:none;width:15px;height:15px;transition:transform .18s ease}
+.production .workflow-page .tool-category-nav[open]>summary>.icon{transform:rotate(180deg)}
+.production .workflow-page .tool-category-nav>summary:is(:hover,:focus-visible){border-color:#bca1df65;background:#211b2b}
+.production .workflow-page .tool-category-nav>summary:focus-visible{outline:2px solid #bca1df;outline-offset:3px}
+.production .workflow-page .tool-category-options{position:absolute;z-index:15;top:calc(100% + 8px);left:0;display:grid;gap:8px;width:min(680px,100%);max-height:min(440px,60vh);overflow-y:auto;padding:16px;border:1px solid #bca1df35;border-radius:14px;background:#19151f;box-shadow:0 16px 36px #0006}
+.production .workflow-page .tool-category-row{display:flex;align-items:flex-start;gap:14px;min-width:0}
+.production .workflow-page .tool-category-label{flex:0 0 30px;padding-top:9px;color:#82768e;font-size:11px;line-height:16px}
+.production .workflow-page .tool-category-row .category-tabs{flex:1;flex-wrap:wrap;gap:5px;min-width:0;max-width:none;margin:0;padding:0;overflow:visible}
+.production .workflow-page .tool-category-row .category{min-height:34px;padding:7px 11px;background:transparent;border-color:transparent;color:#a396af}
+.production .workflow-page .tool-category-row .category:hover{background:#bca1df0b;color:#ded0ea}
+.production .workflow-page .tool-category-row .category.active{background:#bca1df18;border-color:#bca1df35;color:#e2cff7}
+.production .workflow-page .tool-category-row .category:focus-visible{outline:2px solid #bca1df;outline-offset:2px}
+@media(max-width:720px){
+ .production .workflow-page .tool-category-nav{margin-bottom:18px}
+ .production .workflow-page .tool-category-options{padding:12px;gap:8px}
+ .production .workflow-page .tool-category-row{gap:8px}
+ .production .workflow-page .tool-category-label{flex-basis:26px;font-size:10px;padding-top:8px}
+ .production .workflow-page .tool-category-row .category-tabs{gap:3px}
+ .production .workflow-page .tool-category-row .category{min-height:32px;padding:6px 8px;font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.production .workflow-page .tool-category-nav>summary>.icon{transition:none}}

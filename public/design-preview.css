@@ -40,3 +40,9 @@ input:invalid:not(:placeholder-shown){border-color:#c98f91!important}
 .task-visual>video{width:100%;height:100%;object-fit:cover;display:block}
 
 .preview-ui .catalog-camera-distance{display:flex;align-items:center;gap:9px;font-size:11px;color:#b8acc4;margin:9px 0}.preview-ui .catalog-camera-distance input{flex:1;min-width:70px}.preview-ui .catalog-camera-distance strong{width:34px;text-align:right}
+
+/* Clear task diagrams replace unrelated placeholder photographs. */
+.task-visual .task-cover-diagram{width:100%;height:100%;stroke:none;fill:initial}.task-visual .task-cover-note{position:absolute;left:12px;bottom:10px;color:#d4c8df;background:#17131dd9;padding:3px 7px;border-radius:4px;font-size:11px}.result-layout-example{padding:18px 0;border-top:1px solid var(--line)}.result-layout-example .result-actions{margin-top:12px}.result-layout-example p{font-size:13px;color:var(--muted);margin-top:12px}.review-caption{font-size:13px}.review-tabs button{font-size:13px}.state-strip button{font-size:12px;min-height:30px;padding:4px 9px}.task-text .pill{font-size:12px}.result-empty{min-height:260px}.review-caption>span:last-child{font-size:11px}
+@media(max-width:700px){.review-caption>span:last-child{display:none}.task-text .pill{font-size:10px}.state-strip button{font-size:11px}.review-caption{font-size:11px}.review-caption #scene-caption{overflow:hidden;text-overflow:ellipsis}.state-strip{gap:4px}}
+
+.task-visual:has(.task-cover-diagram){background:#201a29}

@@ -1,4 +1,8 @@
-"""Check every connected card form against its server request contract."""
+"""Check the 32 legacy catalog forms against their adapter contracts, offline.
+
+Generic and primary forms are audited separately; this script does not claim
+the legacy adapter list is the complete current ready workflow inventory.
+"""
 import json
 import sys
 from pathlib import Path
@@ -8,6 +12,17 @@ sys.path.insert(0, str(ROOT))
 from adapters import CATALOG_WORKFLOWS, build_graph, manifest, settings_for  # noqa: E402
 
 IDS = [int(workflow['id'].split('-')[-1]) for workflow in CATALOG_WORKFLOWS]
+
+
+def custom_sample(field):
+    """Choose within the reviewed unit/range, including branch-specific MP keys."""
+    limits = field['customRange']
+    minimum, maximum, step = limits['min'], limits['max'], limits['step']
+    if field['key'] == 'size':
+        edge = int(minimum + step * min(4, int((maximum - minimum) / step)))
+        return f'{edge}x{edge}'
+    sample = minimum + step * min(4, int((maximum - minimum) / step))
+    return round(sample, 10)
 
 
 def main():
@@ -32,11 +47,12 @@ def main():
             if field['kind'] == 'seed' and number in (11, 15, 16, 17, 18, 20):
                 continue
             for item in field.get('options') or []:
+                if isinstance(item, dict) and item.get('disabled'):
+                    continue
                 variants.append((field['id'], {**baseline, field['key']: item.get('value') if isinstance(item, dict) else item}))
             custom = field.get('customRange')
             if custom:
-                sample = '1024x1152' if field['key'] == 'size' else (
-                    1.7 if field['key'] == 'megapixels' else 1280)
+                sample = custom_sample(field)
                 variants.append((field['id'] + ' custom', {**baseline, field['key']: sample}))
         for label, supplied in variants:
             try:
@@ -55,7 +71,7 @@ def main():
     if errors:
         print('\n'.join(errors), file=sys.stderr)
         raise SystemExit(1)
-    print(f'PASS: {len(IDS)} connected workflows, UI defaults and options match the backend')
+    print(f'PASS: {len(IDS)} legacy catalog workflows; UI defaults, enabled options and custom ranges match their adapters (not the full ready inventory)')
 
 
 if __name__ == '__main__':

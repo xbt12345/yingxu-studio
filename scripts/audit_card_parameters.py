@@ -9,14 +9,17 @@ from __future__ import annotations
 
 import argparse
 import ast
+import copy
 from collections import Counter
 import hashlib
 import json
 from pathlib import Path
 import re
+from types import SimpleNamespace
 
 from build_workflow_interfaces import Graph, semantic, widget_bindings
-from workflow_customization import INTERNAL, REVIEW70_INPUTS, REVIEW70_LINKED_INPUTS, downstream
+from workflow_customization import INTERNAL, REVIEW70_INPUTS, REVIEW70_LINKED_INPUTS, downstream, dance_ratio_protocol_form
+from review74_parameter_contracts import reviewed_inactive_middle_position
 
 ROOT = Path(__file__).resolve().parents[1]
 SECRET = re.compile(r"api.?key|access.?token|authorization|password|secret|credential", re.I)
@@ -202,6 +205,35 @@ def input_metadata(graph, node_id, key, object_info):
     return result
 
 
+def creative_input_metadata(graph, field, object_info, executable):
+    """Resolve nested source wrappers through the contract's concrete targets.
+
+    A UUID wrapper can lack object_info while its flattened API node has a
+    registered socket. Accept that evidence only when every declared target
+    exists and agrees on the metadata; changed or missing targets stay unknown.
+    """
+    node_id, key = field['id'].rsplit(':', 1)
+    original = input_metadata(graph, node_id, key, object_info)
+    if original:
+        return original
+    targets = field.get('targets') or []
+    definitions, evidence = [], []
+    for target in targets:
+        node = executable.get(target['node'])
+        if not node or target['input'] not in node.get('inputs', {}):
+            return None
+        proxy = SimpleNamespace(nodes={target['node']: {'type': node['class_type'],
+            'widgets_values_named': node.get('inputs', {})}})
+        definition = input_metadata(proxy, target['node'], target['input'], object_info)
+        if not definition:
+            return None
+        definitions.append(definition)
+        evidence.append({'node': target['node'], 'input': target['input'], 'nodeType': node['class_type']})
+    if not definitions or any(item != definitions[0] for item in definitions[1:]):
+        return None
+    return {**definitions[0], 'concreteTargets': evidence}
+
+
 def execution_view(config, spec):
     if not spec or spec.get('validation')=='blocked':return config
     out=dict(config)
@@ -217,10 +249,33 @@ def audit(workflow, raw, config, source, object_info, compiled_dir, spec):
     bindings = binding_sets(config)
     executable={}
     if spec and spec.get('validation')!='blocked' and spec.get('template'):
-        for candidate in (ROOT/'private/card-compiled'/spec['template'],ROOT/'workflows/api'/spec['template']):
-            if candidate.exists():
-                executable=load_json(candidate)
-                break
+        import schema_adapters
+        from configuration import workflow_path
+        candidate = (schema_adapters.template_path(spec) if spec.get('adapter') == 'generic'
+                     else workflow_path(workflow['id']))
+        if candidate.exists():
+            executable=load_json(candidate)
+    inactive_middle = False
+    fixed_orientation = False
+    if workflow['id'] == 'local-card-30':
+        source_hash = hashlib.sha256(Path(source).read_bytes()).hexdigest()
+        dance_ratio_protocol_form(copy.deepcopy(config['controls']), config['texts'],
+                                  graph=graph, source_hash=source_hash)
+        if executable:
+            dance_ratio_protocol_form(copy.deepcopy(config['controls']), config['texts'],
+                                      graph=executable, source_hash=source_hash)
+        fixed_orientation = True
+    if workflow['id'] == 'local-card-124':
+        # This input is real but cannot affect the reviewed two-frame branch.
+        # The existing repair verifies the exact source hash, stopped middle
+        # image nodes, and compiled omission. Drift must fail, not be ignored.
+        reviewed_inactive_middle_position(workflow, config['controls'], graph=graph,
+            source_hash=hashlib.sha256(Path(source).read_bytes()).hexdigest())
+        inputs44 = executable.get('44', {}).get('inputs', {})
+        if executable and ('middle_image' in inputs44 or inputs44.get('mode') != 'NORMAL'
+                           or inputs44.get('middle_frame_ratio') != 0.5):
+            raise ValueError('有效执行图的中间帧分支已改变，需要重新审查。')
+        inactive_middle = True
     inputs, skipped = [], Counter()
     original_fields=source_fields(workflow,graph)
     for (node_id, key), value in original_fields.items():
@@ -233,6 +288,10 @@ def audit(workflow, raw, config, source, object_info, compiled_dir, spec):
         targets = graph.targets(node_id, key)
         hits = covered_by(node_id, key, targets, config, bindings)
         status, reason = classify(workflow, graph, node_id, key, targets, value, hits)
+        if inactive_middle and (node_id, key) == ('44', 'middle_frame_ratio'):
+            status, reason = 'hidden-internal', 'reviewed-disabled-middle-image-branch'
+        if fixed_orientation and (node_id, key) in (('156', 'text'), ('157', 'text')):
+            status, reason = 'hidden-internal', 'reviewed-orientation-protocol-constant'
         if executable and status not in ('visible','hidden-credential'):
             if node_id not in executable and not any(nid in executable for nid,_ in targets):
                 status,reason='hidden-pruned','source-node-outside-compiled-active-output-path'
@@ -269,7 +328,14 @@ def audit(workflow, raw, config, source, object_info, compiled_dir, spec):
                 schema_issues.append({"id": identifier, "issue": "credential-in-creative-field"})
             if family=='controls' and (any(n+':'+k==identifier for n,k,*_ in REVIEW70_INPUTS.get(int(workflow['id'].rsplit('-',1)[-1]) if workflow['id'].startswith('local-card-') else -1, [])) or workflow['id']=='local-card-75' and field.get('kind')=='camera'):
                 nid,key=identifier.rsplit(':',1)
-                metadata=input_metadata(graph,nid,key,object_info)
+                # The interface stores source wrapper targets; the compiler
+                # owns their flattened API identity. Only a same-source ready
+                # contract can supply concrete targets for this metadata check.
+                concrete = next((item for item in (spec or {}).get('controls', [])
+                                 if item['id'] == identifier), None)
+                same_source = (spec or {}).get('source_hash') == config.get('sourceHash')
+                bound = concrete if concrete and same_source and spec.get('validation') == 'structural-verified' else field
+                metadata=creative_input_metadata(graph,bound,object_info,executable)
                 findings=[]
                 if metadata:
                     for attr in ('min','max','step'):
