@@ -9,6 +9,7 @@ import configuration
 import schema_adapters
 from adapters import build_graph, settings_for
 from scripts.check_setup import check_files
+from scripts.review87_infinite_controls import derive_infinite_reference_geometry
 
 server=None
 
@@ -74,11 +75,19 @@ class PortableContracts(unittest.TestCase):
                 with self.subTest(workflow=spec['id']):
                     assets = {slot['id']: {'kind': slot['kind'], 'remote': 'fixture.' + {'image': 'png', 'video': 'mp4', 'audio': 'wav'}[slot['kind']]} for slot in spec['media']}
                     values = {field['id']: -1 for field in spec['controls'] if field['kind'] == 'seed'}
+                    # Required per-speaker regions are user input, not a default.
+                    # This packaging test supplies two anonymous fixture people.
+                    values.update({field['id']: json.dumps([
+                        {'x':.05,'y':.05,'width':.4,'height':.9},
+                        {'x':.55,'y':.05,'width':.4,'height':.9},
+                    ]) for field in spec['controls'] if field['kind'] == 'speaker_regions'})
                     recipe = spec.get('pointsRecipe')
                     geometry = None
                     if recipe:
                         values.update({field['id']: '{"positive":[{"x":0.5,"y":0.5}],"negative":[]}' for field in spec['controls'] if field['kind'] == 'points'})
                         geometry = {'width': 1280, 'height': 736, 'node': recipe['node'], 'negativeTarget': recipe['negativeTarget']}
+                    if spec.get('speakerRegionsRecipe'):
+                        geometry = derive_infinite_reference_geometry(spec, values, 1280, 736)
                     graph, _, _ = schema_adapters.build(spec, values, {}, assets, {}, 'portable-generic', geometry=geometry)
                     self.assertTrue(graph)
                     for node in graph.values():
