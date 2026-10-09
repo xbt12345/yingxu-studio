@@ -420,6 +420,19 @@ def build():
             from workflow_customization import refresh_curated_controls
             config = refresh_curated_controls(w, curated[w['id']], config)
             controls, texts, media = config['controls'], config['texts'], config['media']
+        from review85_parameter_semantics import reviewed_parameter_semantics
+        config = reviewed_parameter_semantics(w, config)
+        from review86_h3_controls import reviewed_h3_config
+        config = reviewed_h3_config(w, config, graph=graph)
+        from review86_ltx_controls import reviewed_ltx_config
+        config = reviewed_ltx_config(w, config, graph=json.loads(raw_bytes))
+        from review87_video_controls import reviewed_video_config
+        config = reviewed_video_config(w, config, graph=json.loads(raw_bytes))
+        from review87_flash_controls import reviewed_flash_config
+        config = reviewed_flash_config(w, config, graph=json.loads(raw_bytes))
+        from review87_infinite_controls import reviewed_infinite_config
+        config = reviewed_infinite_config(w, config, graph=json.loads(raw_bytes))
+        controls, texts, media = config['controls'], config['texts'], config['media']
         interfaces[w['id']] = config
         report.append({'id': w['id'], 'name': w['name'], 'sourceHash': config['sourceHash'],
                        'controls': [{k: c[k] for k in ['id', 'kind', 'label', 'targets']} for c in controls],

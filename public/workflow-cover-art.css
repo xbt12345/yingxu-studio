@@ -1,0 +1,22 @@
+/* Selected C direction: a photo and an operation unique to each workflow. */
+.cover-art { display:block; position:relative; width:100%; height:100%; overflow:hidden; isolation:isolate; background:#1d1627; }
+.cover-art .cover-photo { position:absolute; z-index:1; display:block; overflow:hidden; background:#34283e; box-shadow:0 8px 20px #09051018; }
+.cover-art .cover-photo>svg,.cover-art .cover-photo>img { position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:cover; }
+.cover-art .cover-photo>svg { opacity:.7; }
+.cover-art .cover-operation { position:absolute; inset:0; z-index:2; display:block; width:100%; height:100%; pointer-events:none; }
+.cover-art .cover-evidence,.cover-art .cover-feature,.cover-art .cover-operation-label { position:absolute; z-index:3; color:#ecdff6; line-height:1.5; }
+.cover-art .cover-evidence { top:9px; left:10px; padding:2px 5px; border-radius:5px; font-size:8px; background:#170f21c9; color:#c3b0d3; }
+.cover-art .cover-feature { display:none; }
+.cover-art .cover-operation-label { left:15px; bottom:12px; max-width:calc(100% - 30px); font-size:14px; font-weight:550; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.workflow-card .task-cover:has(.cover-art) { aspect-ratio:16/9; }
+.task-cover>.cover-art { border-radius:inherit; }
+.task-visual>.cover-art { width:100%; height:100%; }
+.workflow-card:not(.workflow-family) .cover-evidence { left:auto; right:10px; }
+.production .workflow-family .family-meta { top:9px; left:auto; right:10px; padding:0; z-index:4; }
+.workflow-card:has(.cover-art) .wf-card-status { font-size:8px; }
+.workflow-card:has(.cover-art) .workflow-info { position:static; inset:auto; padding:13px 14px 15px; margin:0; }
+.workflow-card:has(.cover-art) .workflow-info::before { content:none; }
+.workflow-card:has(.cover-art) .workflow-info h2 { white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; text-shadow:none; }
+.workflow-card:has(.cover-art) .workflow-info p { display:block; max-height:none; min-height:0; opacity:1; transform:none; margin-top:5px; color:#a092af; }
+@media(max-width:760px) { .cover-art .cover-operation-label { left:10px; bottom:8px; font-size:12px; } .cover-art .cover-evidence { top:6px; left:6px; font-size:7px; } .workflow-card:not(.workflow-family) .cover-evidence { left:auto; right:6px; } .production .workflow-family .family-meta { top:6px; right:6px; } .workflow-family .family-meta>span:last-child { padding:2px 5px; font-size:8px; } }
+@media(prefers-reduced-motion:reduce) { .cover-art * { transition:none!important; } }

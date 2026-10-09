@@ -1,7 +1,7 @@
 {
-  "version": "0.81.1",
-  "release": "81.1",
-  "released_on": "2026-10-07",
+  "version": "0.88.0",
+  "release": 88,
+  "released_on": "2026-10-08",
   "connected_workflows": 129,
   "blocked_workflows": 6
 }

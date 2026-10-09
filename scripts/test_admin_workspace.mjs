@@ -8,14 +8,14 @@ const admin={id:'admin-1',username:'管理员',role:'admin',balance:20,held:7};
 const member={id:'user-1',username:'创作用户',role:'user',balance:100,held:12,enabled:true};
 const source=readFileSync(new URL('../public/admin.js',import.meta.url),'utf8').replace(/^import .*\r?\n/,'').replace(/\bexport /g,'').replace(/if\(typeof document!==.*startAdmin\(\);\s*$/,'');
 
-function fixture({user=admin,onFetch}={}){
+function fixture({user=admin,onFetch,localMode=false}={}){
  const nodes=new Map(['admin-shell','admin-main','admin-notice','admin-dialog'].map(id=>[id,{innerHTML:'',hidden:true,textContent:'',querySelector:()=>null,querySelectorAll(){return this.secretFields||[];},handlers:{},addEventListener(type,handler){this.handlers[type]=handler;},showModal(){this.open=true;},close(){this.closed=true;this.open=false;this.handlers.close?.();}}]));
  const data={users:[structuredClone(admin),structuredClone(member)],orders:[],packages:[],pricing:[],payment_reviews:[],generation_reviews:[],workflow_options:[{id:'image-job',name:'画面创作'}]};
- const calls=[],events=[];let key=0;
- const context=vm.createContext({initializePlatform:async()=>user,console,Intl,Number,JSON,Date,String,Object,Array,Map,Set,Promise,Error,
+ const calls=[],events=[],redirects=[];let key=0;
+ const context=vm.createContext({initializePlatform:async()=>user,isLocalPlatform:()=>localMode,console,Intl,Number,JSON,Date,String,Object,Array,Map,Set,Promise,Error,
   crypto:{randomUUID:()=>`00000000-0000-4000-8000-${String(++key).padStart(12,'0')}`},
   document:{title:'',getElementById:id=>nodes.get(id),querySelector:()=>null,addEventListener:(type,handler)=>events.push([type,handler])},
-  location:{hash:'#users',href:'http://local/admin.html'},URLSearchParams,addEventListener:(type,handler)=>events.push([type,handler]),
+  location:{hash:'#users',href:'http://local/admin.html',replace:url=>redirects.push(url)},URLSearchParams,addEventListener:(type,handler)=>events.push([type,handler]),
   queueMicrotask:callback=>callback(),setTimeout:()=>1,clearTimeout:()=>{},
   FormData:class{constructor(form){this.values=form.values;}get(name){return this.values[name]??null;}has(name){return Object.hasOwn(this.values,name);}},
   fetch:async(path,options)=>{calls.push({path,...options,body:options.body?JSON.parse(options.body):undefined});return onFetch?onFetch(path,options,calls,data):{ok:true,json:async()=>path==='/api/admin/audit'?{audit:[]}:path.startsWith('/api/admin/users?')?{users:data.users,total:data.users.length,limit:50,offset:0}:data};}
@@ -23,7 +23,7 @@ function fixture({user=admin,onFetch}={}){
  vm.runInContext(source+'\nglobalThis.subject={state,startAdmin,submit,loadUsers,usersPage,ordersPage,pricingPage,pricingRegion,reviewsPage,auditPage,openNewUser,closeDialog,restoreUserFilters,action};',context);
  function creditForm(values={}){const error={textContent:'',hidden:true},button={disabled:false,isConnected:true};return {dataset:{adminForm:'credits',userId:member.id},values:{direction:'add',amount:'5',reason:'核对积分调整',...values},querySelector:selector=>selector==='[data-admin-error]'?error:selector==='[type=submit]'?button:null,error,button};}
  function newUserForm(values={}){const form=creditForm();form.dataset={adminForm:'new-user'};form.values={username:'new-creator',password:'initial secret 123',password_confirm:'initial secret 123',role:'user',...values};form.secretFields=[{value:form.values.password},{value:form.values.password_confirm}];form.querySelectorAll=()=>form.secretFields;nodes.get('admin-dialog').secretFields=form.secretFields;return form;}
- return {context,subject:context.subject,nodes,calls,data,creditForm,newUserForm,events};
+ return {context,subject:context.subject,nodes,calls,data,creditForm,newUserForm,events,redirects};
 }
 const response=(ok,data)=>({ok,json:async()=>data});
 
@@ -58,6 +58,12 @@ test('ordinary users are rejected before any management API is requested',async(
 });
 test('anonymous initialization does not mount administrator data',async()=>{
  const f=fixture({user:null});await f.subject.startAdmin();assert.equal(f.calls.length,0);assert.equal(f.nodes.get('admin-shell').innerHTML,'');
+});
+test('local administrator entry redirects to user information before reading any management API',async()=>{
+ for(const user of [admin,member]){
+  const f=fixture({user,localMode:true});await f.subject.startAdmin();
+  assert.deepEqual(f.redirects,['studio.html#account']);assert.equal(f.calls.length,0);assert.equal(f.nodes.get('admin-shell').innerHTML,'');assert.equal(f.subject.state.data,null);
+ }
 });
 test('admin startup reads data only and users view does not show unrelated package or payment forms',async()=>{
  const f=fixture();await f.subject.startAdmin();assert.equal(f.calls[0].path,'/api/admin/dashboard');assert.match(f.calls[1].path,/^\/api\/admin\/users\?/);assert.ok(f.calls.every(call=>call.method==='GET'));

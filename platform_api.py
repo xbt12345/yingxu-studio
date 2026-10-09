@@ -9,6 +9,8 @@ import threading
 import time
 import base64
 import io
+import ipaddress
+import os
 from typing import Literal
 
 from fastapi import HTTPException, Query, Request
@@ -109,8 +111,29 @@ class GenerationReviewDecision(BaseModel):
 
 
 def public_user(user):
+    hidden = {'csrf_token', 'session_expires_at', '_local_mode'}
+    if user.get('_local_mode'):
+        hidden.update(('balance', 'held', 'available'))
     return {k:v for k,v in {**user, 'available':user['balance']}.items()
-            if k not in ('csrf_token', 'session_expires_at')}
+            if k not in hidden}
+
+
+def local_mode_enabled():
+    """Explicit desktop-only setting; deployed instances keep account billing."""
+    return (os.environ.get('YINGXU_LOCAL_MODE') == '1' and
+            not os.environ.get('RAILWAY_ENVIRONMENT_ID') and
+            not os.environ.get('RAILWAY_PUBLIC_DOMAIN'))
+
+
+def _loopback(host, allow_localhost=False):
+    if allow_localhost and host == 'localhost':
+        return True
+    try:
+        address = ipaddress.ip_address(host or '')
+        return address.is_loopback or bool(getattr(address, 'ipv4_mapped', None)
+                                          and address.ipv4_mapped.is_loopback)
+    except ValueError:
+        return False
 
 
 class PlatformIntegration:
@@ -155,6 +178,47 @@ class PlatformIntegration:
         if admin and user['role'] != 'admin':
             raise HTTPException(403, '仅管理员可以进行此操作。')
         return user
+
+    def local_request(self, request):
+        # Neither forwarded headers nor a caller's loopback Host alone prove
+        # that the connection originated on this computer.
+        return (local_mode_enabled() and request.client is not None and
+                _loopback(request.client.host) and
+                _loopback(request.url.hostname, allow_localhost=True))
+
+    def local_account(self, request, unsafe=False):
+        accounts = self.accounts()
+        key = (str(self.backend.DB), str(self.backend.PRIVATE))
+        owner = accounts.account(self._owners[key])
+        session = None
+        try:
+            user = accounts.resolve_session(request.cookies.get(COOKIE))
+        except AccountError:
+            user = None
+        if not user or user['id'] != owner['id']:
+            if unsafe:
+                raise AccountError(409, 'account_changed', '用户状态已变化，请刷新页面后继续。')
+            session = accounts.create_session(owner['id'])
+            user = accounts.resolve_session(session['token'])
+        return {**user, '_local_mode':True}, session
+
+    @staticmethod
+    def local_disabled_endpoint(path, method):
+        if path.startswith('/api/payments/'):
+            return True
+        if path.startswith('/api/admin/'):
+            return method not in ('GET', 'HEAD') or path not in (
+                '/api/admin/users', '/api/admin/dashboard')
+        return (path in ('/api/account/login','/api/account/register','/api/account/logout',
+                         '/api/account/password','/api/account/pricing-policy',
+                         '/api/account/creation-quote') or
+                path.startswith('/api/account/quote/') or
+                path == '/api/account/orders' or path.startswith('/api/account/orders/'))
+
+    def set_session_cookie(self, response, session, request):
+        response.set_cookie(COOKIE, session['token'], httponly=True, samesite='lax',
+            secure=bool(railway_origin()) or request.url.scheme == 'https',
+            max_age=self.accounts().SESSION_SECONDS, path='/')
 
     def check_resource(self, kind, identifier):
         user = CURRENT_USER.get()
@@ -223,6 +287,9 @@ class PlatformIntegration:
         if old:
             self.checked_replay(old[0])
             return
+        if user.get('_local_mode'):
+            SUBMISSION_IDENTITY.get()['local_mode'] = True
+            return
         quote = self.accounts().pricing(workflow_id)
         if not quote['configured']:
             raise HTTPException(409, '管理员尚未设置此工具的积分费用；免费演示仍可使用。')
@@ -252,10 +319,11 @@ class PlatformIntegration:
             if old:
                 replay = self.checked_replay(old[0])
                 return {**replay, '_platform_replay':True}
-            if accounts.pricing(record['workflow_id'], connection=db)['credits'] != identity['quoted_credits']:
-                raise HTTPException(409, '积分价格在准备期间发生变化，请确认新报价后重新提交。')
-            reservation = accounts.reserve(identity['owner_id'], record['id'], record['workflow_id'], connection=db)
-            record['credit_cost'] = reservation['credits']
+            if not identity.get('local_mode'):
+                if accounts.pricing(record['workflow_id'], connection=db)['credits'] != identity['quoted_credits']:
+                    raise HTTPException(409, '积分价格在准备期间发生变化，请确认新报价后重新提交。')
+                reservation = accounts.reserve(identity['owner_id'], record['id'], record['workflow_id'], connection=db)
+                record['credit_cost'] = reservation['credits']
             db.execute('INSERT INTO jobs(id,token,data) VALUES(?,?,?)',
                 (record['id'], record['token'], json.dumps(record, ensure_ascii=False)))
             accounts.grant_resource(identity['owner_id'], 'job', record['id'], connection=db)
@@ -275,6 +343,11 @@ class PlatformIntegration:
             connection.row_factory = previous_factory
 
     def settle_record(self, record, connection=None):
+        # Local tracking must not append financial events, including background
+        # completion of new local tasks. Local UI actions leave old holds intact.
+        user = CURRENT_USER.get()
+        if record.get('local_mode') or user and user.get('_local_mode'):
+            return
         accounts = self.accounts()
         status = record.get('status')
         if status == 'done':
@@ -312,6 +385,10 @@ class PlatformIntegration:
             path = request.url.path
             if not path.startswith('/api'):
                 return await call_next(request)
+            local = self.local_request(request)
+            if local and self.local_disabled_endpoint(path, request.method):
+                return JSONResponse({'detail':'本地环境未启用此功能。',
+                                     'code':'local_feature_disabled'}, 404)
             # Verified payment notifications use signatures, never browser cookies.
             if path in webhooks:
                 return await call_next(request)
@@ -329,7 +406,11 @@ class PlatformIntegration:
                     except AccountError as error:return JSONResponse({'detail':error.message,'code':error.code},error.status)
                 return await call_next(request)
             try:
-                user = self.accounts().resolve_session(request.cookies.get(COOKIE))
+                pending_session = None
+                if local:
+                    user, pending_session = self.local_account(request, unsafe)
+                else:
+                    user = self.accounts().resolve_session(request.cookies.get(COOKIE))
                 expected = request.headers.get('X-Platform-Account')
                 if expected and expected != user['id']:
                     raise AccountError(409, 'account_changed', '账户已切换，请刷新页面后继续。')
@@ -348,6 +429,8 @@ class PlatformIntegration:
                     if path == '/api/local-directory' and user['role'] != 'admin':
                         raise HTTPException(403, '本机目录选择仅限管理员使用。')
                     response = await call_next(request)
+                    if pending_session:
+                        self.set_session_cookie(response, pending_session, request)
                     response.headers['Cache-Control'] = 'no-store'
                     response.headers['X-Content-Type-Options'] = 'nosniff'
                     return response
@@ -377,16 +460,15 @@ class PlatformIntegration:
 
         def login_response(session, request):
             response = JSONResponse({'user':public_user(session['user']), 'csrf_token':session['csrf_token']})
-            response.set_cookie(COOKIE, session['token'], httponly=True, samesite='lax',
-                secure=bool(railway_origin()) or request.url.scheme == 'https',
-                max_age=self.accounts().SESSION_SECONDS, path='/')
+            self.set_session_cookie(response, session, request)
             response.headers['Cache-Control'] = 'no-store'
             return response
 
         @app.get('/api/account/me')
         def me(request:Request):
             user = self.require_user(request)
-            return {'user':public_user(user), 'csrf_token':user['csrf_token']}
+            return {'user':public_user(user), 'csrf_token':user['csrf_token'],
+                    **({'local_mode':True} if user.get('_local_mode') else {})}
 
         @app.post('/api/account/logout')
         def logout(request:Request):
@@ -403,6 +485,9 @@ class PlatformIntegration:
         def dashboard(request:Request):
             user = self.require_user(request)
             accounts = self.accounts()
+            if user.get('_local_mode'):
+                return {'user':public_user({**accounts.account(user['id']), '_local_mode':True}),
+                        'local_mode':True}
             methods = self.gateway.methods()
             automatic = any(m['enabled'] and m['automatic'] for m in methods)
             manual = any(m['enabled'] and not m['automatic'] for m in methods)
@@ -430,6 +515,18 @@ class PlatformIntegration:
                 return creation_quote(**body.model_dump())
             except PricingValidationError as error:
                 raise HTTPException(422, str(error)) from error
+
+        @app.post('/api/account/creation-availability')
+        def creation_availability(body:CreationQuoteRequest, request:Request):
+            user = self.require_user(request)
+            if not user.get('_local_mode'):
+                raise HTTPException(404, '找不到此接口。')
+            try:
+                availability = creation_quote(**body.model_dump())
+            except PricingValidationError as error:
+                raise HTTPException(422, str(error)) from error
+            return {'local_mode':True, **{key:availability[key] for key in (
+                'model','kind','quality','count','duration','available','availability_reason')}}
 
         @app.get('/api/account/quote/{workflow_id}')
         def quote(workflow_id:str, request:Request):
@@ -467,6 +564,9 @@ class PlatformIntegration:
         def admin_dashboard(request:Request):
             user = self.require_user(request, admin=True)
             accounts = self.accounts()
+            if user.get('_local_mode'):
+                return {'local_mode':True, 'users':[public_user({**u, '_local_mode':True})
+                        for u in accounts.list_accounts(user['id'])]}
             return {'users':[public_user(u) for u in accounts.list_accounts(user['id'])],
                 'orders':accounts.list_orders(actor_id=user['id']), 'packages':accounts.packages(user['id']),
                 'pricing':accounts.list_pricing(user['id']), 'payment_reviews':accounts.list_payment_reviews(user['id']),
@@ -485,7 +585,9 @@ class PlatformIntegration:
                 limit:int=Query(default=50,ge=1,le=100),offset:int=Query(default=0,ge=0,le=PlatformAccounts.MAX_CREDITS)):
             result = self.accounts().query_accounts(self.require_user(request,admin=True)['id'],
                 query=query,role=role,state=state,limit=limit,offset=offset)
-            return {**result,'users':[public_user(user) for user in result['users']]}
+            local = self.require_user(request).get('_local_mode')
+            return {**result,'users':[public_user({**user, **({'_local_mode':True} if local else {})})
+                                     for user in result['users']]}
 
         @app.get('/api/admin/users/{id}/ledger')
         def read_user_ledger(id:str, request:Request):

@@ -15,6 +15,14 @@ from urllib.parse import urlsplit
 from adapters import prune
 from configuration import ROOT, WORKFLOW_DIR, workflow_path
 from reviewed_repairs import apply_reviewed_repairs
+from scripts.review86_h3_controls import bind_reviewed_h3_assets
+from scripts.review86_ltx_controls import apply_ltx_control_projection
+from scripts.review86_scail_controls import apply_scail_output_size
+from scripts.review87_video_controls import apply_video_control_projection
+from scripts.review87_flash_controls import apply_flash_control_projection
+from scripts.review87_infinite_controls import apply_infinite_speaker_regions, validate_speaker_regions
+from scripts.review87_output_loops import output_loop_native_values,prepare_output_loops
+from scripts.review84_portrait_controls import portrait_text_input, restore_portrait_templates
 
 REGISTRY_PATH = ROOT / 'workflows/compiled-registry.json'
 
@@ -158,8 +166,18 @@ def validate_values(spec, supplied):
                 count=(value-origin)/step
                 if abs(count-round(count))>1e-6:raise ValueError(f'{label}的调整步长为 {step}。')
         if kind=='points':validate_points(value)
+        if kind=='speaker_regions':value=json.dumps(validate_speaker_regions(value),separators=(',',':'))
         result[field['id']] = value
     for constraint in spec.get('constraints',[]):
+        if constraint.get('type')=='paired-size':
+            width,height=(result.get(constraint.get(key))for key in ('width','height'))
+            limits=[constraint.get(key)for key in ('min_nonzero','max','multiple')]
+            if not all(_number(n)and int(n)==n and n>0 for n in limits):raise ValueError('成对画面尺寸约束未完成审查。')
+            if width==0 and height==0:continue
+            minimum,maximum,multiple=limits
+            if any(not _number(n)or int(n)!=n or n<minimum or n>maximum or n%multiple for n in (width,height)):
+                raise ValueError(f'自定义宽高需一起填写 {minimum}–{maximum} 的 {multiple} 倍数；都填 0 沿用原配置。')
+            continue
         if constraint.get('type')!='nonzero-size':raise ValueError('工作流的参数组合约束未完成审查。')
         width,height=(result.get(constraint.get(key))for key in ('width','height'))
         if not _number(width)or not _number(height):raise ValueError('画面尺寸约束未完成审查。')
@@ -168,6 +186,7 @@ def validate_values(spec, supplied):
 
 
 def validate_texts(spec, supplied, prompt='', negative=''):
+    spec, supplied = portrait_text_input(spec, supplied)
     fields = spec.get('texts', [])
     _known_mapping(supplied, fields, '描述')
     first = {role: next((item['id'] for item in fields if item.get('role') == role), None)
@@ -235,6 +254,9 @@ def _control_values(field, value, values, geometry=None):
         if field.get('integer') and int(value)!=value:raise ValueError('此数值参数需要整数。')
         encoded=str(int(value)) if field.get('integer') else str(value)
         return [(target,encoded)for target in _targets(field)]
+    if operation=='speaker-regions':
+        validate_speaker_regions(value)
+        return []
     if operation=='points':
         points=validate_points(value)
         if not geometry or not all(isinstance(geometry.get(key),int) and geometry[key]>0 for key in ('width','height')):
@@ -332,6 +354,7 @@ def validate_audio_crops(graph):
 
 def bind_assets(graph, spec, records):
     validate_assets(spec, records)
+    if bind_reviewed_h3_assets(graph,spec,records):return graph
     for field in spec.get('media', []):
         record = records.get(field['id'])
         for target in _targets(field):
@@ -393,25 +416,37 @@ def build(spec, supplied_values, supplied_texts, records, profiles, job_id, prom
     for field in spec.get('controls', []):
         for target, value in _control_values(field, values[field['id']], values,geometry):
             _put(graph, target, value)
-    for field in spec.get('texts', []):
+    text_spec, _ = portrait_text_input(spec, supplied_texts)
+    for field in text_spec.get('texts', []):
         if field.get('preserveWhenEmpty') and not texts[field['id']].strip():
             continue
         for target in _targets(field):
             _put(graph, target, texts[field['id']])
     bind_assets(graph, spec, records)
     bind_api_profiles(graph, spec, profiles)
+    restore_portrait_templates(spec, graph, graph)
     apply_reviewed_repairs(graph, spec)
+    graph=apply_ltx_control_projection(graph,spec,values)
+    apply_scail_output_size(graph,spec,values)
+    native_values=output_loop_native_values(spec,values)
+    graph=apply_video_control_projection(graph,spec,native_values)
+    graph=apply_flash_control_projection(graph,spec,native_values)
+    graph=apply_infinite_speaker_regions(graph,spec,native_values,geometry=geometry)
+    graph=prepare_output_loops(spec,graph,values)
     _prefixes(graph, spec['outputs'], job_id)
     graph = prune(graph, spec['outputs'])
     validate_audio_crops(graph)
     return graph, values, texts
 
 
-def rerun(original, records, job_id,randomize_seed=True):
+def rerun(original, records, job_id,randomize_seed=True,geometry=None):
     """Keep the saved graph and credentials; redraw only reviewed random seeds."""
     spec = original['schema_spec']
     graph = copy.deepcopy(original['graph'])
     values = copy.deepcopy(original['catalog_values'])
+    if spec.get('id') in ('local-card-80', 'local-card-81'):
+        template = json.loads(template_path(spec).read_text('utf-8'))
+        restore_portrait_templates(spec, graph, template)
     for field in spec.get('controls', []):
         if not randomize_seed or field.get('kind') != 'seed':
             continue
@@ -421,6 +456,13 @@ def rerun(original, records, job_id,randomize_seed=True):
             _put(graph, target, adjusted)
     bind_assets(graph, spec, records)
     apply_reviewed_repairs(graph, spec)
+    if spec.get('id')=='local-card-101' and not spec.get('speakerRegionsRecipe'):
+        raise ValueError('双人视频需要先重新编辑，分别框选两路音频对应的人物后生成。')
+    native_values=output_loop_native_values(spec,values)
+    graph=apply_video_control_projection(graph,spec,native_values)
+    graph=apply_flash_control_projection(graph,spec,native_values)
+    graph=apply_infinite_speaker_regions(graph,spec,native_values,geometry=geometry)
+    graph=prepare_output_loops(spec,graph,values)
     _prefixes(graph, spec['outputs'], job_id)
     graph = prune(graph, spec['outputs'])
     validate_audio_crops(graph)

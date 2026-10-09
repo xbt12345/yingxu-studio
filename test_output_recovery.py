@@ -17,6 +17,8 @@ import av
 from fastapi import HTTPException
 from PIL import Image
 import requests
+from output_media_metadata import probe_output_metadata
+from workflow_result_contracts import prompt_helper_receipt_error
 
 
 ROOT=Path(__file__).resolve().parent
@@ -64,6 +66,8 @@ class OutputRecovery(unittest.TestCase):
                         schema_adapters=SimpleNamespace(manifest=lambda id:None),
                         present_outputs=lambda job,items,outputs:copy.deepcopy(outputs),
                         reviewed_compiler_failure=lambda *args:None,reviewed_translation_failure=lambda *args:None,
+                        prompt_helper_receipt_error=prompt_helper_receipt_error,
+                        probe_output_metadata=probe_output_metadata,
                         public_graph=copy.deepcopy,embed_workflow=Mock(),friendly=lambda text:text,
                         attempt_cancel=Mock(side_effect=AssertionError('No cancellation during retrieval')))
         exec(compile(ast.Module(body=[kinds,*nodes],type_ignores=[]),'exact-server-output-contracts','exec'),self.scope)
@@ -90,6 +94,58 @@ class OutputRecovery(unittest.TestCase):
         self.assertEqual({key:self.record[key] for key in self.original_identity},self.original_identity)
         self.post.assert_not_called()
         self.assertEqual(self.scope['collecting'],set())
+
+    def test_actual_gif_timing_metadata_collects_once_and_finishes(self):
+        payload=io.BytesIO()
+        first=Image.new('RGB',(16,16),(30,60,90))
+        second=Image.new('RGB',(16,16),(180,90,30))
+        first.save(payload,format='GIF',save_all=True,append_images=[second],
+                   duration=[120,240],loop=0,optimize=False)
+        self.record['schema_spec'].update(output='image',outputs=['first'])
+        self.history['outputs']={'first':{'gifs':[{'filename':'animation.gif','type':'output'}]}}
+        self.files={'animation.gif':payload.getvalue()}
+        self.scope['poll_once']()
+        self.assertEqual(self.record['status'],'done')
+        self.assertEqual(len(self.record['outputs']),1)
+        result=self.record['outputs'][0]
+        self.assertEqual(result['type'],'image')
+        self.assertAlmostEqual(result['duration'],.36,places=6)
+        self.assertEqual(result['frame_count'],2)
+        self.assertEqual((result['width'],result['height']),(16,16))
+        self.assertEqual(result['metadata_source'],'saved-file')
+        self.scope['poll_once']()
+        views=[call for call in self.get.call_args_list if call.args[0].endswith('/view')]
+        self.assertEqual(len(views),1)
+        self.assert_identity()
+
+    def test_actual_video_timing_metadata_collects_once_and_finishes(self):
+        fixture=self.private/'fixture.mp4'
+        with av.open(str(fixture),'w')as container:
+            stream=container.add_stream('libx264',rate=8)
+            stream.width=stream.height=16
+            stream.pix_fmt='yuv420p'
+            for i in range(4):
+                frame=av.VideoFrame.from_image(Image.new('RGB',(16,16),(30+i*30,60,90)))
+                for packet in stream.encode(frame):container.mux(packet)
+            for packet in stream.encode():container.mux(packet)
+        self.record['schema_spec'].update(output='video',outputs=['first'])
+        self.history['outputs']={'first':{'videos':[{'filename':'clip.mp4','type':'output'}]}}
+        self.files={'clip.mp4':fixture.read_bytes()}
+        self.scope['poll_once']()
+        self.assertEqual(self.record['status'],'done')
+        self.assertEqual(len(self.record['outputs']),1)
+        result=self.record['outputs'][0]
+        self.assertEqual(result['type'],'video')
+        self.assertAlmostEqual(result['duration'],.5,places=6)
+        self.assertEqual(result['frame_count'],4)
+        self.assertEqual(result['frame_rate'],8)
+        self.assertEqual((result['width'],result['height']),(16,16))
+        self.assertEqual(result['metadata_source'],'saved-file')
+        self.scope['embed_workflow'].assert_called_once()
+        self.scope['poll_once']()
+        views=[call for call in self.get.call_args_list if call.args[0].endswith('/view')]
+        self.assertEqual(len(views),1)
+        self.assert_identity()
 
     def test_oversized_text_stops_polling_without_network_retry(self):
         self.record['schema_spec']['output']='text'

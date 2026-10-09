@@ -1,13 +1,15 @@
-import {taskOperation,similarWorkflows,modelLabel} from './workflow-experience.js?v=81.0';
+import {taskOperation,similarWorkflows,modelLabel} from './workflow-experience.js?v=88.0';
 import {multiCameraGuide,legacyCameraRanges,cameraGroups} from './multi-camera.js?v=75.1';
 import {esc,I} from './data.js';
-import {selectControl} from './workflow-select.js?v=81.0';
-import {workflowPresentation,workflowHelp,workflowTitle} from './workflow-presentation.js?v=75.1';
-import {controlValue as value,controlField as field,controlSection,seedControls} from './workflow-controls.js?v=81.0';
-import {normalizePointSelection,serializePointSelection} from './point-picker.js?v=81.0';
-import {normalizeObjectIndices} from './object-indices.js?v=81.0';
-import {effectiveCatalogInterface,catalogConnectionState,validateCatalogConstraints,validateCatalogOptions} from './catalog-submission.js?v=81.0';
+import {selectControl} from './workflow-select.js?v=88.0';
+import {workflowPresentation,workflowHelp,workflowTitle} from './workflow-presentation.js?v=88.0';
+import {controlValue as value,controlField as field,controlSection,seedControls} from './workflow-controls.js?v=88.0';
+import {normalizeSpeakerRegions,serializeSpeakerRegions} from './speaker-regions.js?v=88.0';
+import {normalizePointSelection,serializePointSelection} from './point-picker.js?v=88.0';
+import {normalizeObjectIndices} from './object-indices.js?v=88.0';
+import {effectiveCatalogInterface,catalogConnectionState,validateCatalogConstraints,validateCatalogOptions} from './catalog-submission.js?v=88.0';
 import {hasRemovedReference} from './reference-numbering.js';
+import {catalogReferenceLayout} from './catalog-reference-slots.js?v=88.0';
 import {validateBrowserNumbers} from './numeric-contract.js?v=81.0';
 import {cameraGuide,outpaintGuide,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-guides.js?v=75.1';
 export {syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue};
@@ -15,8 +17,9 @@ export {syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpai
 export const randomSeed=()=>{const words=crypto.getRandomValues(new Uint32Array(2));return (words[0]&65535)*4294967296+words[1];};
 const ui=effectiveCatalogInterface;
 const textValue=(d,t)=>d.catalogTexts?.[t.id]??t.value??'';
-const textHint=(w,t,primary=false)=>t.preserveWhenEmpty?'留空沿用工作流指令':
- ['分割目标','姿势检测目标'].includes(t.label)?'填写简短检测词，例如 person 或 blue sweater':primary?promptHint(w):t.label||'此分支的描述';
+const textHint=(w,t,primary=false)=>
+ ['跟踪主体描述','分割目标','姿势检测目标','定位视频中的人物','定位要修改的衣服'].includes(t.label)?(t.label==='定位要修改的衣服'?'填写要定位的衣物，如 sweater':'填写要定位跟踪的主体，如 person')+(t.preserveWhenEmpty?'；留空沿用原配置':''):
+ t.preserveWhenEmpty?'留空沿用工作流指令':primary?promptHint(w):t.label||'此分支的描述';
 const controls=w=>ui(w).controls.filter(f=>f.kind!=='seed');
 const seeds=w=>ui(w).controls.filter(f=>f.kind==='seed');
 export const catalogSeedMode=(d,f)=>d.catalogSeedModes?.[f.id]||'random';
@@ -38,7 +41,7 @@ export function prepareCatalogSnapshot(w,d,{redraw=false}={}){
  const previous=d.catalogValues||{};
  d.catalogValues={...Object.fromEntries([...(w.fields||[]),...config.controls].map(f=>[f.id,f.derived?value({catalogValues:previous},f):f.value])),...previous};d.catalogSeedModes={...(d.catalogSeedModes||{})};
  for(const f of seeds(w)){const mode=redraw?'random':catalogSeedMode(d,f);const seed=mode==='random'?randomSeed()%(Math.min(f.max??Number.MAX_SAFE_INTEGER,Number.MAX_SAFE_INTEGER)+1):Number(value(d,f));if(!Number.isSafeInteger(seed)||seed<0||seed>(f.max??Number.MAX_SAFE_INTEGER))throw new Error(`${f.label}需要填写 0 至 ${f.max??Number.MAX_SAFE_INTEGER} 的整数。`);for(const m of f.members||[f]){d.catalogValues[m.id]=seed;d.catalogSeedModes[m.id]='fixed';}}
- for(const f of controls(w)){const v=value(d,f),r=f.customRange;if(f.kind==='indices'){d.catalogValues[f.id]=normalizeObjectIndices(v);continue;}if(f.kind==='points'){const points=normalizePointSelection(v);if(!points.positive.length)throw new Error('请在原视频起始帧上至少点选一个要保留的主体。');d.catalogValues[f.id]=serializePointSelection(points);continue;}if(r&&f.key==='size'){const m=String(v).match(/^([0-9]{3,4})x([0-9]{3,4})$/);if(!m||[Number(m[1]),Number(m[2])].some(n=>n<r.min||n>r.max||n%r.step))throw new Error('画面尺寸需填写 '+r.min+'–'+r.max+' 的 '+r.step+' 像素倍数。');continue;}if(f.type==='number'&&(!Number.isFinite(Number(v))||(f.integer&&!Number.isInteger(Number(v)))||(r?Number(v)<r.min||Number(v)>r.max||Math.abs(Number(v)/r.step-Math.round(Number(v)/r.step))>1e-6:(f.min!==undefined&&Number(v)<f.min)||(f.max!==undefined&&Number(v)>f.max))))throw new Error(`请检查${f.label}的范围。`);if(f.options&&!r&&!f.options.some(x=>String(x?.value??x)===String(v)))throw new Error(`请选择有效的${f.label}。`);}
+ for(const f of controls(w)){const v=value(d,f),r=f.customRange;if(f.kind==='indices'){d.catalogValues[f.id]=normalizeObjectIndices(v);continue;}if(f.kind==='speaker_regions'){normalizeSpeakerRegions(v,{complete:true});d.catalogValues[f.id]=serializeSpeakerRegions(v);continue;}if(f.kind==='points'){const points=normalizePointSelection(v);if(!points.positive.length)throw new Error('请在原视频起始帧上至少点选一个要保留的主体。');d.catalogValues[f.id]=serializePointSelection(points);continue;}if(r&&f.key==='size'){const m=String(v).match(/^([0-9]{3,4})x([0-9]{3,4})$/);if(!m||[Number(m[1]),Number(m[2])].some(n=>n<r.min||n>r.max||n%r.step))throw new Error('分辨率需填写 '+r.min+'–'+r.max+' 的 '+r.step+' 像素倍数。');continue;}if(f.type==='number'&&(!Number.isFinite(Number(v))||(f.integer&&!Number.isInteger(Number(v)))||(r?Number(v)<r.min||Number(v)>r.max||Math.abs(Number(v)/r.step-Math.round(Number(v)/r.step))>1e-6:(f.min!==undefined&&Number(v)<f.min)||(f.max!==undefined&&Number(v)>f.max))))throw new Error(`请检查${f.label}的范围。`);if(f.options&&!r&&!f.options.some(x=>String(x?.value??x)===String(v)))throw new Error(`请选择有效的${f.label}。`);}
  for(const f of controls(w)){if(!f.derived)continue;const v=Number(value(d,f)),r=f.derived;let native;if(r.operation==='frames')native=frameCount(v*r.fps);else if(r.operation==='audio-end'){const start=Number(d.catalogValues[r.startId]);if(v<=start)throw new Error('音频终点需要晚于起点。');native=v-start;}else continue;const bounds=r.nativeBounds;if(!Number.isFinite(native)||(bounds&&(native<bounds.min||native>bounds.max)))throw new Error(`请检查${f.label}的范围。`);d.catalogValues[r.targetId]=native;}
  validateCatalogConstraints(w,d);
  validateBrowserNumbers(config,d);
@@ -48,9 +51,11 @@ export function prepareCatalogSnapshot(w,d,{redraw=false}={}){
  const primary=config.texts.find(t=>t.role==='prompt');if(primary)d.catalogTexts={...(d.catalogTexts||{}),[primary.id]:d.prompt??textValue(d,primary)};
  return d;
 }
-export function catalogEditor(w,d){
+export function catalogEditor(w,d,{localMode=false}={}){
  migrateLegacyFlux4bSize(w,d);
- const cfg=ui(w),connectionState=catalogConnectionState(w),presentation=workflowPresentation[w.id],slotMarkup=slot=>{const ref=d.refs.find(r=>r.catalogSlot===slot.id),info=presentation?.slots?.[slot.id],label=info?.label||slot.label,canAnnotate=ref?.kind==='image'&&cfg.annotation&&(!cfg.annotation.slots||cfg.annotation.slots.includes(slot.id));return `<article class="catalog-input-card" data-catalog-drop-slot="${esc(slot.id)}" data-media-kind="${esc(slot.kind)}"><header><strong>${esc(label)}</strong>${slot.required===false?'<small class="catalog-optional">可选</small>':''}${ref?`<button type="button" class="catalog-ref-link" data-mention="${esc(ref.id)}" aria-label="引用${esc(ref.id)}">@${esc(ref.id)}</button>`:''}</header>${info?.help?`<small class="catalog-input-purpose">${esc(info.help)}</small>`:''}<div class="catalog-input-preview">${slot.kind==='image'&&slot.required!==false?'<span class="catalog-required">必填</span>':''}${ref?`${ref.kind==='image'?`<button type="button" class="catalog-input-view" data-preview-slot="${esc(slot.id)}" aria-label="查看${esc(label)}"><img src="${esc(ref.src)}" alt=""></button>`:ref.kind==='video'?`<video src="${esc(ref.src)}" controls preload="metadata" playsinline></video>`:`<audio src="${esc(ref.src)}" controls></audio>`}<button class="catalog-input-remove" data-catalog-remove="${esc(slot.id)}" aria-label="移除${esc(label)}">${I('close')}</button>`:`<button type="button" class="catalog-input-empty" data-catalog-pick="${esc(slot.id)}">${I(slot.kind)}<span>选择${slot.kind==='image'?'图片':slot.kind==='video'?'视频':'音频'}</span></button>`}</div><div class="catalog-input-actions"><button type="button" data-catalog-pick="${esc(slot.id)}">${ref?'更换素材':'素材库'}</button><label>上传<input type="file" data-catalog-slot="${esc(slot.id)}" accept="${slot.kind}/*"></label>${canAnnotate?`<button type="button" class="catalog-input-annotate" data-catalog-annotate="${esc(slot.id)}">${ref.annotationStrokes?.length?'修改标注':'标注区域'}${cfg.annotation.optional?' · 可选':''}</button>`:''}</div></article>`};const slots=cfg.media.map(slotMarkup).join('');
+ const cfg=ui(w),connectionState=catalogConnectionState(w,{hideCosts:localMode}),presentation=workflowPresentation[w.id],referenceLayout=catalogReferenceLayout(cfg,d),slotMarkup=slot=>{const ref=d.refs.find(r=>r.catalogSlot===slot.id),info=presentation?.slots?.[slot.id],label=info?.label||slot.label,canAnnotate=ref?.kind==='image'&&cfg.annotation&&(!cfg.annotation.slots||cfg.annotation.slots.includes(slot.id));return `<article class="catalog-input-card" data-catalog-drop-slot="${esc(slot.id)}" data-media-kind="${esc(slot.kind)}"><header><strong>${esc(label)}</strong>${slot.required===false?'<small class="catalog-optional">可选</small>':''}${ref?`<button type="button" class="catalog-ref-link" data-mention="${esc(ref.id)}" aria-label="引用${esc(ref.id)}">@${esc(ref.id)}</button>`:''}</header>${info?.help?`<small class="catalog-input-purpose">${esc(info.help)}</small>`:''}<div class="catalog-input-preview">${slot.kind==='image'&&slot.required!==false?'<span class="catalog-required">必填</span>':''}${ref?`${ref.kind==='image'?`<button type="button" class="catalog-input-view" data-preview-slot="${esc(slot.id)}" aria-label="查看${esc(label)}"><img src="${esc(ref.src)}" alt=""></button>`:ref.kind==='video'?`<video src="${esc(ref.src)}" controls preload="metadata" playsinline></video>`:`<audio src="${esc(ref.src)}" controls></audio>`}<button class="catalog-input-remove" data-catalog-remove="${esc(slot.id)}" aria-label="移除${esc(label)}">${I('close')}</button>`:`<button type="button" class="catalog-input-empty" data-catalog-pick="${esc(slot.id)}">${I(slot.kind)}<span>选择${slot.kind==='image'?'图片':slot.kind==='video'?'视频':'音频'}</span></button>`}${!ref&&referenceLayout.progressive&&slot.required===false?`<button type="button" class="catalog-input-remove" data-catalog-remove="${esc(slot.id)}" aria-label="移除${esc(label)}栏位">${I('close')}</button>`:''}</div><div class="catalog-input-actions"><button type="button" data-catalog-pick="${esc(slot.id)}">${ref?'更换素材':'素材库'}</button><label>上传<input type="file" data-catalog-slot="${esc(slot.id)}" accept="${slot.kind}/*"></label>${canAnnotate?`<button type="button" class="catalog-input-annotate" data-catalog-annotate="${esc(slot.id)}">${ref.annotationStrokes?.length?'修改标注':'标注区域'}${cfg.annotation.optional?' · 可选':''}</button>`:''}</div></article>`};const slots=referenceLayout.visible.map(slotMarkup).join('');
+ const addReference=referenceLayout.next?`<button type="button" class="catalog-add-reference" data-catalog-add-reference aria-label="添加参考图">${I('plus')}<span>添加参考图</span></button>`:'';
+ const referenceSummary=referenceLayout.progressive?`${referenceLayout.boundCount} 张已绑定 · 最多 ${referenceLayout.maximum} 张`:`${cfg.media.filter(s=>d.refs.some(r=>r.catalogSlot===s.id)).length} / ${cfg.media.length} 已绑定`;
  const positive=cfg.texts.filter(t=>t.role==='prompt'),negative=cfg.texts.filter(t=>t.role==='negative'),primary=positive[0];
  const extra=positive.slice(1).map(t=>`<label class="catalog-text-field"><span>${esc(t.label||'分支描述')}</span><textarea data-catalog-text="${esc(t.id)}" rows="3" placeholder="${esc(textHint(w,t))}">${esc(textValue(d,t))}</textarea>${t.help?`<small class="catalog-field-help">${esc(t.help)}</small>`:''}</label>`).join('');
  const prompt=primary?`<section class="wf-section"><div class="wf-section-title"><strong>${esc(taskOperation(w).key==='outfit'?'换装描述':primary.label||'创作描述')}</strong></div><textarea id="prompt" data-catalog-text="${esc(primary.id)}" aria-label="工作流描述" rows="4" placeholder="${esc(textHint(w,primary,true))}">${esc(d.prompt??textValue(d,primary))}</textarea>${primary.help?`<small class="catalog-field-help">${esc(primary.help)}</small>`:''}</section>`:'';
@@ -58,17 +63,25 @@ export function catalogEditor(w,d){
  const specialized=cfg.presentation?.kind&&cfg.presentation.kind!=='generic';
  const textMarkup=t=>t===primary?prompt:`<label class="catalog-text-field"><span>${esc(t.label)}</span><textarea data-catalog-text="${esc(t.id)}" rows="${t.label==='扩写指令'?3:4}" placeholder="${esc(textHint(w,t))}">${esc(textValue(d,t))}</textarea>${t.help?`<small class="catalog-field-help">${esc(t.help)}</small>`:''}</label>`;
  const quick=(group,title)=>{
-  if(!cfg.controls.some(c=>c.uiGroup===group))return '';
+  if(!cfg.controls.some(c=>c.uiGroup===group&&c.hidden!==true))return '';
   return controlSection(group.startsWith('seed')?title:'',group.startsWith('seed')?seedPanel(w,d,group):catalogCommonPanel(w,d,group));
  };
- const mediaSection=items=>items.length?`<section class="wf-section catalog-media-inputs"><div class="wf-section-title"><strong>${w.category==='数字人与对口型'?'驱动素材':w.category==='视频修复与扩展'?'原始素材':'参考素材'}</strong></div><div class="catalog-input-grid">${items.map(slotMarkup).join('')}</div></section>`:'';
+ const mediaSection=items=>items.length?`<section class="wf-section catalog-media-inputs"><div class="wf-section-title"><strong>${w.category==='数字人与对口型'?'驱动素材':w.category==='视频修复与扩展'?'原始素材':'参考素材'}</strong></div><div class="catalog-input-grid">${items.filter(slot=>referenceLayout.visible.some(shown=>shown.id===slot.id)).map(slotMarkup).join('')}${referenceLayout.next&&items.some(slot=>slot.id===referenceLayout.next.id)?addReference:''}</div></section>`:'';
  let tailored='';
  if(specialized){
   if(w.category==='提示词辅助')tailored=(cfg.presentation.branches||[]).map(b=>`<section class="catalog-operation"><div class="catalog-operation-title"><strong>${esc(b.label)}</strong></div>${mediaSection(cfg.media.filter(m=>m.branchId===b.id))}${positive.filter(t=>t.branchId===b.id).map(textMarkup).join('')}<div class="catalog-inline-groups">${quick('seed:'+b.id,'提示词种子')}</div>${apiPanel(w,d,b.id)}</section>`).join('');
   else if(w.category==='素材格式工具')tailored=`<section class="wf-section catalog-source-fields"><div class="wf-section-title"><strong>素材来源</strong></div>${main.filter(f=>f.uiGroup==='location').map(f=>field(d,f)).join('')}</section><section class="wf-section"><div class="wf-section-title"><strong>读取与播放</strong></div><div class="catalog-inline-groups">${quick('read','读取设置')}${quick('playback','播放设置')}${quick('seed','素材抽取种子')}</div></section>`;
   else tailored=`${mediaSection(cfg.media)}${positive.map(textMarkup).join('')}<section class="wf-section"><div class="wf-section-title"><strong>${w.category==='数字人与对口型'?'片段与生成':'修复与输出'}</strong></div><div class="catalog-inline-groups">${quick('clip',w.category==='数字人与对口型'?'音频与片段':'处理片段')}${quick('output','输出设置')}${quick('seed',w.category==='数字人与对口型'&&seedFields.length>1?'分段生成种子':'随机种子')}</div></section>${apiPanel(w,d)}`;
  }
- const mediaBlock=slots?`<section class="wf-section catalog-media-inputs"><div class="wf-section-title"><strong>参考素材</strong><span>${cfg.media.filter(s=>d.refs.some(r=>r.catalogSlot===s.id)).length} / ${cfg.media.length} 已绑定</span></div><div class="catalog-input-grid">${slots}</div></section>`:'';
+ if(specialized){
+  const rendered=new Set([...tailored.matchAll(/data-catalog-field="([^"]+)"/g)].map(match=>match[1]));
+  const remaining=main.filter(f=>f.hidden!==true&&!rendered.has(f.id));
+  if(remaining.length){
+   const rest=controlSection('',catalogCommonPanel({...w,interface:{...cfg,controls:remaining}},d));
+   const api=apiPanel(w,d);tailored=api&&tailored.endsWith(api)?tailored.slice(0,-api.length)+rest+api:tailored+rest;
+  }
+ }
+ const mediaBlock=slots?`<section class="wf-section catalog-media-inputs"><div class="wf-section-title"><strong>参考素材</strong><span>${referenceSummary}</span></div><div class="catalog-input-grid">${slots}${addReference}</div></section>`:'';
  const writingBlock=`${prompt}${extra?`<div class="catalog-prompt-variants">${extra}</div>`:''}`;
  const generic=`${mediaBlock}${writingBlock}${main.length?controlSection('',catalogCommonPanel(w,d)):''}${seedFields.length?controlSection(taskOperation(w).key==='outfit'?'随机种子':seedFields.length===1?seedFields[0].label:'随机种子',seedPanel(w,d)):''}${apiPanel(w,d)}`;
 
@@ -80,7 +93,14 @@ export function catalogSelector(w,workflows){const family=similarWorkflows(w,wor
 export function catalogOverview(w){const cfg=ui(w),status=catalogConnectionState(w),hasPrompt=cfg.texts.some(t=>t.role==='prompt'),input=hasPrompt?'准备描述与素材':cfg.media.length===2?'选择两张图片':'选择素材与参数';return `<div class="catalog-overview"><div class="wf-empty-art" aria-hidden="true">${I(w.output==='video'?'video':w.output==='audio'?'audio':w.output==='text'?'checklist':'image')}</div><h2>${status.blocked?'此工具需要先补齐依赖':'等待第一版作品'}</h2><p>${status.blocked?esc(status.detail):`在左侧${input}，再点击${w.catalogConnected?'生成':'演示生成'}。`}</p><small>${status.blocked?'已保留参数，可先审查编辑区。':w.catalogConnected?'提交后由算力卡执行；结果以实际返回为准。':'演示使用内置素材，不代表模型生成效果。'}</small></div>`;}
 
 export function catalogCommonPanel(w,d,group){
- const all=controls(w).filter(f=>!group||f.uiGroup===group),grid=fields=>`<div class="catalog-fields">${fields.map(f=>field(d,f)).join('')}</div>`;
+ const all=controls(w).filter(f=>!group||f.uiGroup===group),grid=fields=>{
+  const rendered=new Set();
+  return `<div class="catalog-fields">${fields.map(f=>{
+   if(!f.dimensionGroup)return field(d,f);
+   if(rendered.has(f.dimensionGroup))return '';rendered.add(f.dimensionGroup);
+   return `<div class="catalog-dimension-pair" role="group" aria-label="自定义处理尺寸">${fields.filter(item=>item.dimensionGroup===f.dimensionGroup).map(item=>field(d,item)).join('')}</div>`;
+  }).join('')}</div>`;
+ };
  if(!group&&w.id==='local-card-13')return controlSection('扩展范围',outpaintGuide(w,d)+grid(all.filter(f=>f.kind==='outpaint')),'data-control-module="outpaint"')+grid(all.filter(f=>f.kind!=='outpaint'));
  if(!group&&w.id==='local-card-14')return controlSection('视角设置',cameraGuide(w,d)+`<div class="catalog-camera-values">${grid(all.filter(f=>f.kind==='camera'))}</div>`,'data-control-module="camera"')+grid(all.filter(f=>f.kind!=='camera'));
  if(all.filter(f=>f.kind==='camera').length>3){

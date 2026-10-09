@@ -1,4 +1,4 @@
-import {initializePlatform} from './platform-account.js?v=81.0';
+import {initializePlatform,isLocalPlatform} from './platform-account.js?v=88.0';
 
 const state={user:null,data:null,audit:[],tab:'users',load:0,search:'',role:'all',status:'all',orderStatus:'pending',pricingSearch:'',pricingStatus:'all',pricingOffset:0,pricingLimit:20,users:[],userTotal:0,userOffset:0,userLimit:50,userLoading:true,userError:'',userLoad:0,creationFocus:null};
 const tabs={users:{title:'用户管理',description:'管理账号权限、使用状态和积分'},orders:{title:'充值订单',description:'核对真实收款，再确认积分到账'},pricing:{title:'套餐与计价',description:'配置积分套餐和每次创作的费用'},reviews:{title:'账务核对',description:'处理需要人工核实的支付与创作记录'},audit:{title:'操作记录',description:'查看管理员变更，保留每一次操作依据'}};
@@ -286,7 +286,7 @@ function installEvents(){
  addEventListener('hashchange',()=>{if(!state.user||state.user.role!=='admin')return;clearTimeout(userSearchTimer);state.userLoad++;state.tab=currentTab();if(state.tab==='audit')load({quiet:true});else if(state.data){state.load++;render();if(state.tab==='users')loadUsers();}});
 }
 export async function startAdmin(){
- installEvents();state.user=await initializePlatform();if(!state.user)return;
+ installEvents();state.user=await initializePlatform();if(!state.user)return;if(isLocalPlatform()){location.replace('studio.html#account');return;}
  if(state.user.role!=='admin'){document.getElementById('admin-shell').innerHTML='<main id="admin-main" class="admin-denied"><h1>需要管理员权限</h1><p>当前账号没有进入管理后台的权限。</p><a class="admin-button is-primary" href="studio.html#home">返回创作台</a></main>';return;}
  state.tab=currentTab();await load({quiet:true});
 }

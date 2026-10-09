@@ -1,10 +1,10 @@
 # 映序 YINGXU Studio
 
-当前发布版本：**0.81.1（2026-10-07）**。版本标记位于 `public/version.json`；工作流参数及发布检查见 [本轮审查](docs/workflow-release-review-2026-10-07.md)。
+当前界面版本：**0.88.0（2026-10-08）**，包含 C 方案封面、三轮工作流参数优化、尺寸校验和实际结果识别。部署版本以服务的 `/version.json` 为准；本次范围与验收边界见 [发布摘要](docs/workflow-release-review-2026-10-09.md)，部署方式见 [Railway 部署](docs/railway-deployment.md)。
 
 将复杂工作流转换为素材、描述和参数组成的创作界面。包含前端、Python 后端、交互组件库和 **151 个目录工作流的界面配置**；界面数量不等于逐图真实生成通过。当前指定算力卡有 **127 个 ready 工作流、6 个 blocked**，另有 1 个空文件和 3 个同图别名。2 个外部命名模板另计，当前 manifest 注册 **129 份 API 模板**（34 份既有适配器、95 份通用执行合同）。ready 表示可构造任务，模型加载与真实输出仍需验收。逐图输入与阻碍见 [参数审查](docs/card-workflow-parameter-audit.md)。
 
-[在线演示](https://xbt12345.github.io/yingxu-studio/) · [组件库](https://xbt12345.github.io/yingxu-studio/workflow-control-library.html) · [真实生成接入说明](workflows/README.md)
+[在线平台](https://yingxu-studio-production.up.railway.app/studio.html) · [静态预览](https://xbt12345.github.io/yingxu-studio/) · [组件库](https://xbt12345.github.io/yingxu-studio/workflow-control-library.html) · [真实生成接入说明](workflows/README.md)
 
 ## Python 搭建
 
@@ -34,7 +34,7 @@ cp .env.example .env
 
 打开 **http://127.0.0.1:8770/studio.html**；组件库位于 **http://127.0.0.1:8770/workflow-control-library.html**。`Ctrl+C` 停止服务。Windows 也可在安装后运行 `启动映序.ps1`，它优先使用项目的 `.venv`。
 
-正式创作台需要登录。首次启动会在数据目录生成 `admin-bootstrap.json`，管理员用户名和随机初始密码只保存在该私有文件中。旧作品和素材归初始管理员，新注册用户使用独立账户。登录后可在“我的账号”修改密码；文件不可上传到公开仓库。具体操作见 [账户、权限与积分](docs/platform-accounts-and-credits.md)。
+本地运行 `启动映序.ps1` 使用用户模式：保留用户信息，直接进入创作，不启用登录、积分与充值。本地模式由私有 `.env` 中的 `YINGXU_LOCAL_MODE=1` 开启，仅对本机回环请求生效；已部署版本保持原登录计费流程。正式部署创作台需要登录。首次启动会在数据目录生成 `admin-bootstrap.json`，管理员用户名和随机初始密码只保存在该私有文件中。旧作品和素材归初始管理员，新注册用户使用独立账户。登录后可在“我的账号”修改密码；文件不可上传到公开仓库。具体操作见 [账户、权限与积分](docs/platform-accounts-and-credits.md)。
 
 `.env` 保持默认即可演示，不需要密钥。启用真实生成，在 `.env` 中填写自己的 `CHENYU_CARD_URL`，按 [接入说明](workflows/README.md) 安装模型和节点，再重启服务。
 
@@ -70,7 +70,7 @@ docker compose up --build --wait
 
 真实生成采用“上传 → 提交 → 查询 → 保存”，支持重新编辑、更新种子再次生成、按任务取消及连接恢复后的查询。远端不支持按 ID 取消时会提示，不使用全局中断；取消不保证退回外部费用。不同电脑上的模型、节点版本与 API 额度须各自核对，模板齐全不等于所有模型已经在新环境验收。
 
-2026-10-04 本轮仅 `local-card-15` 的基础区域编辑已真实验证：原图与选区配对上传后生成红星，保护边界外像素保持一致。此结果不代表复杂图片、所有编辑工具或其他工作流全部通过。
+2026-10-08 已通过本地网站完成 13 类代表工作流的 15 个实际任务，能取回和保存结果。完整记录与画质限制见本地工作流审查；这不代表 151 个工作流全部经过 GPU 验收，也不代表部署后再次运行了全部代表。
 
 ## 配置和数据
 

@@ -1,5 +1,6 @@
 const nativeFetch=globalThis.fetch.bind(globalThis);
-const platform={user:null,identity:null,preview:false,installed:false,wrapped:false,authMode:'login',quotes:new Map(),quoteRequests:new Map(),currentWorkflow:null,creationQuotes:new Map(),creationQuoteRequests:new Map(),currentCreation:null,quoteView:null,pricingPolicy:null,pricingPolicyRequest:null,balanceLastAt:0,balancePending:null,balanceTimer:null,balanceDirty:false,balanceStopped:false,menuAnchor:null,recordTabs:{account:'ledger',recharge:'orders'}};
+const platform={user:null,identity:null,preview:false,localMode:false,installed:false,wrapped:false,authMode:'login',quotes:new Map(),quoteRequests:new Map(),currentWorkflow:null,creationQuotes:new Map(),creationQuoteRequests:new Map(),currentCreation:null,quoteView:null,pricingPolicy:null,pricingPolicyRequest:null,balanceLastAt:0,balancePending:null,balanceTimer:null,balanceDirty:false,balanceStopped:false,menuAnchor:null,recordTabs:{account:'ledger',recharge:'orders'}};
+export const isLocalPlatform=()=>platform.localMode;
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 const credits=value=>value===null||value===undefined||value===''?'—':Number.isFinite(Number(value))?Number(value).toLocaleString('zh-CN'):'—';
 const available=user=>user?.available??user?.balance;
@@ -38,8 +39,9 @@ function installApiFetch(){
   const method=String(init?.method||(typeof Request!=='undefined'&&input instanceof Request?input.method:'GET')).toUpperCase();
   headers.set('X-Platform-Account',String(identity.id));
   if(method!=='GET')headers.set('X-CSRF-Token',identity.csrfToken);
+  if(platform.localMode)headers.delete('X-Expected-Credits');
   let workflowId;
-  if(method==='POST'&&(url.pathname==='/api/jobs'||/^\/api\/jobs\/[^/]+\/rerun$/.test(url.pathname))){
+  if(!platform.localMode&&method==='POST'&&(url.pathname==='/api/jobs'||/^\/api\/jobs\/[^/]+\/rerun$/.test(url.pathname))){
    try{
     if(url.pathname==='/api/jobs'){
      const body=typeof init?.body==='string'?JSON.parse(init.body):typeof Request!=='undefined'&&input instanceof Request?await input.clone().json():null;
@@ -73,7 +75,7 @@ function installApiFetch(){
  };
 }
 function scheduleBalanceRefresh(){
- if(platform.preview||!platform.identity||platform.balanceStopped)return;
+ if(platform.preview||platform.localMode||!platform.identity||platform.balanceStopped)return;
  platform.balanceDirty=true;
  if(platform.balancePending||platform.balanceTimer)return;
  const wait=Math.max(0,4000-(Date.now()-platform.balanceLastAt));
@@ -149,7 +151,7 @@ function beginQuoteView(generate,kind,key){
 function quoteViewCurrent(view){return platform.quoteView===view&&view.button.isConnected&&document.querySelector('[data-action="generate"]')===view.button;}
 function generationBusy(view){return view.button.getAttribute('aria-busy')==='true'||view.button.disabled&&/正在提交|提交中|正在生成|正在上传/.test(view.original.textContent+' '+view.button.textContent);}
 function paintQuote(view,state,quote=null){
- if(!quoteViewCurrent(view)||generationBusy(view))return false;
+ if(platform.localMode||!quoteViewCurrent(view)||generationBusy(view))return false;
  const creation=view.kind==='creation',configured=state==='ready'&&quote?.configured===true;
  const label='生成';
  const cost=configured?`${creation?'参考 ':''}${credits(quote.credits)} 积分`:`${state==='loading'?'核对费用…':state==='error'?'费用读取失败':'费用待定'}`;
@@ -169,6 +171,7 @@ function paintQuote(view,state,quote=null){
 }
 export async function refreshGenerationQuote(workflowId){
  const generate=document.querySelector('[data-action="generate"]');
+ if(platform.localMode){clearGenerationQuote();return null;}
  if(!workflowId||platform.preview||!platform.user||!generate||generate.dataset.creationGeneration!==undefined){clearGenerationQuote();return null;}
  if(platform.currentWorkflow&&platform.currentWorkflow!==String(workflowId)){const previous=platform.quotes.get(platform.currentWorkflow);if(previous)previous.displayed=false;}
  platform.currentWorkflow=String(workflowId);const view=beginQuoteView(generate,'workflow',String(workflowId));
@@ -200,6 +203,7 @@ async function readCreationQuote(parameters){
 export async function refreshCreationQuote(draft){
  const generate=document.querySelector('[data-action="generate"]');
  if(!draft||platform.preview||!platform.user||!generate||generate.dataset.creationGeneration===undefined){clearCreationQuote();return null;}
+ if(platform.localMode)return refreshLocalCreationAvailability(draft,generate);
  const parameters=creationParameters(draft),key=JSON.stringify(parameters);platform.currentCreation=key;
  const view=beginQuoteView(generate,'creation',key),cached=platform.creationQuotes.get(key);
  paintQuote(view,cached&&Date.now()-cached.readAt<30000?'ready':'loading',cached);
@@ -209,10 +213,44 @@ export async function refreshCreationQuote(draft){
   if(platform.currentCreation===key)paintQuote(view,'ready',quote);return quote;
  }catch(error){platform.creationQuotes.delete(key);if(platform.currentCreation===key)paintQuote(view,'error');return null;}
 }
+function paintCreationAvailability(view,state,service=null){
+ if(!quoteViewCurrent(view)||generationBusy(view))return false;
+ view.button.disabled=!(state==='ready'&&service?.available===true);
+ const message=state==='loading'?'正在核对生成服务。':state==='error'?'暂时无法核对生成服务，请稍后重试。':service?.availabilityReason||'该模型尚未接入生成服务，暂不能生成。';
+ if(view.button.disabled)view.button.setAttribute('title',message);else view.button.removeAttribute('title');
+ if(view.footer){
+  if(state==='ready'&&service?.available!==true)view.footer.innerHTML='该模型尚未接入 · <a class="text-control control" href="#workflows">查看创作工具</a>';
+  else view.footer.textContent=view.button.disabled?message:'';
+ }
+ return true;
+}
+async function refreshLocalCreationAvailability(draft,generate){
+ const parameters=creationParameters(draft),key=JSON.stringify(parameters);platform.currentCreation=key;
+ const view=beginQuoteView(generate,'creation',key),cached=platform.creationQuotes.get(key);
+ paintCreationAvailability(view,cached&&Date.now()-cached.readAt<30000?'ready':'loading',cached);
+ try{
+  let service=cached&&Date.now()-cached.readAt<30000?cached:null;
+  if(!service){
+   let pending=platform.creationQuoteRequests.get(key);
+   if(!pending){
+    pending=(async()=>{
+     const data=await request('/api/account/creation-availability',{method:'POST',body:parameters});
+     for(const [name,value] of Object.entries(parameters))if(data[name]!==undefined&&String(data[name])!==String(value))throw new Error('生成服务与当前创作参数不一致。');
+     const result={available:data.available===true,availabilityReason:typeof data.availability_reason==='string'?data.availability_reason:'该模型尚未接入生成服务，暂不能生成。',readAt:Date.now()};
+     platform.creationQuotes.set(key,result);return result;
+    })();
+    platform.creationQuoteRequests.set(key,pending);
+   }
+   try{service=await pending;}finally{if(platform.creationQuoteRequests.get(key)===pending)platform.creationQuoteRequests.delete(key);}
+  }
+  if(platform.currentCreation===key)paintCreationAvailability(view,'ready',service);return service;
+ }catch(error){platform.creationQuotes.delete(key);if(platform.currentCreation===key)paintCreationAvailability(view,'error');return null;}
+}
 function updateUser(user){
  if(!user)return;
  if(platform.identity&&String(user.id)!==String(platform.identity.id))throw new Error('账号已切换，请刷新页面后继续。');
  platform.user=user;
+ if(platform.localMode)return;
  document.querySelectorAll('[data-platform-balance]').forEach(element=>{element.textContent=credits(element.dataset.platformBalance==='held'?user.held:available(user));});
 }
 
@@ -222,11 +260,13 @@ export async function initializePlatform({publicPreview=false}={}){
  try{
   const response=await nativeFetch('/api/account/me',{credentials:'same-origin'});
   let data;try{data=await response.json();}catch{throw new Error('账号服务暂时不可用，请稍后重试。');}
+  platform.localMode=data.local_mode===true;
   if(response.status===401||!data.user){showAuthentication(response.ok?'':apiMessage(data,''));return null;}
   if(!response.ok)throw new Error(apiMessage(data,'无法读取账号信息，请稍后重试。'));
   if(!data.csrf_token)throw new Error('账号校验信息不完整，请重新登录。');
   if(platform.wrapped&&String(platform.identity.id)!==String(data.user.id)){showAuthentication('账号已切换，正在重新载入。');location.reload();return null;}
   if(platform.identity)platform.identity.csrfToken=data.csrf_token;else platform.identity={id:data.user.id,csrfToken:data.csrf_token};platform.user=data.user;platform.balanceStopped=false;installApiFetch();
+  if(platform.localMode)document.body.classList.add('platform-local-mode');else document.body.classList.remove('platform-local-mode');
   document.body.classList.remove('platform-auth-required');document.getElementById('platform-auth-screen')?.remove();
   return data.user;
  }catch(error){showAuthentication(error.message||'无法连接账号服务，请稍后重试。');return null;}
@@ -238,16 +278,18 @@ function showAuthentication(message=''){
  document.body.classList.add('platform-auth-required');
  let screen=document.getElementById('platform-auth-screen');if(screen&&screen.dataset.platformAuthMode===platform.authMode&&message){setError(screen,message);return;}
  if(!screen){screen=document.createElement('section');screen.id='platform-auth-screen';screen.className='platform-auth-screen';document.body.append(screen);}screen.dataset.platformAuthMode=platform.authMode;
+ if(platform.localMode){screen.innerHTML=`<div class="platform-auth-brand">映序 <small>YINGXU</small></div><div class="platform-auth-card"><h1>连接本地服务</h1><p class="platform-error" data-platform-error role="alert">${escapeHtml(message||'本地用户信息暂时不可用，请重新连接。')}</p><div class="platform-auth-help">${button('重新连接服务','retry-auth')}</div></div>`;return;}
  const register=platform.authMode==='register';
  screen.innerHTML=`<div class="platform-auth-brand">映序 <small>YINGXU</small></div><div class="platform-auth-card"><h1>${register?'创建账号':'登录映序'}</h1><div class="platform-auth-tabs" role="group" aria-label="登录或注册">${button('登录','auth-mode','data-mode="login" aria-pressed="'+!register+'"')}${button('注册','auth-mode','data-mode="register" aria-pressed="'+register+'"')}</div><form data-platform-form="${register?'register':'login'}"><label>用户名<input name="username" autocomplete="username" required maxlength="80" autofocus></label><label>${register?'密码（至少10位）':'密码'}<input name="password" type="password" autocomplete="${register?'new-password':'current-password'}" ${register?'minlength="10"':''} required></label>${register?'<label>再次输入密码<input name="password_confirm" type="password" autocomplete="new-password" minlength="10" required></label>':''}<p class="platform-error" data-platform-error role="alert" ${message?'':'hidden'}>${escapeHtml(message)}</p><button type="submit" class="platform-button is-primary">${register?'注册并登录':'登录'}</button></form><div class="platform-auth-help">${button('重新连接服务','retry-auth')}</div></div>`;
 }
 
 export function accountNavigation(){
  const user=platform.user;if(!user||platform.preview)return '';
- return `<div class="platform-nav-account"><button type="button" class="nav-item platform-nav-user" data-platform-action="account-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="platform-account-menu" aria-label="打开${escapeHtml(user.username)}的账号菜单" title="账号菜单"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(user.username||'用户').slice(0,1).toUpperCase())}</i><span class="platform-nav-copy"><strong>${escapeHtml(user.username)}</strong><small><span data-platform-balance="available">${credits(available(user))}</span> 积分</small></span><svg class="platform-nav-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 10 4-4 4 4"/></svg></button></div>`;
+ return `<div class="platform-nav-account"><button type="button" class="nav-item platform-nav-user" data-platform-action="account-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="platform-account-menu" aria-label="打开${escapeHtml(user.username)}的账号菜单" title="账号菜单"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(user.username||'用户').slice(0,1).toUpperCase())}</i><span class="platform-nav-copy"><strong>${escapeHtml(user.username)}</strong><small>${platform.localMode?'本地用户':`<span data-platform-balance="available">${credits(available(user))}</span> 积分`}</small></span><svg class="platform-nav-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 10 4-4 4 4"/></svg></button></div>`;
 }
 function accountMenuContents(){
  const user=platform.user;
+ if(platform.localMode)return `<div class="platform-menu-identity"><strong>${escapeHtml(user.username)}</strong><small>本地用户</small></div><a role="menuitem" href="#account">${icon('user')}<span>用户信息</span></a><a role="menuitem" href="#settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg><span>偏好设置</span></a>`;
  return `<div class="platform-menu-identity"><strong>${escapeHtml(user.username)}</strong><small>${user.role==='admin'?'管理员':'普通账号'} · <span data-platform-balance="available">${credits(available(user))}</span> 积分</small></div><a role="menuitem" href="#account">${icon('user')}<span>我的账号</span></a><a role="menuitem" href="#recharge">${icon('credit')}<span>积分充值</span></a><a role="menuitem" href="#settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg><span>偏好设置</span></a>${user.role==='admin'?`<a role="menuitem" href="/admin.html">${icon('admin')}<span>管理员后台</span><small>↗</small></a>`:''}<div class="platform-menu-divider"></div><button type="button" role="menuitem" data-platform-action="logout"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 4H5v16h4M9 12h12m-5-5 5 5-5 5"/></svg><span>退出登录</span></button>${errorRegion()}`;
 }
 function positionAccountMenu(){
@@ -272,21 +314,27 @@ function closeAccountMenu(restoreFocus=false){
  if(menu)document.dispatchEvent(new CustomEvent('platform-account-menu-change',{detail:{open:false}}));
 }
 export function accountPage(kind='account'){
+ if(platform.localMode)return `<section class="platform-page platform-local-account" data-platform-page="account"><header class="platform-page-header"><h1>用户信息</h1>${button('刷新','refresh-page')}</header><div data-platform-content>${localAccountContents(platform.user)}</div></section>`;
  const title=kind==='recharge'?'积分充值':'我的账号';
  if(kind==='admin')return '<section class="platform-page"><a class="platform-button" href="/admin.html">打开管理员后台 ↗</a></section>';
  if(platform.preview)return `<section class="platform-page"><h1>${title}</h1>${empty('账户操作请使用正式入口。')}</section>`;
  return `<section class="platform-page" data-platform-page="${kind==='recharge'?'recharge':'account'}"><header class="platform-page-header"><h1>${title}</h1>${button('刷新','refresh-page')}</header><nav class="platform-page-tabs" aria-label="账号中心"><a href="#account" ${kind==='account'?'aria-current="page"':''}>账号</a><a href="#recharge" ${kind==='recharge'?'aria-current="page"':''}>充值</a></nav><div data-platform-content><p class="platform-loading" role="status">正在读取账号信息…</p></div></section>`;
 }
 export async function loadAccountPage(kind='account'){
- if(kind==='admin')return;
- const selected=kind==='recharge'?'recharge':'account',host=document.querySelector(`[data-platform-page="${selected}"]`);if(!host||platform.preview)return;
+ if(kind==='admin'&&!platform.localMode)return;
+ const selected=!platform.localMode&&kind==='recharge'?'recharge':'account',host=document.querySelector(`[data-platform-page="${selected}"]`);if(!host||platform.preview)return;
  const content=host.querySelector('[data-platform-content]'),run=host.platformLoad=(host.platformLoad||0)+1;
  try{
-  const data=await request('/api/account/dashboard');
+  const data=await request(platform.localMode?'/api/account/me':'/api/account/dashboard');
   if(!host.isConnected||host.platformLoad!==run)return;
   if(data.user)updateUser(data.user);
-  content.innerHTML=accountContents(data,selected);
+  if(platform.localMode&&data.csrf_token)platform.identity.csrfToken=data.csrf_token;
+  content.innerHTML=platform.localMode?localAccountContents(data.user||platform.user):accountContents(data,selected);
  }catch(error){if(host.isConnected&&host.platformLoad===run)content.innerHTML=`<p class="platform-error" role="alert">${escapeHtml(error.message)}</p>${button('重新读取','refresh-page')}`;}
+}
+function localAccountContents(user){
+ const name=user?.username||'本地用户';
+ return `<div class="platform-local-profile"><div class="platform-profile"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(name).slice(0,1).toUpperCase())}</i><div><strong title="${escapeHtml(name)}">${escapeHtml(name)}</strong><small>本地用户</small></div></div><dl class="platform-local-details"><div><dt>用户名</dt><dd>${escapeHtml(name)}</dd></div><div><dt>用户标识</dt><dd>${escapeHtml(user?.id||'—')}</dd></div></dl></div>`;
 }
 
 function paymentMethods(data){
@@ -303,6 +351,7 @@ function paymentNote(method,contact){
  return `<p>创建订单后前往已开通的支付平台，返回页面刷新订单状态。</p>${message?`<p>${escapeHtml(message)}</p>`:''}`;
 }
 function accountContents(data,kind){
+ if(platform.localMode)return localAccountContents(data.user||platform.user);
  const user=data.user||platform.user;
  const recordTab=platform.recordTabs[kind]||'ledger';
  return `<div class="platform-summary"><div class="platform-profile"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(user?.username||'用户').slice(0,1).toUpperCase())}</i><div><strong title="${escapeHtml(user?.username)}">${escapeHtml(user?.username)}</strong><small>${user?.role==='admin'?'管理员':'普通账号'}</small></div></div><div class="platform-summary-credit"><span>可用积分</span><strong data-platform-balance="available">${credits(available(user))}</strong></div><div class="platform-summary-credit is-held" title="正在处理的创作会暂时冻结积分"><span>冻结积分</span><strong data-platform-balance="held">${credits(user?.held)}</strong></div>${kind==='account'?'<a class="platform-button is-primary" href="#recharge">充值积分</a>':''}</div>${kind==='recharge'?rechargeForm(data):''}<section class="platform-section platform-records"><div class="platform-record-tabs" role="group" aria-label="积分与充值记录">${button('积分记录','records-tab',`data-records="ledger" aria-pressed="${recordTab==='ledger'}"`)}${button('充值订单','records-tab',`data-records="orders" aria-pressed="${recordTab==='orders'}"`)}</div><div data-platform-record-panel="ledger" ${recordTab==='ledger'?'':'hidden'}>${ledgerTable(rows(data.ledger))}</div><div data-platform-record-panel="orders" ${recordTab==='orders'?'':'hidden'}>${ordersTable(rows(data.orders))}</div></section>${kind==='account'?`<details class="platform-security"><summary><span>${icon('admin')}<strong>账号安全</strong></span><span class="platform-security-label">修改密码 <i aria-hidden="true">⌄</i></span></summary><form class="platform-password-form" data-platform-form="password"><label>当前密码<input name="current_password" type="password" autocomplete="current-password" required></label><label>新密码<input name="new_password" type="password" autocomplete="new-password" minlength="10" required placeholder="至少10位"></label><label>确认新密码<input name="new_password_confirm" type="password" autocomplete="new-password" minlength="10" required></label>${errorRegion()}<p class="platform-success" data-platform-success role="status" hidden></p><button type="submit" class="platform-button">保存新密码</button></form></details>`:''}`;
@@ -331,6 +380,7 @@ function orderResult(order,checkout){
 async function handleForm(form){
  if(form.dataset.platformBusy==='true')return;
  const kind=form.dataset.platformForm,values=new FormData(form),get=name=>String(values.get(name)||'');
+ if(platform.localMode)return;
  if(kind==='register'&&get('password')!==get('password_confirm')){setError(form,'两次输入的密码不一致。');return;}
  if(kind==='password'&&get('new_password')!==get('new_password_confirm')){setError(form,'两次输入的新密码不一致。');return;}
  setError(form);form.dataset.platformBusy='true';const submit=form.querySelector('button[type="submit"]');if(submit)submit.disabled=true;
@@ -353,6 +403,7 @@ async function handleForm(form){
 }
 async function handleAction(element){
  const action=element.dataset.platformAction,host=element.closest('[data-platform-page]');
+ if(platform.localMode&&['records-tab','auth-mode','logout','order-status','copy-payment'].includes(action))return;
  if(action==='account-menu'){if(platform.menuAnchor===element&&document.getElementById('platform-account-menu'))closeAccountMenu();else openAccountMenu(element);return;}
  if(action==='records-tab'){
   if(!host)return;const selected=element.dataset.records==='orders'?'orders':'ledger';platform.recordTabs[host.dataset.platformPage]=selected;

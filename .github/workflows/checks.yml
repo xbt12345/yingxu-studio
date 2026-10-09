@@ -34,6 +34,42 @@ jobs:
           curl --retry 20 --retry-connrefused --retry-delay 2 --fail http://127.0.0.1:8770/healthz
           curl --fail http://127.0.0.1:8770/studio.html > /dev/null
           curl --fail http://127.0.0.1:8770/workflow-control-library.html > /dev/null
+      - name: Exercise complete audio-video looping without inference
+        run: |
+          docker compose exec -T yingxu python - <<'PY'
+          import copy
+          import json
+          import subprocess
+          import tempfile
+          from pathlib import Path
+          import schema_adapters as runtime
+          from output_media_metadata import probe_output_metadata
+          from scripts.review87_output_loops import prepare_output_loops, repeat_output_if_needed
+          spec = copy.deepcopy(runtime.manifest('local-card-118'))
+          graph = json.loads(runtime.template_path(spec).read_text('utf-8'))
+          ready = prepare_output_loops(spec, graph, {'24:loop_count': 1})
+          with tempfile.TemporaryDirectory(prefix='ci-output-loop-') as folder:
+              path = Path(folder) / 'finished.mp4'
+              subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y',
+                  '-f', 'lavfi', '-i', 'testsrc2=size=64x64:rate=4:duration=2',
+                  '-f', 'lavfi', '-i', 'sine=frequency=440:sample_rate=8000:duration=2',
+                  '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-shortest',
+                  str(path)], check=True)
+              before = probe_output_metadata(path, 'video')
+              import av
+              with av.open(str(path)) as media:
+                  audio_packet_seconds = max(s.codec_context.frame_size / s.codec_context.sample_rate
+                      for s in media.streams.audio)
+              evidence = repeat_output_if_needed(spec, ready, '24', path)
+              after = probe_output_metadata(path, 'video')
+              assert evidence and after['frame_count'] == before['frame_count'] * 2
+              with av.open(str(path)) as media:
+                  assert len(media.streams.audio) == 1
+                  assert len(list(media.decode(video=0))) == after['frame_count']
+              # Stream-copy preserves AAC packets, including encoder padding.
+              assert abs(after['duration'] - before['duration'] * 2) <= audio_packet_seconds + 0.02
+              print('Container delivered a decoded looped MP4 with its audio track.')
+          PY
       - name: Exercise local cutout inside the container
         run: |
           docker compose exec -T yingxu python - <<'PY'

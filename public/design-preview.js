@@ -1,12 +1,12 @@
 import {I as baseIcon,esc} from './data.js';
 const I=name=>({download:'<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2v11m-4-4 4 4 4-4M3 13v4h14v-4"/></svg>',more:'<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="4" cy="10" r="1"/><circle cx="10" cy="10" r="1"/><circle cx="16" cy="10" r="1"/></svg>'}[name]||baseIcon(name));
-import {controlField,controlValue,seedControls,syncControlChoices,dimensionOptions} from './workflow-controls.js?v=81.0';
-import {catalogCommonPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=81.0';
+import {controlField,controlValue,seedControls,syncControlChoices,dimensionOptions} from './workflow-controls.js?v=88.0';
+import {catalogCommonPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=88.0';
 import {installMultiCamera} from './multi-camera.js?v=75.1';
-import {installWorkflowSelects} from './workflow-select.js?v=81.0';
-import {installTimecodeControls} from './timecode-control.js?v=60.1';
-import {installProcessingDurations} from './processing-duration.js?v=81.0';
-import {taskCover} from './workflow-experience.js?v=81.0';
+import {installWorkflowSelects} from './workflow-select.js?v=88.0';
+import {installTimecodeControls} from './timecode-control.js?v=88.0';
+import {installProcessingDurations} from './processing-duration.js?v=88.0';
+import {taskCover} from './workflow-experience.js?v=88.0';
 
 // This review surface only issues same-origin GET requests. No production storage or job submission.
 const root=document.getElementById('design-root'),dialog=document.getElementById('preview-dialog');
@@ -50,7 +50,7 @@ if(!inner){
  showScene();
 }else{
  const safeGet=async(url,fallback)=>{try{const r=await fetch(url);return r.ok?await r.json():fallback}catch{return fallback}};
- const [catalog,schemas,jobs,live,connections]=await Promise.all([safeGet('local-catalog.json',{workflows:[]}),safeGet('workflow-interfaces.json?v=81.0',{workflows:{}}),safeGet('/api/jobs',[]),safeGet('/api/workflows',[]),safeGet('/api/catalog-connections',[])]);
+ const [catalog,schemas,jobs,live,connections]=await Promise.all([safeGet('local-catalog.json',{workflows:[]}),safeGet('workflow-interfaces.json?v=88.0',{workflows:{}}),safeGet('/api/jobs',[]),safeGet('/api/workflows',[]),safeGet('/api/catalog-connections',[])]);
  const records=catalog.workflows.map(w=>({...w,interface:schemas.workflows[w.id]}));
  const sources=new Map(records.map(w=>[w.id,w]));
  const done=Array.isArray(jobs)?jobs.filter(j=>j.status==='done'&&j.outputs?.length):[];

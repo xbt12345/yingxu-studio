@@ -429,6 +429,16 @@ def refresh_curated_controls(workflow, reviewed, derived):
     reviewed['controls']=reviewed_stage_seeds(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
     from reviewed_native_seed_limits import reviewed_native_seed_limits
     reviewed['controls']=reviewed_native_seed_limits(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    from review84_anima_controls import reviewed_anima_controls
+    reviewed['controls']=reviewed_anima_controls(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    from review86_scail_controls import reviewed_scail_controls
+    reviewed['controls']=reviewed_scail_controls(workflow,reviewed['controls'],source_hash=derived.get('sourceHash'),derived=derived)
+    from review84_portrait_controls import reviewed_portrait_controls
+    reviewed['controls'],reviewed['texts']=reviewed_portrait_controls(workflow,reviewed['controls'],reviewed.get('texts',[]),source_hash=derived.get('sourceHash'),derived=derived)
+    if workflow['id'] in ('local-card-80','local-card-81'):
+        for slot in reviewed['media']:slot['label']='人物参考图'
+    from review84_text_presentation import reviewed_text_presentation
+    reviewed['texts']=reviewed_text_presentation(workflow,reviewed.get('texts',[]),source_hash=derived.get('sourceHash'))
     # Curated layouts keep their field order, while these graph-proved display
     # corrections must survive an unchanged sourceHash.
     fresh_texts={field['id']:field for field in derived.get('texts',[])}
@@ -1191,10 +1201,20 @@ def customize(w,graph,controls,texts,media,*,source_hash=None):
     controls=reviewed_stage_seeds(w,controls,graph=graph,source_hash=source_hash)
     from reviewed_native_seed_limits import reviewed_native_seed_limits
     controls=reviewed_native_seed_limits(w,controls,graph=graph,source_hash=source_hash)
+    from review84_anima_controls import reviewed_anima_controls
+    controls=reviewed_anima_controls(w,controls,graph=graph,source_hash=source_hash)
+    from review86_scail_controls import reviewed_scail_controls
+    controls=reviewed_scail_controls(w,controls,graph=graph,source_hash=source_hash)
     for text in texts:
         nid,key=text['id'].rsplit(':',1)
         if preserves_system_instruction(graph,nid,key):text['preserveWhenEmpty']=True
         text.update(reviewed_text_purpose(graph,nid,key))
+    from review84_portrait_controls import reviewed_portrait_controls
+    controls,texts=reviewed_portrait_controls(w,controls,texts,graph=graph,source_hash=source_hash)
+    if w['id'] in ('local-card-80','local-card-81'):
+        for slot in media:slot['label']='人物参考图'
+    from review84_text_presentation import reviewed_text_presentation
+    texts=reviewed_text_presentation(w,texts,source_hash=source_hash)
     return controls,texts,media,{'apiProfiles':apis,'annotation':annotation,'notes':notes,'presentation':{'kind':w['category'] if focused else 'generic','branches':branches},
        'referencePolicy':{'mode':'graph-ports','imageSlots':sum(m['kind']=='image' for m in media),'help':'按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。'},
        'auditMethod':'active-output-path + concrete-input-binding','execution':'demo'}

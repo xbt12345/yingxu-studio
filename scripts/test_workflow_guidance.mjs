@@ -44,7 +44,7 @@ for(const h of [0,90,180,270,359])for(const v of [-30,0,60,90])for(const z of [0
  assert.ok(n.h>=0&&n.h<=360&&n.v>=-30&&n.v<=90&&n.z>=0&&n.z<=10);
 }
 assert.equal(nudgeZoom(9.9,.3),10);assert.equal(nudgeZoom(0,-.3),0);
-const times=Object.values(schemas).flatMap(w=>w.controls.filter(isTimecode));assert.equal(times.length,12);
+const times=Object.values(schemas).flatMap(w=>w.controls.filter(isTimecode));assert.equal(times.length,13);
 for(const f of times){const html=timecodeControl(f,f.value,'test');assert.equal((html.match(/data-catalog-field=/g)||[]).length,1);assert.ok(html.includes(`type="${f.type}" value="${f.value}"`),'original format remains untouched on render');}
 for(const n of [0,5,59,60,102,3601,125.25])assert.equal(parseTimecode(formatTimecode(n)),n);
 assert.equal(parseTimecode('0:5'),5);assert.equal(parseTimecode('60:01'),3601);

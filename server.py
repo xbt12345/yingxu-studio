@@ -40,6 +40,14 @@ import schema_adapters
 from region_preservation import preserve_region_output
 from reviewed_repairs import preserve_117_source_audio
 from png_delivery import strip_png_text
+from output_media_metadata import probe_output_metadata
+from scripts.review86_ltx_controls import derive_ltx_processing_geometry
+from scripts.review86_scail_controls import CONTRACTS as SCAIL_DIMENSION_CONTRACTS, derive_scail_processing_geometry
+from scripts.review87_video_controls import derive_video_processing_geometry
+from scripts.review87_flash_controls import derive_flash_processing_geometry
+from scripts.review87_infinite_controls import derive_infinite_reference_geometry
+from scripts.review87_output_loops import repeat_output_if_needed
+from workflow_result_contracts import prompt_helper_output_metadata, prompt_helper_receipt_error
 
 try:
     local_config=json.loads((ROOT/'private/backend.json').read_text('utf-8'))
@@ -297,15 +305,53 @@ def bind_vhs_audio(graph,records):
 
 
 def points_geometry(spec,values,records):
+    # All reviewed geometry checks run before remote upload and GPU dispatch.
+    video_policy=spec.get('videoGeometryPolicy')
+    flash_policy=spec.get('videoSizePolicy')
+    infinite_policy=spec.get('infiniteReferenceGeometry')
+    scail_policy=spec.get('scail_dimensions')
+    if video_policy or flash_policy or infinite_policy or scail_policy:
+        policy=video_policy or flash_policy or infinite_policy or scail_policy
+        if scail_policy:
+            scail_contract=SCAIL_DIMENSION_CONTRACTS.get(spec.get('id'))
+            if not scail_contract:raise ValueError('此工作流没有已审查的动作参考尺寸路径。')
+            slot_id=scail_contract['loader']
+        else:slot_id=policy.get('loader') if video_policy else policy.get('slotId',policy.get('mediaSlotId'))
+        source=records.get(slot_id)
+        if not source or source.get('kind') not in ('image','video'):
+            raise ValueError('请先添加用于尺寸处理的原始素材。')
+        if scail_policy and source['kind']!='video':raise ValueError('请先添加动作参考视频。')
+        try:
+            if source['kind']=='image':
+                with Image.open(asset_file(source)) as image:width,height=ImageOps.exif_transpose(image).size
+            else:
+                with av.open(str(asset_file(source))) as container:
+                    stream=next((stream for stream in container.streams if stream.type=='video'),None)
+                    width,height=(stream.width,stream.height) if stream else (0,0)
+        except (OSError,ValueError,av.error.FFmpegError):
+            raise ValueError('无法读取原始素材尺寸，请重新导入。') from None
+        if video_policy:derive_video_processing_geometry(spec,values,width,height)
+        elif flash_policy:derive_flash_processing_geometry(spec,values,width,height)
+        elif infinite_policy:return derive_infinite_reference_geometry(spec,values,width,height)
+        else:derive_scail_processing_geometry(spec,values,{'width':width,'height':height})
+        return None
     recipe=spec.get('pointsRecipe')
-    if not recipe:return None
-    source=records.get(recipe.get('slotId'))
+    validate_ltx_size=spec.get('id')=='local-card-49'
+    if not recipe and not validate_ltx_size:return None
+    source=records.get(recipe.get('slotId') if recipe else '363')
     if not source or source.get('kind')!='video':raise ValueError('主体点选需要绑定原视频。')
     try:
         with av.open(str(asset_file(source))) as container:
             stream=next((s for s in container.streams if s.type=='video'),None)
             width,height=(stream.width,stream.height) if stream else (0,0)
     except (av.error.FFmpegError,OSError,ValueError):raise ValueError('无法读取原视频尺寸，请重新导入。') from None
+    if validate_ltx_size:
+        derive_ltx_processing_geometry(spec,values,width,height)
+        return None
+    if recipe.get('customGeometryPolicy')=='vhs-center-crop-then-layer-none-v1':
+        target=derive_ltx_processing_geometry(spec,values,width,height)['target']
+        return {**target,'node':recipe['node'],'bindDimensions':True,
+                **({'negativeTarget':recipe['negativeTarget']} if recipe.get('negativeTarget') else {})}
     long_side=values.get(recipe.get('longSideControlId'),recipe.get('longSide'))
     multiple=recipe.get('multiple')
     if not width or not height or not isinstance(long_side,(int,float)) or isinstance(long_side,bool) or not math.isfinite(long_side) or long_side<=0 or not isinstance(multiple,int) or multiple<=0:
@@ -353,7 +399,7 @@ def public_asset(a):
                       original_src=f'/api/assets/{original_id}/file' if original_available else '')
     return result
 
-def public(j):
+def public(j,*,include_media_metadata=False):
     from history_parameters import history_seed_values
     references=[]
     catalog_slots=[slot['id'] for slot in j.get('schema_spec',{}).get('media',[]) if slot['id'] in j.get('catalog_assets',{})]
@@ -363,7 +409,24 @@ def public(j):
         if index<len(catalog_slots):reference['catalogSlot']=catalog_slots[index]
         references.append(reference)
     recovered=history_seed_values(j)
-    return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items','schema_spec','owner_id','client_token','request_fingerprint','_platform_replay']},'outputs':historical_output_presentation(j),'request_token':j.get('client_token',j['token']),'references':references,**({'catalog_seed_values':recovered}if recovered else{})}
+    outputs=historical_output_presentation(j)
+    if include_media_metadata:outputs=historical_output_file_metadata(j,outputs)
+    error=j.get('error')
+    friendly_error=friendly(error) if isinstance(error,str) and 'repo id must' in error.lower() and 'birefnet-general' in error.lower() else error
+    return {**{k:v for k,v in j.items() if k not in ['token','graph','download_items','schema_spec','owner_id','client_token','request_fingerprint','_platform_replay']},'error':friendly_error,'outputs':outputs,'request_token':j.get('client_token',j['token']),'references':references,**({'catalog_seed_values':recovered}if recovered else{})}
+
+def historical_output_file_metadata(j,outputs):
+    """Probe older files only when their job is opened, leaving list polling cheap."""
+    result=[]
+    for original in outputs:
+        output=copy.deepcopy(original)
+        if not output.get('metadata_source'):
+            match=re.fullmatch(r'/api/media/'+re.escape(j['id'])+r'/([0-9]+\.[a-zA-Z0-9]+)',output.get('src',''))
+            if match:
+                facts=probe_output_metadata(PRIVATE/'outputs'/j['id']/match[1],output.get('type'))
+                if facts:output.update(facts,metadata_source='saved-file')
+        result.append(output)
+    return result
 
 def public_graph(graph):
     """Keep execution credentials out of workflow downloads and video metadata."""
@@ -394,21 +457,37 @@ def public_graph(graph):
 
 def ensure_remote(a):
     local=asset_file(a)
+    transfer_step='check-existing'
+    response=None
     try:
         if a.get('remote'):
             remote=Path(a['remote'])
             with requests.get(BASE+'/view',params={'filename':remote.name,'subfolder':remote.parent.as_posix() if str(remote.parent)!='.' else '', 'type':'input'},headers={'Range':'bytes=0-63'},stream=True,timeout=15) as response:
                 if response.status_code in (200,206):return a
+        transfer_step='upload'
         with local.open('rb') as stream:
             response=requests.post(BASE+'/upload/image',files={'image':('yingxu-'+a['id'][:24]+local.suffix,stream,mimetypes.guess_type(str(local))[0])},data={'overwrite':'false'},timeout=(15,180))
         response.raise_for_status();out=response.json()
         a={**a,'remote':(out.get('subfolder','')+'/'+out['name']).lstrip('/')}
         with lock,database() as db:db.execute('UPDATE assets SET data=? WHERE id=?',(json.dumps(a,ensure_ascii=False),a['id']))
         return a
-    except (requests.RequestException,ValueError,KeyError):
+    except (requests.RequestException,ValueError,KeyError) as error:
+        # Keep transport evidence without logging URLs, credentials or request bodies.
+        upstream=getattr(error,'response',None)
+        if upstream is None:upstream=response
+        diagnostic={'asset_id':a['id'],'phase':transfer_step,'exception':type(error).__name__,
+                    'http_status':getattr(upstream,'status_code',None),
+                    'endpoint_matches_private_config':BASE==local_config.get('card_url','').rstrip('/')}
+        import logging
+        logging.getLogger('yingxu.assets').warning('Asset transfer failed (%s, %s, HTTP %s)',
+                                                  transfer_step,type(error).__name__,diagnostic['http_status'])
+        try:(PRIVATE/'receipts'/('asset-transfer-'+a['id']+'.json')).write_text(json.dumps(diagnostic),'utf-8')
+        except OSError:pass
         raise HTTPException(502, '参考素材已保留，但无法送达算力卡。请确认卡在线后重试。')
 def friendly(message):
     low=message.lower()
+    if 'repo id must' in low and 'birefnet-general' in low:
+        return '算力端的 BiRefNet-General 抠图模型未正确安装或模型目录不完整。需补齐该模型后重试；原图已保留。'
     if 'out of memory' in low or 'cuda error' in low:return '显存不足。请降低画面像素或时长、减少参考图，再重试。'
     if 'not in list' in low or 'not found' in low:return '算力卡缺少此任务依赖的模型或素材。请检查卡上的模型与上传文件后重试。'
     if 'connection' in low or 'timeout' in low:return '暂时无法连接算力卡。请确认卡已开机，恢复连接后本页会继续查询。'
@@ -446,6 +525,7 @@ def output_items(h,kind='video',output_nodes=None):
                 texts=[v for v in entries if isinstance(v,str)]
                 if texts:
                     text='\n'.join(texts)
+                    if not text.strip():continue
                     if len(text.encode('utf-8'))>1024*1024:raise ValueError('返回的文字超过允许大小。')
                     item={'kind':'text','text':text,'filename':str(node_id)+'.txt','type':'output'}
                     retain(item,node_id)
@@ -454,6 +534,8 @@ def output_items(h,kind='video',output_nodes=None):
 
 def reviewed_output_metadata(spec,graph):
     """Labels describe reviewed execution chains, never filenames or order."""
+    helper_metadata=prompt_helper_output_metadata(spec,graph)
+    if helper_metadata:return helper_metadata
     def matches(node_id,class_type,**links):
         node=graph.get(node_id,{})
         return node.get('class_type')==class_type and all(node.get('inputs',{}).get(key)==value for key,value in links.items())
@@ -912,7 +994,7 @@ def historical_output_presentation(j):
                                                 'local-card-26','local-card-27','local-card-28','local-card-30','local-card-116','local-card-124',
                                                 'local-card-40','local-card-43','local-card-44','local-card-45','local-card-46',
                                                 'local-card-48','local-card-49','local-card-50','local-card-60','local-card-126',
-                                                'local-card-51','local-card-90','local-card-95','local-card-96','local-card-133'):return outputs
+                                                'local-card-34','local-card-51','local-card-90','local-card-95','local-card-96','local-card-133'):return outputs
     spec=j.get('schema_spec')or manifest(j['workflow_id'])or schema_adapters.manifest(j['workflow_id'])or{}
     metadata=reviewed_output_metadata(spec,j.get('graph',{}))
     if not metadata:return outputs
@@ -1046,6 +1128,13 @@ def collect(j,h):
 
 def _collect_outputs(j,h):
     spec=j.get('schema_spec') or manifest(j['workflow_id']) or schema_adapters.manifest(j['workflow_id']) or {}
+    helper_error=prompt_helper_receipt_error(spec,j.get('graph',{}),h)
+    if helper_error:
+        receipt={k:h.get(k) for k in ['outputs','status']}
+        (PRIVATE/'receipts'/f'{j["id"]}.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),'utf-8')
+        update(j['id'],status='failed',stage='提示词返回不完整',error=helper_error,ended=time.time()*1000,
+               failure_phase='output',output_failure_code='empty_text_response',connection_error=None)
+        return
     kind=spec.get('output','video')
     items=output_items(h,kind,spec.get('outputs') if j.get('schema_spec') else None)
     if not items:
@@ -1084,6 +1173,8 @@ def _collect_outputs(j,h):
                     with av.open(str(tmp)) as container:
                         if not any(stream.type==kind for stream in container.streams):raise ValueError('算力卡返回的媒体格式不正确。')
             except (OSError,UnicodeError,av.error.FFmpegError) as error:raise ValueError('无法读取算力卡返回的作品。') from error
+            if kind=='video' and suffix=='.mp4' and spec.get('outputLoopPolicies'):
+                repeat_output_if_needed(spec,j.get('graph',{}),item['output_node'],tmp)
             tmp.replace(dest)
         embedded=kind=='video' and suffix=='.mp4'
         if embedded:embed_workflow(dest,public_graph(j['graph']))
@@ -1094,7 +1185,8 @@ def _collect_outputs(j,h):
             for name,display in [('Flux-9B','Flux 9B 结果'),('Qwen-AIO','Qwen 结果'),('single','单图结果'),('double','双图结果')]:
                 if name in item.get('subfolder','').split('/') or item.get('filename','').startswith(name+'_'):
                     branch_name=display;break
-        outputs.append(dict(workflow_embedded=embedded,id=j['id']+'o'+str(i),type=kind,src=f'/api/media/{j["id"]}/{i}{suffix}',poster='',duration=j.get('settings',{}).get('duration') if kind in ('video','audio') else None,bytes=dest.stat().st_size,label=branch_name or (label[i] if i<len(label) else None),**({'text':dest.read_text('utf-8')} if kind=='text' else {})))
+        facts=probe_output_metadata(dest,kind)
+        outputs.append(dict(workflow_embedded=embedded,id=j['id']+'o'+str(i),type=kind,src=f'/api/media/{j["id"]}/{i}{suffix}',poster='',bytes=dest.stat().st_size,label=branch_name or (label[i] if i<len(label) else None),**({'text':dest.read_text('utf-8')} if kind=='text' else {}),**{'duration':None,**facts},**({'metadata_source':'saved-file'} if facts else {})))
         update(j['id'],outputs=present_outputs(j,items,outputs))
     receipt={k:h.get(k) for k in ['outputs','status']}
     (PRIVATE/'receipts'/f'{j["id"]}.json').write_text(json.dumps(receipt,ensure_ascii=False,indent=2),'utf-8')
@@ -1275,7 +1367,7 @@ def catalog_connections():
 
 def public_schema(spec):
     def control(field):
-        visible={key:copy.deepcopy(field[key]) for key in ('id','kind','key','value','type','label','nodeId','min','max','step','integer','options','customRange','derived','help','uiGroup','unit','guidanceRange','mediaSlotId') if key in field}
+        visible={key:copy.deepcopy(field[key]) for key in ('id','kind','key','value','type','label','nodeId','min','max','step','integer','options','customRange','derived','help','uiGroup','unit','guidanceRange','mediaSlotId','hidden','visibleWhen','presets','accelerationTechnology','dimensionGroup','placeholder','displayHelp','title','effectiveDuration','timecodeInput','speakerCount','speakerRegionsRecipe') if key in field}
         # A native INT64 bound becomes rounded when parsed as a browser Number.
         # Narrow only the editable projection, preserving the execution contract
         # and fractional seconds accepted by duration controls.
@@ -1286,7 +1378,7 @@ def public_schema(spec):
                     if type(value) is int and (value > limit if key == 'max' else value < limit):
                         bounds[key] = limit
         if field.get('previewRecipe'):
-            visible['previewRecipe']={key:copy.deepcopy(field['previewRecipe'][key]) for key in ('longSideControlId','longSide','multiple','sourceMultiple','postScale','fit','frameRate','skipControlId','skipFrames') if key in field['previewRecipe']}
+            visible['previewRecipe']={key:copy.deepcopy(field['previewRecipe'][key]) for key in ('longSideControlId','longSide','multiple','sourceMultiple','postScale','fit','frameRate','skipControlId','skipFrames','customWidthControlId','customHeightControlId','customGeometryPolicy') if key in field['previewRecipe']}
         if field.get('members'):visible['members']=[{key:member[key] for key in ('id','key','nodeId') if key in member} for member in field['members']]
         return visible
     def api_profile(profile):
@@ -1302,15 +1394,17 @@ def public_schema(spec):
     media=[{**{key:copy.deepcopy(slot[key]) for key in ('id','kind','label','branchId') if key in slot},
             'required':slot.get('required',not slot.get('optional',False)),
             'optional':not slot.get('required',not slot.get('optional',False))} for slot in spec.get('media',[])]
-    constraints=[{key:item[key]for key in ('type','width','height')if key in item}
-                 for item in spec.get('constraints',[])if item.get('type')=='nonzero-size']
+    constraints=[{key:item[key]for key in ('type','width','height','min_nonzero','max','multiple')if key in item}
+                 for item in spec.get('constraints',[])if item.get('type') in ('nonzero-size','paired-size')]
     return {'supportedControlIds':[field['id'] for field in spec.get('controls',[])],
             'supportedTextIds':[field['id'] for field in spec.get('texts',[])],
             'constraints':constraints,
             'supportedMediaIds':[slot['id'] for slot in spec.get('media',[])],
             'controls':[control(field) for field in spec.get('controls',[])],
             'texts':[{key:copy.deepcopy(field[key]) for key in ('id','key','role','label','help','branchId','default','value','required','preserveWhenEmpty') if key in field} for field in spec.get('texts',[])],
-            'media':media,'apiProfiles':[api_profile(profile) for profile in spec.get('apiProfiles',[])],
+            'media':media,'referencePolicy':copy.deepcopy(spec.get('referencePolicy',{})),
+            'speakerRegionsRecipe':copy.deepcopy(spec.get('speakerRegionsRecipe',{})),
+            'apiProfiles':[api_profile(profile) for profile in spec.get('apiProfiles',[])],
             'external_api_account':spec.get('external_api_account',False)}
 
 @app.get('/api/health')
@@ -1781,13 +1875,18 @@ def rerun_schema(id,body):
         original=job(id)
         if original['status'] not in ['done','failed','cancelled','abandoned']:raise HTTPException(409,'原任务尚未结束，请等待结果后再试。')
         records={slot:asset(key) for slot,key in original.get('catalog_assets',{}).items()}
+        try:
+            if original['schema_spec'].get('id')=='local-card-101' and not original['schema_spec'].get('speakerRegionsRecipe'):
+                raise ValueError('双人视频需要先重新编辑，分别框选两路音频对应的人物后生成。')
+            geometry=points_geometry(original['schema_spec'],original.get('catalog_values',{}),records)
+        except ValueError as error:raise HTTPException(409,str(error))from None
         try:source_has_audio=source_audio_presence(original['schema_spec'],records)
         except ValueError as error:raise HTTPException(409,str(error))from None
         records=schema_vhs_assets(original['schema_spec'],records,original['graph'],source_has_audio=source_has_audio)
         records={slot:ensure_remote(record) for slot,record in records.items()}
         new_id=uuid.uuid4().hex
         try:
-            graph,values=schema_adapters.rerun(original,records,new_id,randomize_seed=body.randomize_seed)
+            graph,values=schema_adapters.rerun(original,records,new_id,randomize_seed=body.randomize_seed,geometry=geometry)
             region_adaptation=preserve_region_output(original['schema_spec'],graph)
             audio_adaptation=preserve_117_source_audio(original['schema_spec'],graph,source_has_audio=source_has_audio)
             if audio_adaptation:graph=prune(graph,original['schema_spec']['outputs'])
@@ -1830,7 +1929,7 @@ def workflow_download(id:str):
 @app.get('/api/jobs')
 def get_jobs():return [public(j) for j in jobs()]
 @app.get('/api/jobs/{id}')
-def get_job(id:str):return public(job(id))
+def get_job(id:str):return public(job(id),include_media_metadata=True)
 
 @app.post('/api/jobs/{id}/retrieve')
 def retrieve(id:str):

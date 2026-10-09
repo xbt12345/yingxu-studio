@@ -15,7 +15,7 @@ applyOutpaintValue(w,d,'left',128);assert.equal(d.catalogValues[id('right')],128
 applyOutpaintValue(w,d,'bottom',64);assert.equal(d.catalogValues[id('top')],64);
 d.catalogUi={outpaintLinks:{horizontal:false}};applyOutpaintValue(w,d,'right',256);assert.equal(d.catalogValues[id('left')],128);
 const snapshot=cloneDraft(d);snapshot.catalogUi.outpaintLinks.horizontal=true;assert.equal(d.catalogUi.outpaintLinks.horizontal,false);
-const rangeEnd=html.indexOf('</section>');assert.ok(html.indexOf('输出最长边')>rangeEnd);assert.ok(html.indexOf('调色强度')>rangeEnd);
+const rangeEnd=html.indexOf('</section>');assert.ok(!html.includes('data-catalog-field="131:scale_to_length"'));assert.ok(html.indexOf('色调对齐强度')>rangeEnd);
 assert.equal((html.match(/<strong>扩展范围<\/strong>/g)||[]).length,1);
 const front=cameraPosition(0,0,0),right=cameraPosition(90,0,0),back=cameraPosition(180,0,0);
 assert.ok(front.z>0&&Math.abs(front.x)<1e-8);assert.ok(right.x>0&&Math.abs(right.z)<1e-8);assert.ok(back.z<0);

@@ -573,8 +573,20 @@ def apply_reviewed_repairs(graph, spec, *, for_template=False):
             if value is not None and not (type(value) is int and value == 512):
                 raise ReviewedRepairError('视频扩图有未知目标尺寸，不能替换原有选择。')
         node('5155', 'PrimitiveFloat', value=24)
+        custom_size={'custom_width':0,'custom_height':0}
+        dimensions={field.get('id'):field for field in spec.get('controls',[])}
+        reviewed_size=all(dimensions.get('5141:'+key,{}).get('targets')==[{'node':'5141','input':key}]
+                          for key in ('custom_width','custom_height'))
+        if reviewed_size:
+            source_size=candidate.get('5141',{}).get('inputs',{})
+            for key in custom_size:
+                value=source_size.get(key)
+                if (isinstance(value,bool) or not isinstance(value,(int,float)) or
+                        not 0<=value<=8192 or value!=int(value)):
+                    raise ReviewedRepairError('视频扩图的自定义输入尺寸无效。')
+                custom_size[key]=int(value)
         node('5141', 'VHS_LoadVideo', force_rate=['5155', 0], frame_load_cap=['5166', 0],
-             custom_width=0, custom_height=0, select_every_nth=1, format='AnimateDiff')
+             **custom_size, select_every_nth=1, format='AnimateDiff')
         count = node('5166', 'MathExpression|pysssss', expression='a*b', a=['5155', 0])
         if count.get('b') != ['5162', 0] and not (
                 type(count.get('b')) in (int, float) and count['b'] >= 0):

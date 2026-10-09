@@ -3833,7 +3833,7 @@
       "output": "image",
       "template": "local-card-80.api.json",
       "source_hash": "83d4166f18f6215116e365394b1d4a3393fcd069d8afd8b6c29ca0e1247c5a41",
-      "template_sha256": "d8ced56b8b63b298cf19a6034f58f0d3f36478f6ccf948ba96a1fdf6ec84a2a6",
+      "template_sha256": "398361fe5356cd268d040fa0299a9db04073d030296d558368cd1a0f698d0692",
       "requires_custom_api": true,
       "node_types": [
         "CFGNorm",
@@ -3877,7 +3877,7 @@
       "output": "image",
       "template": "local-card-81.api.json",
       "source_hash": "464d4f11f25c8a5eb2747e4e0855f02cfe412089f8513188e30380b47b756a67",
-      "template_sha256": "5fe498b250c32008002a52ba7d25cae34f6b4aff321e326bfcaae2fc840b6054",
+      "template_sha256": "5337e106d261b860c4362e4dea4254ce3af54ecc33420948a43dc21ae6131ea9",
       "requires_custom_api": true,
       "node_types": [
         "CFGNorm",

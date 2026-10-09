@@ -1,24 +1,25 @@
-import {installPointPickers} from './point-picker.js?v=81.0';
-import {resultMediaMarkup} from './result-media.js?v=70.0';
-import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=81.0';
+import {installPointPickers} from './point-picker.js?v=88.0';
+import {resultMediaMarkup} from './result-media.js?v=88.0';
+import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=88.0';
 import {outputActionMarkup,installOutputActionPlacement} from './output-actions.js?v=70.0';
-import {installTimecodeControls} from './timecode-control.js?v=60.1';
+import {installTimecodeControls} from './timecode-control.js?v=88.0';
 import {installMultiCamera} from './multi-camera.js?v=75.1';
-import {installProcessingDurations} from './processing-duration.js?v=81.0';
-import {liveDurationControl,liveWorkflowEditor,installTrimPlayback} from './workflow-page.js?v=81.0';
+import {installProcessingDurations} from './processing-duration.js?v=88.0';
+import {liveDurationControl,liveWorkflowEditor,installTrimPlayback} from './workflow-page.js?v=88.0';
 import {installDirectoryPicker} from './directory-picker.js?v=60.1';
-import {installWorkflowSelects} from './workflow-select.js?v=81.0';
+import {installWorkflowSelects} from './workflow-select.js?v=88.0';
 import {annotateImage} from './region-annotation.js?v=54.0';
 import {esc} from './data.js';
+import {openCatalogReferenceSlot,closeCatalogReferenceSlot} from './catalog-reference-slots.js?v=88.0';
 import {advancedFields} from './advanced.js?v=60.1';
-import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=81.0';
-import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=81.0';
+import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=88.0';
+import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=88.0';
 
 // The library renders production components with harmless sample values; no saving or generation.
 const refinement=new URLSearchParams(location.search).get('refine')==='1';
 if(refinement)document.body.classList.add('component-refinement');
 const [catalog,schemas,live]=await Promise.all([
- fetch('local-catalog.json').then(r=>r.json()),fetch('workflow-interfaces.json?v=81.0').then(r=>r.json()),fetch('/api/workflows').then(r=>r.ok?r.json():[]).catch(()=>[])
+ fetch('local-catalog.json').then(r=>r.json()),fetch('workflow-interfaces.json?v=88.0').then(r=>r.json()),fetch('/api/workflows').then(r=>r.ok?r.json():[]).catch(()=>[])
 ]);
 const records=catalog.workflows.map(w=>({...w,interface:schemas.workflows[w.id]}));
 const blank=()=>({prompt:'保留原图主体，调整背景与光线。',refs:[],catalogValues:{},catalogTexts:{},catalogSeedModes:{}});
@@ -26,16 +27,18 @@ const source=id=>records.find(w=>w.id===id);
 const examples=[];
 const add=(id,title,note,w,render)=>{const d=blank();examples.push({id,title,note,w,d,render});};
 function fieldExample(id,title,note,predicate){
- const w=records.find(w=>w.interface.controls.some(predicate)),f=w?.interface.controls.find(predicate);
+ const visibleMatch=f=>f.hidden!==true&&f.visible!==false&&predicate(f);
+ const w=records.find(w=>w.interface.controls.some(visibleMatch)),f=w?.interface.controls.find(visibleMatch);
  if(!f)throw new Error('Missing production control: '+id);
  add(id,title,note,w,d=>controlSection('',`<div class="catalog-fields">${controlField(d,f)}</div>`));
 }
-fieldExample('size','画面尺寸','原生宽高选项：四列尺寸卡；仅原节点允许时提供自定义输入。',f=>f.kind==='ratio'&&f.options?.some(o=>String(o.value??o)==='1024x1024')&&f.options.every(o=>/^\d+x\d+$/.test(String(o.value??o)))&&!f.customRange);
+fieldExample('size','分辨率','原生宽高选项：四列尺寸卡；仅原节点允许时提供自定义输入。',f=>f.kind==='ratio'&&f.options?.some(o=>String(o.value??o)==='1024x1024')&&f.options.every(o=>/^\d+x\d+$/.test(String(o.value??o)))&&!f.customRange);
 fieldExample('custom-size','自定义宽高','预设四个一排；自定义放在第二行末尾，占两个格。',f=>f.kind==='ratio'&&f.customRange);
 fieldExample('ratio','画面比例','比例与具体宽高分开；比例卡的图形随比例变化。',f=>f.kind==='ratio'&&f.options?.some(o=>String(o.value??o).includes('16:9')));
 fieldExample('megapixels','百万像素','像素总量使用 MP；标题右侧直接填写，下方等宽预设。',f=>f.key==='megapixels');
 fieldExample('edge','边长与处理尺寸','三个预设与自定义同排；输入聚焦只保留外层高亮。',f=>f.kind==='resolution'&&f.customRange&&f.key==='output_long_side');
 add('choice','枚举选择','LoRA 分支、放大倍数和遮罩模式使用同一个圆角菜单；支持方向键、回车选择和 Esc 关闭。',source('local-card-109'),(d,w)=>controlSection('',`<div class="catalog-fields">${w.interface.controls.filter(f=>f.options&&['choice','upscale'].includes(f.kind)).map(f=>controlField(d,f)).join('')}</div>`));
+fieldExample('steps','生成步数','三项快捷步数与自定义同排；标准与 Turbo 各自保留数值。',f=>f.kind==='steps'&&f.visibleWhen?.equals===true);
 fieldExample('toggle','功能开关','只用于原图确实支持的布尔功能；标签直接描述开启的作用。',f=>f.kind==='toggle');
 fieldExample('number','数值与强度','强度、色彩、数量和修复值使用原范围及步长，不造统一百分比。',f=>f.kind==='strength');
 fieldExample('color','调色强度','独立于视角与扩图；保留真实节点的数值范围和步长。',f=>f.kind==='color');
@@ -76,6 +79,7 @@ if(bernini)add('video-trim','原视频与片段区间','预览、起止滑轨和
 });
 
 const referenceSamples=[{id:'图片1',kind:'image',src:'assets/coast.jpg',name:'海岸参考'},{id:'图片2',kind:'image',src:'assets/forest.jpg',name:'森林参考'},{id:'图片3',kind:'image',src:'assets/portal-ocean.png',name:'场景参考'},{id:'图片4',kind:'image',src:'assets/mountain.jpg',name:'山景参考'},{id:'图片5',kind:'image',src:'assets/dunes.jpg',name:'沙丘参考'}];
+add('acceleration','加速与生成步数','两种模式保留各自步数；使用与实际工作区相同的组件。',source('local-card-87'),(d,w)=>controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.kind==='toggle'||f.kind==='steps')}},d)));
 let clearExampleShelf=()=>{};
 function referenceExample(pinned=false,prompt=''){return `<div class="api-composer"><div class="api-prompt-layout">${referenceShelfMarkup(referenceSamples,{pinned})}<div class="writing-row"><div class="writing-area"><textarea aria-label="参考图布局示例" rows="4" placeholder="描述画面；参考图叠放在左侧，悬停向右展开。">${esc(prompt)}</textarea></div></div></div></div>`;}
 add('reference-shelf','参考图折叠与编辑','左侧叠放，悬停向右展开并预览大图；全部展开可固定在上方。编辑只更新本页示例。',{id:'model'},()=>referenceExample());
@@ -87,13 +91,24 @@ add('text-result','文本生成结果','提示词工具的真实正文可直接�
 const audioExample={id:'library-audio-result',type:'audio',src:'assets/audio-result-sample.wav'};
 add('audio-result','音频生成结果','使用 2 秒合成测试音；原生控件可播放，下载按钮直接下载 WAV 文件。其他操作前往正式工作区，不调用模型。',{id:'model'},()=>`<article class="output output-audio" tabindex="0"><div class="media-open result-static">${resultMediaMarkup(audioExample)}</div><div class="output-action-bar" role="group" aria-label="音频结果操作">${outputActionMarkup(audioExample,{icons:true})}</div></article>`);
 
+add('progressive-references','参考图按需添加','默认显示一张必填图；点击加号逐张添加，保留各工作流真实上限。',source('local-card-52'),(d,w)=>{
+ const template=document.createElement('template');template.innerHTML=catalogEditor(w,d,{localMode:true});return template.content.querySelector('.catalog-media-inputs')?.outerHTML||'';
+});
+add('h3-steps','H3 加速步数','两项切换对应的模型与采样配置，不单独强改步数。',source('local-card-52'),(d,w)=>controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.kind==='mode')}},d)));
+add('video-dimensions','视频自定义宽高','0保留视频比例；尺寸按工作流规则对齐，实际成片以文件参数为准。',source('local-card-51'),(d,w)=>controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.dimensionGroup==='video-size')}},d)));
+add('video-mode','动作迁移与人物替换','选择同一工作流真实支持的创作模式。',source('local-card-23'),(d,w)=>controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.kind==='mode')}},d)));
+
+add('audio-clip','音频片段起止','以分秒显示上传音频中的起点和终点，终点需晚于起点。',source('local-card-99'),(d,w)=>controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.id==='159:start_time'||f.id==='159:end_time')}},d)));
+add('output-loop','完整音画循环','生成一次再循环导出；0播放一遍，1播放两遍，声音同步重复。',source('local-card-118'),(d,w)=>controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.key==='loop_count')}},d)));
+add('speaker-regions','两路音频对应人物','区域操作示意图；按音频顺序分别框选人物，不是生成效果。',source('local-card-101'),(d,w)=>{d.refs=[{id:'图片1',catalogSlot:'284',kind:'image',src:'assets/speaker-region-guide.svg',name:'人物区域操作示意'}];return controlSection('',catalogCommonPanel({...w,interface:{...w.interface,controls:w.interface.controls.filter(f=>f.kind==='speaker_regions')}},d));});
+
 function renderDemo(e){
  const template=document.createElement('template');template.innerHTML=e.render(e.d,e.w);
  for(const node of template.content.querySelectorAll('[id]')){const previous=node.id;if(previous==='wf-source-video')continue;node.id=e.id+'-'+previous;for(const label of template.content.querySelectorAll('[for]'))if(label.htmlFor===previous)label.htmlFor=node.id;}
  return template.innerHTML;
 }
-const refinementIds=['media','ratio','custom-size','size','edge','object-indices','multi-camera'];
-const refinementNotes={media:'圆角框按图片比例适配；必填素材在左上角标明。',ratio:'四个一排，其余保持原样。','custom-size':'自定义放在第二行末尾，占两个格。',size:'尺寸选项四个一排，不增删原有尺寸。',edge:'三个预设和自定义放在同一行，可切换宽度看是否拥挤。','object-indices':'两项各自保留输入，下方提示最多一行。','multi-camera':'共用一行表头，保留九组数值和可拖动的机位图。'};
+const refinementIds=['audio-clip','output-loop','speaker-regions','progressive-references','h3-steps','video-dimensions','video-mode','acceleration','media','ratio','custom-size','size','edge','object-indices','multi-camera'];
+const refinementNotes={'audio-clip':'上传音频的起止位置统一显示分秒。','output-loop':'0播放一次，1播放两次；画面和声音一起循环。','speaker-regions':'在同一参考图上框选两个人物，按音频1、音频2绑定。','progressive-references':'至少一张参考图，需要更多时点击加号。','h3-steps':'8步与4步分别使用匹配的原版与加速模型。','video-dimensions':'0保留视频比例，按模型规则对齐处理尺寸。','video-mode':'同一工作流切换动作迁移或人物替换。',acceleration:'加速开关与步数放在一起；切换模式时保留各自的步数。',media:'圆角框按图片比例适配；必填素材在左上角标明。',ratio:'四个一排，其余保持原样。','custom-size':'自定义放在第二行末尾，占两个格。',size:'尺寸选项四个一排，不增删原有尺寸。',edge:'三个预设和自定义放在同一行，可切换宽度看是否拥挤。','object-indices':'两项各自保留输入，下方提示最多一行。','multi-camera':'共用一行表头，保留九组数值和可拖动的机位图。'};
 const displayed=refinement?refinementIds.map(id=>examples.find(e=>e.id===id)):examples;
 if(refinement){
  const header=document.querySelector('.library-header');header.querySelector('h1').textContent='本次组件调整';header.querySelector('p').textContent='只展示你点名的几处。可以点击选项、输入数值；不保存、不生成。';header.querySelector('.component-reminders').innerHTML='<span>已应用到本地网站</span><a href="workflow-control-library.html">查看完整组件库 ↗</a>';
@@ -103,7 +118,7 @@ const root=document.getElementById('component-library');
 root.innerHTML=displayed.map(e=>{const note=refinement?refinementNotes[e.id]:e.note;return `<article class="library-example" id="${e.id}"><header><h2>${e.title}</h2><p title="${esc(note)}">${esc(note)}</p><a href="studio.html?review=73.0#${e.w.id==='model'?'create':'workflow/'+e.w.id}" target="_blank" rel="noopener">在对应工作流中查看 ↗</a></header><div class="library-demo catalog-editor">${renderDemo(e)}</div></article>`;}).join('');
 document.getElementById('library-index').innerHTML=displayed.map(e=>`<a href="#${e.id}">${e.title}</a>`).join('');
 const counts={};for(const w of records)for(const f of w.interface.controls)counts[f.kind]=(counts[f.kind]||0)+1;
-document.getElementById('library-counts').textContent=refinement?'本次展示 7 组组件 · 默认按 420 px 宽度查看':`${records.length} 个本地工作流 · ${Object.values(counts).reduce((a,b)=>a+b,0)} 个已配置参数 · ${examples.length} 组组件示例 · 2 个独立接入页 / 12 个内置演示共用控件`;
+document.getElementById('library-counts').textContent=refinement?`本次展示 ${displayed.length} 组组件 · 默认按 420 px 宽度查看`:`${records.length} 个本地工作流 · ${Object.values(counts).reduce((a,b)=>a+b,0)} 个已配置参数 · ${examples.length} 组组件示例 · 2 个独立接入页 / 12 个内置演示共用控件`;
 let active=examples[0];
 const context=e=>examples.find(x=>x.id===e.target.closest('.library-example')?.id);
 const update=e=>{const host=document.getElementById(e.id);if(!host)return;syncControlChoices(host,e.w,e.d);syncCameraGuide(host,e.w,e.d);syncOutpaintGuide(host,e.w,e.d);};
@@ -119,8 +134,12 @@ document.addEventListener('input',event=>{
  e.d.catalogValues[id]=f.type==='checkbox'?event.target.checked:f.type==='number'?Number(event.target.value):event.target.value;applyOutpaintValue(e.w,e.d,f.key,e.d.catalogValues[id]);update(e);
 });
 document.addEventListener('click',event=>{
- const width=event.target.closest('[data-library-width]');if(width){document.body.style.setProperty('--library-preview-width',width.dataset.libraryWidth+'px');document.querySelectorAll('[data-library-width]').forEach(b=>b.setAttribute('aria-pressed',String(b===width)));document.getElementById('library-counts').textContent=`本次展示 7 组组件 · 当前宽度 ${width.dataset.libraryWidth} px`;}
+ const width=event.target.closest('[data-library-width]');if(width){document.body.style.setProperty('--library-preview-width',width.dataset.libraryWidth+'px');document.querySelectorAll('[data-library-width]').forEach(b=>b.setAttribute('aria-pressed',String(b===width)));document.getElementById('library-counts').textContent=`本次展示 ${displayed.length} 组组件 · 当前宽度 ${width.dataset.libraryWidth} px`;}
  const e=context(event),button=event.target.closest('button');if(!e||!button)return;
+ if(button.hasAttribute('data-catalog-add-reference')){if(openCatalogReferenceSlot(e.w.interface,e.d)){document.querySelector(`#${e.id} .library-demo`).innerHTML=renderDemo(e);update(e);}return;}
+ if(button.dataset.catalogRemove){closeCatalogReferenceSlot(e.d,button.dataset.catalogRemove);e.d.refs=e.d.refs.filter(ref=>ref.catalogSlot!==button.dataset.catalogRemove);document.querySelector(`#${e.id} .library-demo`).innerHTML=renderDemo(e);update(e);return;}
+ if(button.dataset.catalogMode){const f=e.w.interface.controls.find(field=>field.id===button.dataset.catalogMode);if(f?.kind==='mode'&&f.options.some(option=>String(option.value)===button.dataset.value)){e.d.catalogValues[f.id]=button.dataset.value==='true';document.querySelector(`#${e.id} [data-catalog-field="${CSS.escape(f.id)}"]`).checked=e.d.catalogValues[f.id];update(e);}return;}
+
  if(button.dataset.advancedChoice){e.d.advanced||={};e.d.advanced[button.dataset.advancedChoice]=button.dataset.value;button.parentElement.querySelectorAll('button').forEach(b=>{b.setAttribute('aria-pressed',String(b===button));b.classList.toggle('chosen',b===button);});return;}
  const id=button.dataset.catalogPreset||button.dataset.catalogChoice;
  if(id){const f=e.w.interface?.controls.find(f=>f.id===id);e.d.catalogValues[id]=f.type==='number'?Number(button.dataset.value):button.dataset.value;const input=[...document.getElementById(e.id).querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===id);if(input)input.value=button.dataset.value;update(e);}

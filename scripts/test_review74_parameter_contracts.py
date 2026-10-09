@@ -127,7 +127,7 @@ class Review74ParameterContractTests(unittest.TestCase):
 
     def test_camera14_output_budget_fresh_curated_preserves_camera_seed_and_all_old_targets(self):
         workflow,sha,graph,cfg,path=self.data(14)
-        before=copy.deepcopy(cfg['controls']);source_bytes=path.read_bytes()
+        before=[copy.deepcopy(f)for f in cfg['controls']if f['id']!='135:scale_to_length'];source_bytes=path.read_bytes()
         old={f['id']:copy.deepcopy(f)for f in before if f['id']!='135:scale_to_length'}
         fresh=reviewed_camera14_size(workflow,before,graph=graph,source_hash=sha)
         field=next(f for f in fresh if f['id']=='135:scale_to_length')

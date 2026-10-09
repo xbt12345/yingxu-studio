@@ -184,4 +184,17 @@ body.platform-auth-required { padding:0!important; overflow:auto; }
  .platform-summary { gap:13px; }
  .platform-summary>.platform-button { padding:8px 10px; font-size:11px; }
 }
+.platform-local-profile { max-width:720px; padding:22px 24px; border:1px solid #b798ce24; border-radius:18px; background:#b997ce06; }
+.platform-local-profile .platform-profile { padding-bottom:20px; border-bottom:1px solid #b798ce1c; }
+.platform-local-details { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:20px 0 0; }
+.platform-local-details dt { color:#a28eaf; font-size:11px; margin-bottom:7px; }
+.platform-local-details dd { margin:0; color:#d9c8e5; font-size:13px; overflow-wrap:anywhere; }
+@media(max-width:540px){.platform-local-profile{padding:18px}.platform-local-details{grid-template-columns:1fr;gap:16px}}
 @media(prefers-reduced-motion:reduce){.platform-account-menu{animation:none}.platform-security-label i{transition:none}}
+
+/* The local availability check keeps the original one-line generation label. */
+.production .generate [data-platform-original-generation]:not([hidden]) { display:inline-flex; align-items:center; justify-content:center; gap:10px; line-height:1; }
+.production .generate [data-platform-original-generation]>.icon { display:block; flex:none; width:16px; height:16px; margin:0; }
+.production .creation-shell .generate[data-creation-generation] { display:inline-flex; align-items:center; justify-content:center; min-width:150px; min-height:44px; padding:0 16px; border-radius:12px; font-size:13px; font-weight:600; line-height:1; background:#bda4e3!important; color:#21172e!important; border:1px solid #cbb5e8!important; box-shadow:none!important; }
+.production .creation-shell .generate[data-creation-generation]:hover:not(:disabled) { background:#cbb7e9!important; }
+.production .creation-shell .generate[data-creation-generation]:disabled { opacity:1; cursor:not-allowed; background:#352c43!important; color:#c2b0d4!important; border-color:#80649350!important; box-shadow:inset 0 1px 0 #ffffff06!important; }

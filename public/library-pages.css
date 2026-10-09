@@ -222,3 +222,6 @@
   .collection-page .asset-footer>div { justify-content:flex-start; }
   .production .collection-page :is(.useful-empty,.asset-empty) { min-height:280px; padding:28px 16px; }
 }
+
+/* Asset cards keep the name only; unsupported references retain their hint. */
+.production .collection-page .asset-card .asset-caption { min-height:0; }

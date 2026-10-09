@@ -302,6 +302,11 @@
         "292",
         "246"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-unavailable-owner-grok-alias",
@@ -477,6 +482,35 @@
             "stepFrames": 17,
             "rounding": "python-round"
           }
+        },
+        {
+          "id": "60:value",
+          "nodeId": "60",
+          "node": "easy boolean",
+          "key": "value",
+          "kind": "mode",
+          "type": "checkbox",
+          "value": false,
+          "label": "加速步数",
+          "targets": [
+            {
+              "node": "60",
+              "input": "value"
+            }
+          ],
+          "options": [
+            {
+              "value": false,
+              "label": "8 步",
+              "help": "原版配置"
+            },
+            {
+              "value": true,
+              "label": "4 步",
+              "help": "切换匹配的加速模型"
+            }
+          ],
+          "help": "同时切换对应模型与步数"
         }
       ],
       "texts": [
@@ -495,22 +529,6 @@
           ],
           "default": "",
           "preserveWhenEmpty": false
-        },
-        {
-          "id": "187:value",
-          "key": "value",
-          "node": "minimaxh3 ref",
-          "role": "prompt",
-          "label": "创作描述",
-          "help": "",
-          "preserveWhenEmpty": true,
-          "targets": [
-            {
-              "node": "187",
-              "input": "value"
-            }
-          ],
-          "default": ""
         }
       ],
       "media": [
@@ -519,50 +537,54 @@
           "kind": "image",
           "label": "参考图片 1",
           "node": "LoadImage",
+          "required": true,
+          "optional": false,
           "targets": [
             {
               "node": "65",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "66",
           "kind": "image",
           "label": "参考图片 2",
           "node": "LoadImage",
+          "required": false,
+          "optional": true,
           "targets": [
             {
               "node": "66",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "70",
           "kind": "image",
           "label": "参考图片 3",
           "node": "LoadImage",
+          "required": false,
+          "optional": true,
           "targets": [
             {
               "node": "70",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "144:ref_image_3",
           "kind": "image",
-          "label": "可选参考图 4",
+          "label": "参考图片 4",
           "optional": true,
           "sourceNodeId": "63",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_3"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -571,19 +593,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_4",
           "kind": "image",
-          "label": "可选参考图 5",
+          "label": "参考图片 5",
           "optional": true,
           "sourceNodeId": "140",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_4"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -592,19 +614,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_5",
           "kind": "image",
-          "label": "可选参考图 6",
+          "label": "参考图片 6",
           "optional": true,
           "sourceNodeId": "136",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_5"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -613,19 +635,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_6",
           "kind": "image",
-          "label": "可选参考图 7",
+          "label": "参考图片 7",
           "optional": true,
           "sourceNodeId": "137",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_6"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -634,19 +656,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_7",
           "kind": "image",
-          "label": "可选参考图 8",
+          "label": "参考图片 8",
           "optional": true,
           "sourceNodeId": "138",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_7"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -655,19 +677,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_8",
           "kind": "image",
-          "label": "可选参考图 9",
+          "label": "参考图片 9",
           "optional": true,
           "sourceNodeId": null,
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_8"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -676,8 +698,7 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         }
       ],
       "apiProfiles": [
@@ -706,6 +727,14 @@
       "outputs": [
         "54"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 9,
+        "help": "至少1张，按需添加",
+        "presentation": "progressive",
+        "minImages": 1,
+        "maxImages": 9
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -799,7 +828,7 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "24帧/秒；0全部",
           "min": 0,
           "step": "any",
           "derived": {
@@ -841,7 +870,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "沿用原比例，越大越慢",
+          "help": "自定义宽高优先",
           "integer": true,
           "customRange": {
             "min": 512,
@@ -852,6 +881,75 @@
             1024,
             1536,
             2048
+          ],
+          "uiGroup": "output",
+          "hidden": true
+        },
+        {
+          "id": "399:custom_width",
+          "nodeId": "399",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "399",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "399:custom_height",
+          "nodeId": "399",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "399",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "395:loop_count",
+          "nodeId": "395",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "help": "0不循环；音画同步重复",
+          "title": "0播放1遍；1播放2遍；完整音画一起循环，不重新推理生成。",
+          "targets": [
+            {
+              "node": "395",
+              "input": "loop_count"
+            }
           ],
           "uiGroup": "output"
         }
@@ -909,6 +1007,11 @@
       "outputs": [
         "395"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-bernini-video-playback-rate",
@@ -919,6 +1022,40 @@
             "368",
             0
           ]
+        }
+      ],
+      "videoGeometryPolicy": {
+        "loader": "399",
+        "layer": "415",
+        "longId": "415:scale_to_length",
+        "widthId": "399:custom_width",
+        "heightId": "399:custom_height",
+        "model": "410",
+        "modelClass": "BerniniConditioning",
+        "reference": [],
+        "intermediates": [],
+        "modelMinimum": 16,
+        "modelMaximum": 8192,
+        "originalMultiple": 8,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1024
+      },
+      "outputLoopPolicies": [
+        {
+          "controlId": "395:loop_count",
+          "node": "395",
+          "format": "video/h264-mp4",
+          "audio": [
+            "399",
+            2
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "extra-frame-repetitions",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "original-audio-once-then-silence"
         }
       ],
       "normalizations": [],
@@ -1044,6 +1181,35 @@
           "min": 0.1,
           "step": 0.1,
           "max": 16.0
+        },
+        {
+          "id": "60:value",
+          "nodeId": "60",
+          "node": "easy boolean",
+          "key": "value",
+          "kind": "mode",
+          "type": "checkbox",
+          "value": false,
+          "label": "加速步数",
+          "targets": [
+            {
+              "node": "60",
+              "input": "value"
+            }
+          ],
+          "options": [
+            {
+              "value": false,
+              "label": "8 步",
+              "help": "原版配置"
+            },
+            {
+              "value": true,
+              "label": "4 步",
+              "help": "切换匹配的加速模型"
+            }
+          ],
+          "help": "同时切换对应模型与步数"
         }
       ],
       "texts": [
@@ -1226,6 +1392,11 @@
       "outputs": [
         "54"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 9,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -1437,6 +1608,11 @@
       "outputs": [
         "22"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -1549,6 +1725,11 @@
       "outputs": [
         "1"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -1685,7 +1866,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0,
@@ -1761,7 +1942,7 @@
           "id": "197:object_indices",
           "nodeId": "197",
           "key": "object_indices",
-          "label": "动作与参考图处理对象",
+          "label": "动作与参考图的人物",
           "node": "SCAIL2ColoredMaskV2",
           "value": "",
           "type": "string",
@@ -1772,13 +1953,16 @@
               "input": "object_indices"
             }
           ],
-          "help": "留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。"
+          "help": "选择检测到的人物",
+          "displayHelp": "编号从0开始；留空选全部检测人物",
+          "placeholder": "自动选择；或填0",
+          "title": "当前最多跟踪1人；编号以检测结果为准，不按画面左右猜编号。"
         },
         {
           "id": "579:object_indices",
           "nodeId": "579",
           "key": "object_indices",
-          "label": "参考图保留对象",
+          "label": "参考图保留人物",
           "node": "SAM3_TrackToMask",
           "value": "",
           "type": "string",
@@ -1789,7 +1973,70 @@
               "input": "object_indices"
             }
           ],
-          "help": "留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。"
+          "help": "选择检测到的人物",
+          "displayHelp": "编号从0开始；留空选全部检测人物",
+          "placeholder": "自动选择；或填0",
+          "title": "当前最多跟踪1人；编号以检测结果为准，不按画面左右猜编号。"
+        },
+        {
+          "id": "347:width",
+          "nodeId": "347",
+          "key": "width",
+          "node": "WanAnimatePlus SCAIL_2 Embeds",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "label": "输出宽度",
+          "unit": "px",
+          "min": 0,
+          "nonzeroMin": 64,
+          "max": 8096,
+          "step": 32,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "targets": [
+            {
+              "node": "347",
+              "input": "width"
+            }
+          ],
+          "help": "双0沿用；宽高须成对填",
+          "displayHelp": "均填0沿用原配置；自定义需同时填两边，范围64–8096，须为32的倍数。",
+          "title": "0不是模型的原生宽高，而是保留原尺寸链路。自定义尺寸会同步动作视频、参考图和生成条件。",
+          "reviewedTransform": "scail-paired-size",
+          "nativeMinimum": 64,
+          "zeroMeaning": "both-zero-preserves-authored-linked-dimensions"
+        },
+        {
+          "id": "347:height",
+          "nodeId": "347",
+          "key": "height",
+          "node": "WanAnimatePlus SCAIL_2 Embeds",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "label": "输出高度",
+          "unit": "px",
+          "min": 0,
+          "nonzeroMin": 64,
+          "max": 8096,
+          "step": 32,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "targets": [
+            {
+              "node": "347",
+              "input": "height"
+            }
+          ],
+          "help": "双0沿用；宽高须成对填",
+          "displayHelp": "均填0沿用原配置；自定义需同时填两边，范围64–8096，须为32的倍数。",
+          "title": "0不是模型的原生宽高，而是保留原尺寸链路。自定义尺寸会同步动作视频、参考图和生成条件。",
+          "reviewedTransform": "scail-paired-size",
+          "nativeMinimum": 64,
+          "zeroMeaning": "both-zero-preserves-authored-linked-dimensions"
         }
       ],
       "texts": [
@@ -1860,7 +2107,30 @@
         "86",
         "119"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "scail_dimensions": {
+        "width": "347:width",
+        "height": "347:height",
+        "source_hash": "a56c5ea4fe32da4688b1e60040a51f886320b71917c5a80ef4baf6cd5b731404",
+        "min_nonzero": 64,
+        "max": 8096,
+        "multiple": 32
+      },
+      "constraints": [
+        {
+          "type": "paired-size",
+          "width": "347:width",
+          "height": "347:height",
+          "min_nonzero": 64,
+          "max": 8096,
+          "multiple": 32
+        }
+      ],
       "normalizations": [
         {
           "node": "610",
@@ -1996,7 +2266,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0,
@@ -2072,7 +2342,7 @@
           "id": "527:object_indices",
           "nodeId": "527",
           "key": "object_indices",
-          "label": "处理对象",
+          "label": "动作与参考图的人物",
           "node": "SCAIL2ColoredMaskV2",
           "value": "",
           "type": "string",
@@ -2083,7 +2353,108 @@
               "input": "object_indices"
             }
           ],
-          "help": "留空处理所有检测对象；填写检测结果中的对象编号，例如 0,2。编号以检测结果为准。"
+          "help": "选择检测到的人物",
+          "displayHelp": "编号从0开始；留空选全部检测人物",
+          "placeholder": "自动选择；或填0",
+          "title": "当前最多跟踪1人；编号以检测结果为准，不按画面左右猜编号。"
+        },
+        {
+          "id": "575:value",
+          "nodeId": "575",
+          "key": "replacement_mode",
+          "node": "PrimitiveBoolean",
+          "kind": "mode",
+          "type": "checkbox",
+          "value": false,
+          "label": "创作模式",
+          "targets": [
+            {
+              "node": "575",
+              "input": "value"
+            }
+          ],
+          "controlledTargets": [
+            {
+              "node": "527",
+              "input": "replacement_mode"
+            },
+            {
+              "node": "529",
+              "input": "replacement_mode"
+            }
+          ],
+          "options": [
+            {
+              "value": false,
+              "label": "动作迁移",
+              "help": "让参考人物跟随视频动作"
+            },
+            {
+              "value": true,
+              "label": "人物替换",
+              "help": "用参考人物替换视频中的人物"
+            }
+          ]
+        },
+        {
+          "id": "529:width",
+          "nodeId": "529",
+          "key": "width",
+          "node": "WanAnimatePlus SCAIL_2 Embeds",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "label": "输出宽度",
+          "unit": "px",
+          "min": 0,
+          "nonzeroMin": 64,
+          "max": 8096,
+          "step": 32,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "targets": [
+            {
+              "node": "529",
+              "input": "width"
+            }
+          ],
+          "help": "双0沿用；宽高须成对填",
+          "displayHelp": "均填0沿用原配置；自定义需同时填两边，范围64–8096，须为32的倍数。",
+          "title": "0不是模型的原生宽高，而是保留原尺寸链路。自定义尺寸会同步动作视频、参考图和生成条件。",
+          "reviewedTransform": "scail-paired-size",
+          "nativeMinimum": 64,
+          "zeroMeaning": "both-zero-preserves-authored-linked-dimensions"
+        },
+        {
+          "id": "529:height",
+          "nodeId": "529",
+          "key": "height",
+          "node": "WanAnimatePlus SCAIL_2 Embeds",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "label": "输出高度",
+          "unit": "px",
+          "min": 0,
+          "nonzeroMin": 64,
+          "max": 8096,
+          "step": 32,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "targets": [
+            {
+              "node": "529",
+              "input": "height"
+            }
+          ],
+          "help": "双0沿用；宽高须成对填",
+          "displayHelp": "均填0沿用原配置；自定义需同时填两边，范围64–8096，须为32的倍数。",
+          "title": "0不是模型的原生宽高，而是保留原尺寸链路。自定义尺寸会同步动作视频、参考图和生成条件。",
+          "reviewedTransform": "scail-paired-size",
+          "nativeMinimum": 64,
+          "zeroMeaning": "both-zero-preserves-authored-linked-dimensions"
         }
       ],
       "texts": [
@@ -2154,7 +2525,30 @@
         "508",
         "475"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "scail_dimensions": {
+        "width": "529:width",
+        "height": "529:height",
+        "source_hash": "e51c07d0d9c2b2c15c9e5a54c8bbc38420d2fc139582485ecadc0173d739d386",
+        "min_nonzero": 64,
+        "max": 8096,
+        "multiple": 32
+      },
+      "constraints": [
+        {
+          "type": "paired-size",
+          "width": "529:width",
+          "height": "529:height",
+          "min_nonzero": 64,
+          "max": 8096,
+          "multiple": 32
+        }
+      ],
       "normalizations": [
         {
           "node": "563",
@@ -2239,10 +2633,10 @@
               "input": "pose_strength"
             }
           ],
-          "help": "越大，动作跟随越强",
+          "help": "姿势跟随；1为默认",
           "min": 0,
           "step": 0.001,
-          "max": 10.0
+          "max": 10
         },
         {
           "id": "3750:value",
@@ -2261,7 +2655,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0,
@@ -2305,7 +2699,7 @@
               "input": "face_strength"
             }
           ],
-          "help": "越大，面部动作跟随越强",
+          "help": "表情跟随；1为默认",
           "min": 0,
           "max": 10,
           "step": 0.001
@@ -2325,9 +2719,9 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "16帧/秒加载参考",
           "min": 0,
-          "max": 48000,
+          "max": 624,
           "step": 1,
           "constraintSources": [
             {
@@ -2342,6 +2736,52 @@
             "fpsSource": "3732:value"
           },
           "integer": true
+        },
+        {
+          "id": "3751:custom_width",
+          "nodeId": "3751",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "3751",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "3751:custom_height",
+          "nodeId": "3751",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "3751",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -2365,9 +2805,10 @@
           "id": "3724:value",
           "key": "value",
           "node": "描述",
-          "label": "分割目标",
+          "label": "定位视频中的人物",
           "role": "prompt",
-          "help": "用简短词描述目标",
+          "help": "定位原视频人物；留空沿用",
+          "preserveWhenEmpty": true,
           "targets": [
             {
               "node": "3724",
@@ -2375,7 +2816,7 @@
             }
           ],
           "default": "",
-          "preserveWhenEmpty": false
+          "sanitizeValue": true
         },
         {
           "id": "3621:negative_prompt",
@@ -2442,7 +2883,32 @@
         "3701",
         "3736"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "videoGeometryPolicy": {
+        "loader": "3751",
+        "layer": "3727",
+        "longId": "3750:value",
+        "widthId": "3751:custom_width",
+        "heightId": "3751:custom_height",
+        "model": "3744",
+        "modelClass": "WanVideoAnimateEmbeds",
+        "reference": [
+          "3697",
+          "3689"
+        ],
+        "intermediates": [],
+        "modelMinimum": 64,
+        "modelMaximum": 8096,
+        "originalMultiple": 16,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1280
+      },
       "normalizations": [
         {
           "node": "3709",
@@ -2527,10 +2993,10 @@
               "input": "pose_strength"
             }
           ],
-          "help": "越大，动作跟随越强",
+          "help": "姿势跟随；1为默认",
           "min": 0,
           "step": 0.001,
-          "max": 10.0
+          "max": 10
         },
         {
           "id": "647:value",
@@ -2549,7 +3015,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0,
@@ -2593,7 +3059,7 @@
               "input": "face_strength"
             }
           ],
-          "help": "越大，面部动作跟随越强",
+          "help": "表情跟随；1为默认",
           "min": 0,
           "max": 10,
           "step": 0.001
@@ -2613,9 +3079,9 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "16帧/秒加载参考",
           "min": 0,
-          "max": 48000,
+          "max": 624,
           "step": 1,
           "constraintSources": [
             {
@@ -2630,6 +3096,52 @@
             "fpsSource": "631:value"
           },
           "integer": true
+        },
+        {
+          "id": "653:custom_width",
+          "nodeId": "653",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "653",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "653:custom_height",
+          "nodeId": "653",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "653",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -2653,9 +3165,10 @@
           "id": "623:value",
           "key": "value",
           "node": "描述",
-          "label": "分割目标",
+          "label": "定位视频中的人物",
           "role": "prompt",
-          "help": "用简短词描述目标",
+          "help": "定位原视频人物；留空沿用",
+          "preserveWhenEmpty": true,
           "targets": [
             {
               "node": "623",
@@ -2663,7 +3176,7 @@
             }
           ],
           "default": "",
-          "preserveWhenEmpty": false
+          "sanitizeValue": true
         },
         {
           "id": "520:negative_prompt",
@@ -2717,7 +3230,31 @@
         "635",
         "582"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "videoGeometryPolicy": {
+        "loader": "653",
+        "layer": "626",
+        "longId": "647:value",
+        "widthId": "653:custom_width",
+        "heightId": "653:custom_height",
+        "model": "641",
+        "modelClass": "WanVideoAnimateEmbeds",
+        "reference": [
+          "596"
+        ],
+        "intermediates": [],
+        "modelMinimum": 64,
+        "modelMaximum": 8096,
+        "originalMultiple": 16,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1280
+      },
       "normalizations": [
         {
           "node": "608",
@@ -2802,10 +3339,10 @@
               "input": "pose_strength"
             }
           ],
-          "help": "越大，动作跟随越强",
+          "help": "姿势跟随；1为默认",
           "min": 0,
           "step": 0.001,
-          "max": 10.0
+          "max": 10
         },
         {
           "id": "477:value",
@@ -2824,7 +3361,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0,
@@ -2868,7 +3405,7 @@
               "input": "face_strength"
             }
           ],
-          "help": "越大，面部动作跟随越强",
+          "help": "表情跟随；1为默认",
           "min": 0,
           "max": 10,
           "step": 0.001
@@ -2888,9 +3425,9 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "16帧/秒加载参考",
           "min": 0,
-          "max": 48000,
+          "max": 624,
           "step": 1,
           "constraintSources": [
             {
@@ -2905,6 +3442,52 @@
             "fpsSource": "461:value"
           },
           "integer": true
+        },
+        {
+          "id": "483:custom_width",
+          "nodeId": "483",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "483",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "483:custom_height",
+          "nodeId": "483",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "483",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -2976,7 +3559,31 @@
         "396",
         "465"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "videoGeometryPolicy": {
+        "loader": "483",
+        "layer": "456",
+        "longId": "477:value",
+        "widthId": "483:custom_width",
+        "heightId": "483:custom_height",
+        "model": "471",
+        "modelClass": "WanVideoAnimateEmbeds",
+        "reference": [
+          "426"
+        ],
+        "intermediates": [],
+        "modelMinimum": 64,
+        "modelMaximum": 8096,
+        "originalMultiple": 16,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1024
+      },
       "normalizations": [
         {
           "node": "438",
@@ -3025,7 +3632,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0,
@@ -3107,10 +3714,10 @@
               "input": "pose_strength"
             }
           ],
-          "help": "越大，动作跟随越强",
+          "help": "姿势跟随；1为默认",
           "min": 0,
           "step": 0.001,
-          "max": 10.0
+          "max": 10
         },
         {
           "id": "771:face_strength",
@@ -3127,7 +3734,7 @@
               "input": "face_strength"
             }
           ],
-          "help": "越大，面部动作跟随越强",
+          "help": "表情跟随；1为默认",
           "min": 0,
           "max": 10,
           "step": 0.001
@@ -3147,9 +3754,9 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "16帧/秒加载参考",
           "min": 0,
-          "max": 48000,
+          "max": 624,
           "step": 1,
           "constraintSources": [
             {
@@ -3164,6 +3771,52 @@
             "fpsSource": "761:value"
           },
           "integer": true
+        },
+        {
+          "id": "783:custom_width",
+          "nodeId": "783",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "783",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "783:custom_height",
+          "nodeId": "783",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "783",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -3187,9 +3840,10 @@
           "id": "753:value",
           "key": "value",
           "node": "描述",
-          "label": "分割目标",
+          "label": "定位要修改的衣服",
           "role": "prompt",
-          "help": "用简短词描述目标",
+          "help": "定位原视频衣物；留空沿用",
+          "preserveWhenEmpty": true,
           "targets": [
             {
               "node": "753",
@@ -3197,7 +3851,7 @@
             }
           ],
           "default": "",
-          "preserveWhenEmpty": false
+          "sanitizeValue": true
         },
         {
           "id": "650:negative_prompt",
@@ -3251,7 +3905,31 @@
         "730",
         "765"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "videoGeometryPolicy": {
+        "loader": "783",
+        "layer": "756",
+        "longId": "777:value",
+        "widthId": "783:custom_width",
+        "heightId": "783:custom_height",
+        "model": "771",
+        "modelClass": "WanVideoAnimateEmbeds",
+        "reference": [
+          "726"
+        ],
+        "intermediates": [],
+        "modelMinimum": 64,
+        "modelMaximum": 8096,
+        "originalMultiple": 16,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1024
+      },
       "normalizations": [
         {
           "node": "738",
@@ -3373,7 +4051,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
           "max": 100000000.0
@@ -3444,6 +4122,52 @@
           "step": 1,
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "427:custom_width",
+          "nodeId": "427",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "427",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "427:custom_height",
+          "nodeId": "427",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "427",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -3467,9 +4191,10 @@
           "id": "443:value",
           "key": "value",
           "node": "描述",
-          "label": "分割目标",
+          "label": "定位视频中的人物",
           "role": "prompt",
-          "help": "用简短词描述目标",
+          "help": "定位原视频人物；留空沿用",
+          "preserveWhenEmpty": true,
           "targets": [
             {
               "node": "443",
@@ -3477,7 +4202,7 @@
             }
           ],
           "default": "",
-          "preserveWhenEmpty": false
+          "sanitizeValue": true
         },
         {
           "id": "1:text",
@@ -3532,7 +4257,31 @@
         "358",
         "345"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "videoGeometryPolicy": {
+        "loader": "427",
+        "layer": "440",
+        "longId": "350:value",
+        "widthId": "427:custom_width",
+        "heightId": "427:custom_height",
+        "model": "286",
+        "modelClass": "WanAnimateToVideo",
+        "reference": [
+          "390"
+        ],
+        "intermediates": [],
+        "modelMinimum": 16,
+        "modelMaximum": 8192,
+        "originalMultiple": 16,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1280
+      },
       "normalizations": [
         {
           "node": "396",
@@ -3744,6 +4493,11 @@
         "147",
         "36"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -4017,6 +4771,11 @@
         "30",
         "205"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -4175,6 +4934,11 @@
       "outputs": [
         "38"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-unavailable-owner-grok-alias",
@@ -4319,6 +5083,11 @@
       "outputs": [
         "18"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-unavailable-owner-model-alias",
@@ -4424,7 +5193,7 @@
       "texts": [
         {
           "id": "1479:text",
-          "label": "用户描述",
+          "label": "文字分支 · 用户描述",
           "node": "Text Multiline",
           "key": "text",
           "role": "prompt",
@@ -4441,7 +5210,7 @@
         },
         {
           "id": "1488:text",
-          "label": "扩写指令",
+          "label": "文字分支 · 扩写指令",
           "node": "Text Multiline",
           "key": "text",
           "role": "prompt",
@@ -4458,7 +5227,7 @@
         },
         {
           "id": "1520:text",
-          "label": "用户描述",
+          "label": "图片分支 · 用户描述",
           "node": "Text Multiline",
           "key": "text",
           "role": "prompt",
@@ -4475,7 +5244,7 @@
         },
         {
           "id": "1518:text",
-          "label": "扩写指令",
+          "label": "图片分支 · 扩写指令",
           "node": "Text Multiline",
           "key": "text",
           "role": "prompt",
@@ -4492,7 +5261,7 @@
         },
         {
           "id": "1514:prompt",
-          "label": "补充要求",
+          "label": "文字分支 · 补充要求",
           "node": "RH_LLMAPI_NODE",
           "key": "prompt",
           "role": "prompt",
@@ -4509,7 +5278,7 @@
         },
         {
           "id": "1525:prompt",
-          "label": "补充要求",
+          "label": "图片分支 · 补充要求",
           "node": "RH_LLMAPI_NODE",
           "key": "prompt",
           "role": "prompt",
@@ -4589,10 +5358,13 @@
       ],
       "outputs": [
         "1515",
-        "1486",
-        "1529",
         "1524"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -4981,6 +5753,11 @@
         "11",
         "16"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -5296,6 +6073,11 @@
         "10",
         "9"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 4,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -5648,6 +6430,11 @@
         "9",
         "13"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -5895,6 +6682,11 @@
       "outputs": [
         "128"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 3,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -6003,10 +6795,10 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -6105,6 +6897,52 @@
             "fpsSource": "13:value"
           },
           "integer": true
+        },
+        {
+          "id": "27:custom_width",
+          "nodeId": "27",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "27",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "27:custom_height",
+          "nodeId": "27",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "27",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -6174,6 +7012,11 @@
         "40",
         "42"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-bernini-video-playback-rate",
@@ -6196,6 +7039,29 @@
           ]
         }
       ],
+      "videoGeometryPolicy": {
+        "loader": "27",
+        "layer": "38",
+        "longId": "37:value",
+        "widthId": "27:custom_width",
+        "heightId": "27:custom_height",
+        "model": "33",
+        "modelClass": "BerniniStudio",
+        "reference": [],
+        "intermediates": [
+          [
+            "17",
+            "image",
+            "27"
+          ]
+        ],
+        "modelMinimum": 16,
+        "modelMaximum": 8192,
+        "originalMultiple": 8,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1024
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 29,
@@ -6313,7 +7179,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "沿用原比例，越大越慢",
+          "help": "自定义宽高优先",
           "integer": true,
           "customRange": {
             "min": 512,
@@ -6324,6 +7190,52 @@
             1024,
             1536,
             2048
+          ]
+        },
+        {
+          "id": "425:custom_width",
+          "nodeId": "425",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按32像素对齐。",
+          "targets": [
+            {
+              "node": "425",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "425:custom_height",
+          "nodeId": "425",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按32像素对齐。",
+          "targets": [
+            {
+              "node": "425",
+              "input": "custom_height"
+            }
           ]
         }
       ],
@@ -6393,6 +7305,11 @@
       "outputs": [
         "443"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-bernini-video-playback-rate",
@@ -6405,6 +7322,29 @@
           ]
         }
       ],
+      "videoGeometryPolicy": {
+        "loader": "425",
+        "layer": "434",
+        "longId": "434:scale_to_length",
+        "widthId": "425:custom_width",
+        "heightId": "425:custom_height",
+        "model": "387",
+        "modelClass": "BerniniConditioning",
+        "reference": [],
+        "intermediates": [
+          [
+            "430",
+            "image",
+            "425"
+          ]
+        ],
+        "modelMinimum": 16,
+        "modelMaximum": 8192,
+        "originalMultiple": 32,
+        "customMultiple": 32,
+        "sourceMultiple": 8,
+        "defaultLong": 1024
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 53,
@@ -6425,6 +7365,11 @@
       "media": [],
       "apiProfiles": [],
       "outputs": [],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 3,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "missing_nodes": [
         "BerniniPromptEnhancer"
       ],
@@ -6573,7 +7518,7 @@
             }
           ],
           "help": "",
-          "min": 0,
+          "min": 1,
           "max": 16384,
           "step": 1,
           "constraintSources": [
@@ -6659,6 +7604,11 @@
         "362",
         "363"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -6693,7 +7643,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义处理尺寸优先",
           "min": 4,
           "step": 1,
           "uiGroup": "output",
@@ -6784,6 +7734,81 @@
           ],
           "uiGroup": "seed",
           "integer": true
+        },
+        {
+          "id": "5099:custom_width",
+          "nodeId": "5099",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "5099",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "5099:custom_height",
+          "nodeId": "5099",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "5099",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "5069:loop_count",
+          "nodeId": "5069",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "5069",
+              "input": "loop_count"
+            },
+            {
+              "node": "5135",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [
@@ -6840,7 +7865,65 @@
         "5069",
         "5135"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "5069:loop_count",
+          "sink": "5069",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "5099",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        },
+        {
+          "controlId": "5069:loop_count",
+          "sink": "5135",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "5099",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "5099",
+        "widthControlId": "5099:custom_width",
+        "heightControlId": "5099:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "ltx-encoded-input-dimensions"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 42,
@@ -6973,12 +8056,87 @@
               "input": "value"
             }
           ],
-          "help": "",
+          "help": "自定义处理尺寸优先",
           "min": 1,
           "step": 1,
           "uiGroup": "output",
           "max": 9223372036854775807,
           "integer": true
+        },
+        {
+          "id": "34:custom_width",
+          "nodeId": "34",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "34",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "34:custom_height",
+          "nodeId": "34",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "34",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "37:loop_count",
+          "nodeId": "37",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "37",
+              "input": "loop_count"
+            },
+            {
+              "node": "24",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [
@@ -7019,7 +8177,65 @@
         "37",
         "24"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "37:loop_count",
+          "sink": "37",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "34",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        },
+        {
+          "controlId": "37:loop_count",
+          "sink": "24",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "34",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "34",
+        "widthControlId": "34:custom_width",
+        "heightControlId": "34:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "ltx-encoded-input-dimensions"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 45,
@@ -7206,6 +8422,81 @@
           "step": 1,
           "uiGroup": "output",
           "integer": true
+        },
+        {
+          "id": "5141:custom_width",
+          "nodeId": "5141",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "原视频处理宽高；成片尺寸还会加上原扩展边距。",
+          "targets": [
+            {
+              "node": "5141",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "5141:custom_height",
+          "nodeId": "5141",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "原视频处理宽高；成片尺寸还会加上原扩展边距。",
+          "targets": [
+            {
+              "node": "5141",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "5104:loop_count",
+          "nodeId": "5104",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "5104",
+              "input": "loop_count"
+            },
+            {
+              "node": "5131",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [
@@ -7246,6 +8537,11 @@
         "5104",
         "5131"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-outpaint-source-padding-target_width",
@@ -7262,6 +8558,59 @@
           "to": "omitted optional socket"
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "5104:loop_count",
+          "sink": "5104",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "5141",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        },
+        {
+          "controlId": "5104:loop_count",
+          "sink": "5131",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "5141",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "5141",
+        "widthControlId": "5141:custom_width",
+        "heightControlId": "5141:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 32,
+        "rounding": "floor-center-cover",
+        "customBypassesNativeResize": false,
+        "sizing": "ltx-outpaint-size-with-margins"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 46,
@@ -7282,6 +8631,11 @@
       "media": [],
       "apiProfiles": [],
       "outputs": [],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "validation": "blocked",
       "blocking_reason": "Saved link 22 targets a different node: 212:37.LATENT",
       "excluded": []
@@ -7427,7 +8781,7 @@
             }
           ],
           "help": "",
-          "min": 0,
+          "min": 1,
           "max": 16384,
           "step": 1,
           "constraintSources": [
@@ -7513,6 +8867,11 @@
         "362",
         "363"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -7661,8 +9020,8 @@
               "input": "value"
             }
           ],
-          "help": "",
-          "min": 0,
+          "help": "自定义尺寸优先",
+          "min": 1,
           "max": 16384,
           "step": 1,
           "constraintSources": [
@@ -7692,6 +9051,75 @@
           "min": 0,
           "max": 10,
           "step": 0.01
+        },
+        {
+          "id": "363:custom_width",
+          "nodeId": "363",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；模型对齐",
+          "targets": [
+            {
+              "node": "363",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "363:custom_height",
+          "nodeId": "363",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；模型对齐",
+          "targets": [
+            {
+              "node": "363",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "467:value",
+          "nodeId": "467",
+          "key": "value",
+          "label": "视频处理缩放系数",
+          "kind": "strength",
+          "type": "number",
+          "value": 1,
+          "min": 0.01,
+          "max": 8,
+          "step": 0.01,
+          "help": "1不缩放；小于1缩小",
+          "targets": [
+            {
+              "node": "467",
+              "input": "value"
+            }
+          ],
+          "constraintSources": [
+            {
+              "node": "448",
+              "input": "scale_by"
+            }
+          ]
         }
       ],
       "texts": [
@@ -7748,6 +9176,11 @@
         "357",
         "358"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -8022,6 +9455,11 @@
         "75",
         "477"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -8168,10 +9606,10 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义尺寸优先",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -8199,7 +9637,10 @@
             "skipControlId": "1084:skip_first_frames",
             "skipFrames": 0,
             "sourceMultiple": 8,
-            "postScale": 0.5
+            "postScale": 0.5,
+            "customWidthControlId": "1084:custom_width",
+            "customHeightControlId": "1084:custom_height",
+            "customGeometryPolicy": "vhs-center-crop-then-layer-none-v1"
           },
           "transform": {
             "operation": "points"
@@ -8245,6 +9686,50 @@
           ],
           "help": "精修阶段参考约束",
           "valueOrigin": "installed-selected-dynamic-option-default"
+        },
+        {
+          "id": "1084:custom_width",
+          "nodeId": "1084",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；模型对齐",
+          "targets": [
+            {
+              "node": "1084",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "1084:custom_height",
+          "nodeId": "1084",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；模型对齐",
+          "targets": [
+            {
+              "node": "1084",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -8305,6 +9790,11 @@
         "1048",
         "1049"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "pointsRecipe": {
         "slotId": "1084",
         "longSideControlId": "1105:value",
@@ -8316,7 +9806,10 @@
         "negativeTarget": {
           "node": "1062",
           "input": "negative_points"
-        }
+        },
+        "customWidthControlId": "1084:custom_width",
+        "customHeightControlId": "1084:custom_height",
+        "customGeometryPolicy": "vhs-center-crop-then-layer-none-v1"
       },
       "execution_repairs": [],
       "normalizations": [
@@ -8493,6 +9986,35 @@
             "stepFrames": 17,
             "rounding": "python-round"
           }
+        },
+        {
+          "id": "60:value",
+          "nodeId": "60",
+          "node": "easy boolean",
+          "key": "value",
+          "kind": "mode",
+          "type": "checkbox",
+          "value": false,
+          "label": "加速步数",
+          "targets": [
+            {
+              "node": "60",
+              "input": "value"
+            }
+          ],
+          "options": [
+            {
+              "value": false,
+              "label": "8 步",
+              "help": "原版配置"
+            },
+            {
+              "value": true,
+              "label": "4 步",
+              "help": "切换匹配的加速模型"
+            }
+          ],
+          "help": "同时切换对应模型与步数"
         }
       ],
       "texts": [
@@ -8511,22 +10033,6 @@
           ],
           "default": "",
           "preserveWhenEmpty": false
-        },
-        {
-          "id": "187:value",
-          "key": "value",
-          "node": "minimaxh3 ref",
-          "role": "prompt",
-          "label": "创作描述",
-          "help": "",
-          "preserveWhenEmpty": true,
-          "targets": [
-            {
-              "node": "187",
-              "input": "value"
-            }
-          ],
-          "default": ""
         }
       ],
       "media": [
@@ -8535,50 +10041,54 @@
           "kind": "image",
           "label": "参考图片 1",
           "node": "LoadImage",
+          "required": true,
+          "optional": false,
           "targets": [
             {
               "node": "65",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "66",
           "kind": "image",
           "label": "参考图片 2",
           "node": "LoadImage",
+          "required": false,
+          "optional": true,
           "targets": [
             {
               "node": "66",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "70",
           "kind": "image",
           "label": "参考图片 3",
           "node": "LoadImage",
+          "required": false,
+          "optional": true,
           "targets": [
             {
               "node": "70",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "144:ref_image_3",
           "kind": "image",
-          "label": "可选参考图 4",
+          "label": "参考图片 4",
           "optional": true,
           "sourceNodeId": "63",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_3"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -8587,19 +10097,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_4",
           "kind": "image",
-          "label": "可选参考图 5",
+          "label": "参考图片 5",
           "optional": true,
           "sourceNodeId": "140",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_4"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -8608,19 +10118,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_5",
           "kind": "image",
-          "label": "可选参考图 6",
+          "label": "参考图片 6",
           "optional": true,
           "sourceNodeId": "136",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_5"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -8629,19 +10139,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_6",
           "kind": "image",
-          "label": "可选参考图 7",
+          "label": "参考图片 7",
           "optional": true,
           "sourceNodeId": "137",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_6"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -8650,19 +10160,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_7",
           "kind": "image",
-          "label": "可选参考图 8",
+          "label": "参考图片 8",
           "optional": true,
           "sourceNodeId": "138",
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_7"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -8671,19 +10181,19 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         },
         {
           "id": "144:ref_image_8",
           "kind": "image",
-          "label": "可选参考图 9",
+          "label": "参考图片 9",
           "optional": true,
           "sourceNodeId": null,
           "target": {
             "node": "144",
             "input": "ref_images.ref_image_8"
           },
+          "required": false,
           "targets": [
             {
               "node": "144",
@@ -8692,8 +10202,7 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         }
       ],
       "apiProfiles": [
@@ -8722,6 +10231,14 @@
       "outputs": [
         "54"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 9,
+        "help": "至少1张，按需添加",
+        "presentation": "progressive",
+        "minImages": 1,
+        "maxImages": 9
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -8872,37 +10389,40 @@
           "kind": "image",
           "label": "参考图片 1",
           "node": "LoadImage",
+          "required": true,
+          "optional": false,
           "targets": [
             {
               "node": "137",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "139",
           "kind": "image",
           "label": "参考图片 2",
           "node": "LoadImage",
+          "required": false,
+          "optional": true,
           "targets": [
             {
               "node": "139",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "136:ref_image_2",
           "kind": "image",
-          "label": "可选参考图 3",
+          "label": "参考图片 3",
           "optional": true,
           "sourceNodeId": null,
           "target": {
             "node": "136",
             "input": "ref_images.ref_image_2"
           },
+          "required": false,
           "targets": [
             {
               "node": "136",
@@ -8911,14 +10431,21 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         }
       ],
       "apiProfiles": [],
       "outputs": [
         "92"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 3,
+        "help": "至少1张，按需添加",
+        "presentation": "progressive",
+        "minImages": 1,
+        "maxImages": 3
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -9077,22 +10604,6 @@
           ],
           "default": "",
           "preserveWhenEmpty": false
-        },
-        {
-          "id": "159:value",
-          "key": "value",
-          "node": "minimaxh3 ref",
-          "role": "prompt",
-          "label": "创作描述",
-          "help": "",
-          "preserveWhenEmpty": true,
-          "targets": [
-            {
-              "node": "159",
-              "input": "value"
-            }
-          ],
-          "default": ""
         }
       ],
       "media": [
@@ -9136,6 +10647,11 @@
       "outputs": [
         "92"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -9286,6 +10802,11 @@
       "outputs": [
         "92"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review74-h3-save-requested-duration",
@@ -9367,7 +10888,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -9457,6 +10978,11 @@
       "outputs": [
         "125"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -9523,7 +11049,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -9630,6 +11156,11 @@
       "outputs": [
         "54"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -9755,6 +11286,35 @@
           "min": 0,
           "step": 0.1,
           "max": 9223372036854775807
+        },
+        {
+          "id": "25:value",
+          "nodeId": "25",
+          "node": "easy boolean",
+          "key": "value",
+          "kind": "mode",
+          "type": "checkbox",
+          "value": false,
+          "label": "加速步数",
+          "targets": [
+            {
+              "node": "25",
+              "input": "value"
+            }
+          ],
+          "options": [
+            {
+              "value": false,
+              "label": "8 步",
+              "help": "原版配置"
+            },
+            {
+              "value": true,
+              "label": "4 步",
+              "help": "切换匹配的加速模型"
+            }
+          ],
+          "help": "同时切换对应模型与步数"
         }
       ],
       "texts": [
@@ -9780,6 +11340,11 @@
       "outputs": [
         "4"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review74-h3-save-requested-duration",
@@ -9977,6 +11542,11 @@
       "outputs": [
         "191"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -10099,7 +11669,7 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义处理尺寸优先",
           "min": 4,
           "step": 1,
           "uiGroup": "output",
@@ -10129,6 +11699,81 @@
           "uiGroup": "clip",
           "max": 48000,
           "integer": true
+        },
+        {
+          "id": "359:custom_width",
+          "nodeId": "359",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "359",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "359:custom_height",
+          "nodeId": "359",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "359",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "347:loop_count",
+          "nodeId": "347",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "347",
+              "input": "loop_count"
+            },
+            {
+              "node": "330",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [
@@ -10169,7 +11814,65 @@
         "347",
         "330"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "347:loop_count",
+          "sink": "347",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "359",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        },
+        {
+          "controlId": "347:loop_count",
+          "sink": "330",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "359",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "359",
+        "widthControlId": "359:custom_width",
+        "heightControlId": "359:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 32,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "h3-processing-size"
+      },
       "normalizations": [
         {
           "node": "64",
@@ -10237,7 +11940,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -10409,6 +12112,11 @@
         "290",
         "302"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -10559,24 +12267,26 @@
           "kind": "image",
           "label": "参考图片",
           "node": "LoadImage",
+          "required": true,
+          "optional": false,
           "targets": [
             {
               "node": "14",
               "input": "image"
             }
-          ],
-          "required": true
+          ]
         },
         {
           "id": "13:ref_image_1",
           "kind": "image",
-          "label": "可选参考图 2",
+          "label": "参考图片 2",
           "optional": true,
           "sourceNodeId": null,
           "target": {
             "node": "13",
             "input": "ref_images.ref_image_1"
           },
+          "required": false,
           "targets": [
             {
               "node": "13",
@@ -10585,14 +12295,21 @@
               "inputType": "IMAGE",
               "optional": true
             }
-          ],
-          "required": false
+          ]
         }
       ],
       "apiProfiles": [],
       "outputs": [
         "4"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "至少1张，按需添加",
+        "presentation": "progressive",
+        "minImages": 1,
+        "maxImages": 2
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -10630,6 +12347,7 @@
           "help": "",
           "min": 4,
           "step": 1,
+          "hidden": true,
           "max": 100000000.0,
           "integer": true
         },
@@ -10729,6 +12447,11 @@
       "outputs": [
         "1"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review74-h3-save-requested-duration",
@@ -10893,6 +12616,11 @@
       "outputs": [
         "92"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review74-h3-save-requested-duration",
@@ -11010,6 +12738,7 @@
           "help": "",
           "min": 4,
           "step": 1,
+          "hidden": true,
           "max": 100000000.0,
           "integer": true
         }
@@ -11064,6 +12793,11 @@
       "outputs": [
         "143"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -11219,7 +12953,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         }
       ],
@@ -11296,6 +13030,11 @@
         "290",
         "302"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -11356,7 +13095,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -11528,6 +13267,11 @@
         "290",
         "302"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -11588,7 +13332,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -11760,6 +13504,11 @@
         "290",
         "302"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-compiler-error-blocks-generation",
@@ -11834,7 +13583,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -12006,6 +13755,11 @@
         "290",
         "302"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -12194,22 +13948,6 @@
           ],
           "default": "",
           "preserveWhenEmpty": false
-        },
-        {
-          "id": "243:value",
-          "key": "value",
-          "node": "minimaxh3 ref",
-          "role": "prompt",
-          "label": "创作描述",
-          "help": "",
-          "preserveWhenEmpty": true,
-          "targets": [
-            {
-              "node": "243",
-              "input": "value"
-            }
-          ],
-          "default": ""
         }
       ],
       "media": [
@@ -12305,6 +14043,11 @@
       "outputs": [
         "21"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 4,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -12438,6 +14181,35 @@
           "step": 1,
           "max": 100000000.0,
           "integer": true
+        },
+        {
+          "id": "26:value",
+          "nodeId": "26",
+          "node": "easy boolean",
+          "key": "value",
+          "kind": "mode",
+          "type": "checkbox",
+          "value": false,
+          "label": "加速步数",
+          "targets": [
+            {
+              "node": "26",
+              "input": "value"
+            }
+          ],
+          "options": [
+            {
+              "value": false,
+              "label": "8 步",
+              "help": "原版配置"
+            },
+            {
+              "value": true,
+              "label": "4 步",
+              "help": "切换匹配的加速模型"
+            }
+          ],
+          "help": "同时切换对应模型与步数"
         }
       ],
       "texts": [
@@ -12477,6 +14249,11 @@
       "outputs": [
         "1"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -14168,6 +15945,11 @@
       "outputs": [
         "123"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -14222,7 +16004,8 @@
             1536,
             2048
           ],
-          "help": "沿用原比例，越大越慢"
+          "help": "保持比例，按总像素处理",
+          "unit": "千像素"
         },
         {
           "id": "50:widget_0",
@@ -14302,6 +16085,11 @@
       "outputs": [
         "40"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 3,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -14336,6 +16124,11 @@
       "media": [],
       "apiProfiles": [],
       "outputs": [],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "missing_nodes": [
         "ConcatTextOfUtils",
         "GroundingDinoModelLoader (segment anything2)",
@@ -14889,7 +16682,7 @@
         },
         {
           "id": "6:text",
-          "label": "不希望出现的内容",
+          "label": "视角 1 · 不希望出现的内容",
           "node": "CLIPTextEncode",
           "key": "text",
           "role": "negative",
@@ -14905,7 +16698,7 @@
         },
         {
           "id": "87:text",
-          "label": "不希望出现的内容",
+          "label": "视角 3 · 不希望出现的内容",
           "node": "CLIPTextEncode",
           "key": "text",
           "role": "negative",
@@ -14921,7 +16714,7 @@
         },
         {
           "id": "97:text",
-          "label": "不希望出现的内容",
+          "label": "视角 6 · 不希望出现的内容",
           "node": "CLIPTextEncode",
           "key": "text",
           "role": "negative",
@@ -14937,7 +16730,7 @@
         },
         {
           "id": "107:text",
-          "label": "不希望出现的内容",
+          "label": "视角 4 · 不希望出现的内容",
           "node": "CLIPTextEncode",
           "key": "text",
           "role": "negative",
@@ -14953,7 +16746,7 @@
         },
         {
           "id": "117:text",
-          "label": "不希望出现的内容",
+          "label": "视角 5 · 不希望出现的内容",
           "node": "CLIPTextEncode",
           "key": "text",
           "role": "negative",
@@ -14969,7 +16762,7 @@
         },
         {
           "id": "57:text",
-          "label": "不希望出现的内容",
+          "label": "视角 2 · 不希望出现的内容",
           "node": "CLIPTextEncode",
           "key": "text",
           "role": "negative",
@@ -15008,6 +16801,11 @@
         "112",
         "122"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-all-views-receive-user-description",
@@ -15179,6 +16977,11 @@
         "445",
         "443"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -15202,7 +17005,7 @@
           "key": "resolution",
           "kind": "resolution",
           "type": "number",
-          "label": "增强输出分辨率",
+          "label": "增强结果输出短边",
           "node": "SeedVR2VideoUpscaler",
           "value": 1536,
           "min": 16,
@@ -15225,7 +17028,8 @@
             1536,
             2048
           ],
-          "help": "短边像素，越大越慢"
+          "help": "另一边按原比例调整",
+          "unit": "px"
         },
         {
           "id": "14:seed",
@@ -15349,6 +17153,11 @@
       "outputs": [
         "80"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -15520,7 +17329,12 @@
             "9:16 (Portrait Widescreen)",
             "16:9 (Widescreen)",
             "21:9 (Ultrawide)"
-          ]
+          ],
+          "visibleWhen": {
+            "controlId": "485:switch",
+            "equals": true,
+            "defaultValue": false
+          }
         },
         {
           "id": "486:megapixels",
@@ -15542,6 +17356,11 @@
           "help": "开启自定义尺寸后生效",
           "min": 0.1,
           "step": 0.1,
+          "visibleWhen": {
+            "controlId": "485:switch",
+            "equals": true,
+            "defaultValue": false
+          },
           "max": 16.0
         }
       ],
@@ -15620,6 +17439,11 @@
       "outputs": [
         "484"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -15739,60 +17563,12 @@
       ],
       "texts": [
         {
-          "id": "96:text",
-          "label": "创作描述",
-          "node": "Text Multiline",
-          "key": "text",
-          "role": "prompt",
-          "help": "",
-          "targets": [
-            {
-              "node": "96",
-              "input": "text"
-            }
-          ],
-          "default": "",
-          "preserveWhenEmpty": false
-        },
-        {
-          "id": "91:text",
-          "label": "创作描述",
-          "node": "Text Multiline",
-          "key": "text",
-          "role": "prompt",
-          "help": "",
-          "targets": [
-            {
-              "node": "91",
-              "input": "text"
-            }
-          ],
-          "default": "",
-          "preserveWhenEmpty": false
-        },
-        {
-          "id": "90:text",
-          "label": "创作描述",
-          "node": "Text Multiline",
-          "key": "text",
-          "role": "prompt",
-          "help": "",
-          "targets": [
-            {
-              "node": "90",
-              "input": "text"
-            }
-          ],
-          "default": "",
-          "preserveWhenEmpty": false
-        },
-        {
           "id": "146:prompt",
-          "label": "创作描述",
+          "label": "套图创作要求",
           "node": "RH_LLMAPI_NODE",
           "key": "prompt",
           "role": "prompt",
-          "help": "",
+          "help": "按数量自动生成不同描述",
           "targets": [
             {
               "node": "146",
@@ -15807,7 +17583,7 @@
         {
           "id": "84",
           "kind": "image",
-          "label": "色彩参考图",
+          "label": "人物参考图",
           "node": "LoadImage",
           "targets": [
             {
@@ -15845,6 +17621,11 @@
       "outputs": [
         "64"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-unavailable-owner-grok-alias",
@@ -15994,64 +17775,16 @@
       ],
       "texts": [
         {
-          "id": "285:text",
-          "label": "创作描述",
-          "node": "Text Multiline",
-          "key": "text",
-          "role": "prompt",
-          "help": "",
-          "targets": [
-            {
-              "node": "285",
-              "input": "text"
-            }
-          ],
-          "default": "",
-          "preserveWhenEmpty": false
-        },
-        {
-          "id": "271:text",
-          "label": "创作描述",
-          "node": "Text Multiline",
-          "key": "text",
-          "role": "prompt",
-          "help": "",
-          "targets": [
-            {
-              "node": "271",
-              "input": "text"
-            }
-          ],
-          "default": "",
-          "preserveWhenEmpty": false
-        },
-        {
           "id": "308:prompt",
-          "label": "创作描述",
+          "label": "套图创作要求",
           "node": "RH_LLMAPI_NODE",
           "key": "prompt",
           "role": "prompt",
-          "help": "",
+          "help": "按数量自动生成不同描述",
           "targets": [
             {
               "node": "308",
               "input": "prompt"
-            }
-          ],
-          "default": "",
-          "preserveWhenEmpty": false
-        },
-        {
-          "id": "306:text",
-          "label": "创作描述",
-          "node": "Text Multiline",
-          "key": "text",
-          "role": "prompt",
-          "help": "",
-          "targets": [
-            {
-              "node": "306",
-              "input": "text"
             }
           ],
           "default": "",
@@ -16062,7 +17795,7 @@
         {
           "id": "295",
           "kind": "image",
-          "label": "色彩参考图",
+          "label": "人物参考图",
           "node": "LoadImage",
           "targets": [
             {
@@ -16099,6 +17832,11 @@
       "outputs": [
         "291"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": true,
@@ -16116,6 +17854,98 @@
       "adapter": "generic",
       "template": "local-card-86.api.json",
       "controls": [
+        {
+          "id": "705:value",
+          "nodeId": "705",
+          "key": "turbo_enabled",
+          "node": "easy boolean",
+          "kind": "toggle",
+          "type": "checkbox",
+          "label": "Turbo 加速",
+          "value": true,
+          "targets": [
+            {
+              "node": "705",
+              "input": "value"
+            }
+          ],
+          "help": "少量步数，缩短生成时间",
+          "accelerationTechnology": "Anima Turbo LoRA v0.2"
+        },
+        {
+          "id": "sub0/107:value",
+          "nodeId": "sub0/107",
+          "key": "standard_steps",
+          "node": "PrimitiveInt",
+          "kind": "steps",
+          "type": "number",
+          "label": "生成步数",
+          "value": 30,
+          "min": 1,
+          "max": 10000,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "88:107",
+              "input": "value"
+            }
+          ],
+          "help": "更多步数，通常更细致更慢",
+          "presets": [
+            20,
+            30,
+            40
+          ],
+          "visibleWhen": {
+            "controlId": "705:value",
+            "equals": false,
+            "defaultValue": true
+          },
+          "constraintSources": [
+            {
+              "node": "sub0/106",
+              "input": "steps"
+            }
+          ]
+        },
+        {
+          "id": "sub0/108:value",
+          "nodeId": "sub0/108",
+          "key": "turbo_steps",
+          "node": "PrimitiveInt",
+          "kind": "steps",
+          "type": "number",
+          "label": "生成步数",
+          "value": 8,
+          "min": 1,
+          "max": 10000,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "88:108",
+              "input": "value"
+            }
+          ],
+          "help": "更多步数，通常更细致更慢",
+          "presets": [
+            4,
+            8,
+            12
+          ],
+          "visibleWhen": {
+            "controlId": "705:value",
+            "equals": true,
+            "defaultValue": true
+          },
+          "constraintSources": [
+            {
+              "node": "sub0/106",
+              "input": "steps"
+            }
+          ]
+        },
         {
           "id": "706:seed",
           "key": "seed",
@@ -16210,6 +18040,11 @@
       "outputs": [
         "46"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -16227,6 +18062,98 @@
       "adapter": "generic",
       "template": "local-card-87.api.json",
       "controls": [
+        {
+          "id": "711:value",
+          "nodeId": "711",
+          "key": "turbo_enabled",
+          "node": "easy boolean",
+          "kind": "toggle",
+          "type": "checkbox",
+          "label": "Turbo 加速",
+          "value": true,
+          "targets": [
+            {
+              "node": "711",
+              "input": "value"
+            }
+          ],
+          "help": "少量步数，缩短生成时间",
+          "accelerationTechnology": "Anima Turbo LoRA v0.2"
+        },
+        {
+          "id": "sub0/107:value",
+          "nodeId": "sub0/107",
+          "key": "standard_steps",
+          "node": "PrimitiveInt",
+          "kind": "steps",
+          "type": "number",
+          "label": "生成步数",
+          "value": 40,
+          "min": 1,
+          "max": 10000,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "699:107",
+              "input": "value"
+            }
+          ],
+          "help": "更多步数，通常更细致更慢",
+          "presets": [
+            20,
+            30,
+            40
+          ],
+          "visibleWhen": {
+            "controlId": "711:value",
+            "equals": false,
+            "defaultValue": true
+          },
+          "constraintSources": [
+            {
+              "node": "sub0/106",
+              "input": "steps"
+            }
+          ]
+        },
+        {
+          "id": "sub0/108:value",
+          "nodeId": "sub0/108",
+          "key": "turbo_steps",
+          "node": "PrimitiveInt",
+          "kind": "steps",
+          "type": "number",
+          "label": "生成步数",
+          "value": 8,
+          "min": 1,
+          "max": 10000,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "699:108",
+              "input": "value"
+            }
+          ],
+          "help": "更多步数，通常更细致更慢",
+          "presets": [
+            4,
+            8,
+            12
+          ],
+          "visibleWhen": {
+            "controlId": "711:value",
+            "equals": true,
+            "defaultValue": true
+          },
+          "constraintSources": [
+            {
+              "node": "sub0/106",
+              "input": "steps"
+            }
+          ]
+        },
         {
           "id": "708:seed",
           "key": "seed",
@@ -16301,6 +18228,11 @@
       "outputs": [
         "695"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -16318,6 +18250,98 @@
       "adapter": "generic",
       "template": "local-card-88.api.json",
       "controls": [
+        {
+          "id": "693:value",
+          "nodeId": "693",
+          "key": "turbo_enabled",
+          "node": "easy boolean",
+          "kind": "toggle",
+          "type": "checkbox",
+          "label": "Turbo 加速",
+          "value": true,
+          "targets": [
+            {
+              "node": "693",
+              "input": "value"
+            }
+          ],
+          "help": "少量步数，缩短生成时间",
+          "accelerationTechnology": "Anima Turbo LoRA v0.2"
+        },
+        {
+          "id": "sub0/107:value",
+          "nodeId": "sub0/107",
+          "key": "standard_steps",
+          "node": "PrimitiveInt",
+          "kind": "steps",
+          "type": "number",
+          "label": "生成步数",
+          "value": 40,
+          "min": 1,
+          "max": 10000,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "88:107",
+              "input": "value"
+            }
+          ],
+          "help": "更多步数，通常更细致更慢",
+          "presets": [
+            20,
+            30,
+            40
+          ],
+          "visibleWhen": {
+            "controlId": "693:value",
+            "equals": false,
+            "defaultValue": true
+          },
+          "constraintSources": [
+            {
+              "node": "sub0/106",
+              "input": "steps"
+            }
+          ]
+        },
+        {
+          "id": "sub0/108:value",
+          "nodeId": "sub0/108",
+          "key": "turbo_steps",
+          "node": "PrimitiveInt",
+          "kind": "steps",
+          "type": "number",
+          "label": "生成步数",
+          "value": 8,
+          "min": 1,
+          "max": 10000,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "88:108",
+              "input": "value"
+            }
+          ],
+          "help": "更多步数，通常更细致更慢",
+          "presets": [
+            4,
+            8,
+            12
+          ],
+          "visibleWhen": {
+            "controlId": "693:value",
+            "equals": true,
+            "defaultValue": true
+          },
+          "constraintSources": [
+            {
+              "node": "sub0/106",
+              "input": "steps"
+            }
+          ]
+        },
         {
           "id": "689:seed",
           "key": "seed",
@@ -16392,6 +18416,11 @@
       "outputs": [
         "46"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -16567,6 +18596,11 @@
       "outputs": [
         "110"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -16602,53 +18636,55 @@
         {
           "id": "85:width_factor",
           "key": "width_factor",
-          "label": "宽度放大倍率",
+          "label": "横向分块数",
           "node": "TTP_Tile_image_size",
           "nodeId": "85",
           "value": 2,
           "type": "number",
           "linked": false,
           "inactive": false,
-          "kind": "upscale",
+          "kind": "count",
           "targets": [
             {
               "node": "85",
               "input": "width_factor"
             }
           ],
-          "help": "",
+          "help": "分块越多，每块越小",
           "min": 1,
           "step": 1,
+          "integer": true,
           "max": 10,
-          "integer": true
+          "unit": "块"
         },
         {
           "id": "85:height_factor",
           "key": "height_factor",
-          "label": "高度放大倍率",
+          "label": "纵向分块数",
           "node": "TTP_Tile_image_size",
           "nodeId": "85",
           "value": 2,
           "type": "number",
           "linked": false,
           "inactive": false,
-          "kind": "upscale",
+          "kind": "count",
           "targets": [
             {
               "node": "85",
               "input": "height_factor"
             }
           ],
-          "help": "",
+          "help": "分块越多，每块越小",
           "min": 1,
           "step": 1,
+          "integer": true,
           "max": 10,
-          "integer": true
+          "unit": "块"
         },
         {
           "id": "88:megapixels",
           "key": "megapixels",
-          "label": "百万像素",
+          "label": "重绘处理总像素",
           "node": "ImageScaleToTotalPixels",
           "nodeId": "88",
           "value": 4,
@@ -16662,10 +18698,12 @@
               "input": "megapixels"
             }
           ],
-          "help": "越大，图片尺寸越大",
-          "min": 1,
+          "help": "重绘图总像素，保留比例",
+          "min": 0.01,
           "step": 0.01,
-          "max": 16.0
+          "unit": "MP",
+          "integer": false,
+          "max": 16
         },
         {
           "id": "13:seed",
@@ -16772,7 +18810,7 @@
         {
           "id": "13:resolution",
           "key": "resolution",
-          "label": "待编辑原图 · 输出短边（像素）",
+          "label": "直接放大输出短边",
           "node": "SeedVR2VideoUpscaler",
           "nodeId": "13",
           "value": 2048,
@@ -16786,16 +18824,17 @@
               "input": "resolution"
             }
           ],
-          "help": "",
+          "help": "另一边按原比例调整",
           "min": 16,
           "step": 2,
-          "max": 16384,
-          "integer": true
+          "unit": "px",
+          "integer": true,
+          "max": 16384
         },
         {
           "id": "126:resolution",
           "key": "resolution",
-          "label": "分支 2 · 输出短边（像素）",
+          "label": "重绘后放大输出短边",
           "node": "SeedVR2VideoUpscaler",
           "nodeId": "126",
           "value": 2048,
@@ -16809,11 +18848,12 @@
               "input": "resolution"
             }
           ],
-          "help": "",
+          "help": "另一边按原比例调整",
           "min": 16,
           "step": 2,
-          "max": 16384,
-          "integer": true
+          "unit": "px",
+          "integer": true,
+          "max": 16384
         },
         {
           "id": "91:denoise",
@@ -16832,7 +18872,7 @@
               "input": "denoise"
             }
           ],
-          "help": "越大，重绘改动越多",
+          "help": "对应降噪，越大改动越多",
           "min": 0,
           "step": 0.01,
           "max": 1
@@ -16894,6 +18934,11 @@
         "128",
         "92"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -16914,53 +18959,55 @@
         {
           "id": "25:width_factor",
           "key": "width_factor",
-          "label": "宽度放大倍率",
+          "label": "横向分块数",
           "node": "TTP_Tile_image_size",
           "nodeId": "25",
           "value": 2,
           "type": "number",
           "linked": false,
           "inactive": false,
-          "kind": "upscale",
+          "kind": "count",
           "targets": [
             {
               "node": "25",
               "input": "width_factor"
             }
           ],
-          "help": "",
+          "help": "分块越多，每块越小",
           "min": 1,
           "step": 1,
+          "integer": true,
           "max": 10,
-          "integer": true
+          "unit": "块"
         },
         {
           "id": "25:height_factor",
           "key": "height_factor",
-          "label": "高度放大倍率",
+          "label": "纵向分块数",
           "node": "TTP_Tile_image_size",
           "nodeId": "25",
           "value": 2,
           "type": "number",
           "linked": false,
           "inactive": false,
-          "kind": "upscale",
+          "kind": "count",
           "targets": [
             {
               "node": "25",
               "input": "height_factor"
             }
           ],
-          "help": "",
+          "help": "分块越多，每块越小",
           "min": 1,
           "step": 1,
+          "integer": true,
           "max": 10,
-          "integer": true
+          "unit": "块"
         },
         {
           "id": "24:megapixels",
           "key": "megapixels",
-          "label": "百万像素",
+          "label": "重绘处理总像素",
           "node": "ImageScaleToTotalPixels",
           "nodeId": "24",
           "value": 3,
@@ -16974,10 +19021,12 @@
               "input": "megapixels"
             }
           ],
-          "help": "越大，图片尺寸越大",
-          "min": 1,
+          "help": "重绘图总像素，保留比例",
+          "min": 0.01,
           "step": 0.01,
-          "max": 16.0
+          "unit": "MP",
+          "integer": false,
+          "max": 16
         },
         {
           "id": "38:seed",
@@ -17032,7 +19081,7 @@
               "input": "denoise"
             }
           ],
-          "help": "越大，重绘改动越多",
+          "help": "对应降噪，越大改动越多",
           "min": 0,
           "step": 0.01,
           "max": 1
@@ -17091,6 +19140,11 @@
       "outputs": [
         "63"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -17111,7 +19165,7 @@
         {
           "id": "79:megapixels",
           "key": "megapixels",
-          "label": "百万像素",
+          "label": "重绘处理总像素",
           "node": "ImageScaleToTotalPixels",
           "nodeId": "79",
           "value": 3,
@@ -17125,56 +19179,60 @@
               "input": "megapixels"
             }
           ],
-          "help": "越大，图片尺寸越大",
-          "min": 1,
+          "help": "重绘图总像素，保留比例",
+          "min": 0.01,
           "step": 0.01,
-          "max": 16.0
+          "unit": "MP",
+          "integer": false,
+          "max": 16
         },
         {
           "id": "76:width_factor",
           "key": "width_factor",
-          "label": "宽度放大倍率",
+          "label": "横向分块数",
           "node": "TTP_Tile_image_size",
           "nodeId": "76",
           "value": 2,
           "type": "number",
           "linked": false,
           "inactive": false,
-          "kind": "upscale",
+          "kind": "count",
           "targets": [
             {
               "node": "76",
               "input": "width_factor"
             }
           ],
-          "help": "",
+          "help": "分块越多，每块越小",
           "min": 1,
           "step": 1,
+          "integer": true,
           "max": 10,
-          "integer": true
+          "unit": "块"
         },
         {
           "id": "76:height_factor",
           "key": "height_factor",
-          "label": "高度放大倍率",
+          "label": "纵向分块数",
           "node": "TTP_Tile_image_size",
           "nodeId": "76",
           "value": 2,
           "type": "number",
           "linked": false,
           "inactive": false,
-          "kind": "upscale",
+          "kind": "count",
           "targets": [
             {
               "node": "76",
               "input": "height_factor"
             }
           ],
-          "help": "",
+          "help": "分块越多，每块越小",
           "min": 1,
           "step": 1,
+          "integer": true,
           "max": 10,
-          "integer": true
+          "unit": "块"
         },
         {
           "id": "82:seed",
@@ -17229,7 +19287,7 @@
               "input": "denoise"
             }
           ],
-          "help": "越大，重绘改动越多",
+          "help": "对应降噪，越大改动越多",
           "min": 0,
           "step": 0.01,
           "max": 1
@@ -17343,6 +19401,11 @@
       "outputs": [
         "73"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [
         {
@@ -17489,6 +19552,11 @@
       "outputs": [
         "48"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-qwen2511-matching-lightning",
@@ -17661,6 +19729,11 @@
       "outputs": [
         "12"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -17786,6 +19859,11 @@
         "13",
         "24"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -17924,6 +20002,11 @@
         "22",
         "18"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -18131,6 +20214,11 @@
         "16",
         "20"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -18270,6 +20358,33 @@
           "uiGroup": "clip",
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "26:loop_count",
+          "nodeId": "26",
+          "key": "loop_count",
+          "node": "VHS_VideoCombine",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "26",
+              "input": "loop_count"
+            },
+            {
+              "node": "29",
+              "input": "loop_count"
+            }
+          ],
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；本地重复成片，画面与声音一起循环。",
+          "uiGroup": "output"
         }
       ],
       "texts": [
@@ -18352,7 +20467,44 @@
         "26",
         "29"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "26:loop_count",
+          "node": "26",
+          "format": "video/h264-mp4",
+          "audio": [
+            "15",
+            0
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        },
+        {
+          "controlId": "26:loop_count",
+          "node": "29",
+          "format": "video/h264-mp4",
+          "audio": [
+            "15",
+            0
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        }
+      ],
       "normalizations": [],
       "external_api_account": false,
       "node_count": 25,
@@ -18423,13 +20575,15 @@
               "input": "start_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频裁剪起始位置",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "从上传的驱动音频这一时刻开始裁剪。"
         },
         {
           "id": "159:end_time",
           "key": "end_time",
-          "label": "音频片段终点（秒）",
+          "label": "片段终点（分:秒）",
           "node": "AudioCrop",
           "nodeId": "159",
           "value": "10",
@@ -18443,8 +20597,10 @@
               "input": "end_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频终点，须晚于起点",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "上传音频中的结束位置，需晚于起点；不是生成时长。"
         },
         {
           "id": "321:value",
@@ -18467,11 +20623,39 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "8/16帧自动批处理",
           "min": 4,
           "step": 1,
           "uiGroup": "output",
-          "max": 100000000.0
+          "max": 2048,
+          "title": "8与16为放大时每批处理的帧数，按边长自动切换；不是生成采样步数。"
+        },
+        {
+          "id": "334:loop_count",
+          "nodeId": "334",
+          "key": "loop_count",
+          "node": "VHS_VideoCombine",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "334",
+              "input": "loop_count"
+            },
+            {
+              "node": "131",
+              "input": "loop_count"
+            }
+          ],
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；本地重复成片，画面与声音一起循环。",
+          "uiGroup": "output"
         }
       ],
       "texts": [
@@ -18541,7 +20725,66 @@
         "334",
         "131"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "334:loop_count",
+          "node": "334",
+          "format": "video/h264-mp4",
+          "audio": [
+            "159",
+            0
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        },
+        {
+          "controlId": "334:loop_count",
+          "node": "131",
+          "format": "video/h264-mp4",
+          "audio": [
+            "159",
+            0
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        }
+      ],
+      "infiniteReferenceGeometry": {
+        "kind": "review87-infinite-reference-geometry",
+        "slotId": "284",
+        "mediaKind": "image",
+        "longSideControlId": "321:value",
+        "defaultLongSide": 832,
+        "sourceMultiple": 1,
+        "layerMultiple": 16,
+        "scaleNode": "307",
+        "sizeNode": "291",
+        "modelNode": "192",
+        "widthLimits": {
+          "min": 64,
+          "max": 2048,
+          "step": 8
+        },
+        "heightLimits": {
+          "min": 64,
+          "max": 29048,
+          "step": 8
+        }
+      },
       "normalizations": [
         {
           "node": "351",
@@ -18583,13 +20826,15 @@
               "input": "start_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频裁剪起始位置",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "从上传的驱动音频这一时刻开始裁剪。"
         },
         {
           "id": "159:end_time",
           "key": "end_time",
-          "label": "音频片段终点（分:秒）",
+          "label": "片段终点（分:秒）",
           "node": "AudioCrop",
           "nodeId": "159",
           "value": "1:42",
@@ -18603,8 +20848,10 @@
               "input": "end_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频终点，须晚于起点",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "上传音频中的结束位置，需晚于起点；不是生成时长。"
         },
         {
           "id": "321:value",
@@ -18627,11 +20874,12 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "8/16帧自动批处理",
           "min": 4,
           "step": 1,
           "uiGroup": "output",
-          "max": 100000000.0
+          "max": 2048,
+          "title": "8与16为放大时每批处理的帧数，按边长自动切换；不是生成采样步数。"
         },
         {
           "id": "341:seed",
@@ -18717,6 +20965,33 @@
           "uiGroup": "clip",
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "334:loop_count",
+          "nodeId": "334",
+          "key": "loop_count",
+          "node": "VHS_VideoCombine",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "334",
+              "input": "loop_count"
+            },
+            {
+              "node": "131",
+              "input": "loop_count"
+            }
+          ],
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；本地重复成片，画面与声音一起循环。",
+          "uiGroup": "output"
         }
       ],
       "texts": [
@@ -18786,7 +21061,66 @@
         "131",
         "334"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "334:loop_count",
+          "node": "334",
+          "format": "video/h264-mp4",
+          "audio": [
+            "159",
+            0
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        },
+        {
+          "controlId": "334:loop_count",
+          "node": "131",
+          "format": "video/h264-mp4",
+          "audio": [
+            "159",
+            0
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        }
+      ],
+      "infiniteReferenceGeometry": {
+        "kind": "review87-infinite-reference-geometry",
+        "slotId": "358",
+        "mediaKind": "video",
+        "longSideControlId": "321:value",
+        "defaultLongSide": 832,
+        "sourceMultiple": 8,
+        "layerMultiple": 16,
+        "scaleNode": "307",
+        "sizeNode": "291",
+        "modelNode": "192",
+        "widthLimits": {
+          "min": 64,
+          "max": 2048,
+          "step": 8
+        },
+        "heightLimits": {
+          "min": 64,
+          "max": 29048,
+          "step": 8
+        }
+      },
       "normalizations": [
         {
           "node": "351",
@@ -18814,7 +21148,7 @@
         {
           "id": "359:start_time",
           "key": "start_time",
-          "label": "驱动音频 2 · 片段起点（分:秒）",
+          "label": "音频 2 · 片段起点（分:秒）",
           "node": "AudioCrop",
           "nodeId": "359",
           "value": "0:00",
@@ -18828,8 +21162,10 @@
               "input": "start_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频裁剪起始位置",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "从上传的驱动音频这一时刻开始裁剪。"
         },
         {
           "id": "341:seed",
@@ -18871,7 +21207,7 @@
         {
           "id": "159:start_time",
           "key": "start_time",
-          "label": "驱动音频 1 · 片段起点（分:秒）",
+          "label": "音频 1 · 片段起点（分:秒）",
           "node": "AudioCrop",
           "nodeId": "159",
           "value": "0:00",
@@ -18885,8 +21221,10 @@
               "input": "start_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频裁剪起始位置",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "从上传的驱动音频这一时刻开始裁剪。"
         },
         {
           "id": "321:value",
@@ -18905,18 +21243,19 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "按参考图比例处理",
           "min": 4,
           "step": 1,
           "uiGroup": "output",
-          "max": 100000000.0,
+          "max": 2048,
+          "title": "8与16为放大时每批处理的帧数，按边长自动切换；不是生成采样步数。",
           "integer": true
         },
         {
           "id": "365:value",
           "nodeId": "365",
           "key": "value",
-          "label": "两路音频终点（分:秒）",
+          "label": "两路音频 · 片段终点（分:秒）",
           "node": "easy string",
           "value": "0:5",
           "type": "text",
@@ -18933,8 +21272,103 @@
               "input": "end_time"
             }
           ],
-          "help": "",
-          "uiGroup": "clip"
+          "help": "音频终点，须晚于起点",
+          "uiGroup": "clip",
+          "timecodeInput": "integer-seconds-or-mm:ss",
+          "title": "上传音频中的结束位置，需晚于起点；不是生成时长。"
+        },
+        {
+          "id": "131:loop_count",
+          "nodeId": "131",
+          "key": "loop_count",
+          "node": "VHS_VideoCombine",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "targets": [
+            {
+              "node": "131",
+              "input": "loop_count"
+            }
+          ],
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；本地重复成片，画面与声音一起循环。",
+          "uiGroup": "output"
+        },
+        {
+          "id": "194:speaker_regions",
+          "nodeId": "194",
+          "key": "speaker_regions",
+          "node": "MultiTalkWav2VecEmbeds",
+          "kind": "speaker_regions",
+          "type": "text",
+          "label": "音频对应的人物区域",
+          "value": "[]",
+          "linked": false,
+          "inactive": false,
+          "mediaSlotId": "284",
+          "speakerCount": 2,
+          "targets": [
+            {
+              "node": "194",
+              "input": "ref_target_masks",
+              "optional": true
+            }
+          ],
+          "derived": {
+            "operation": "speaker-regions",
+            "targetId": "194:ref_target_masks"
+          },
+          "speakerRegionsRecipe": {
+            "controlId": "194:speaker_regions",
+            "mediaSlotId": "284",
+            "speakerCount": 2,
+            "coordinateSpace": "normalized-reference",
+            "referenceImage": [
+              "291",
+              0
+            ],
+            "widthSource": [
+              "291",
+              1
+            ],
+            "heightSource": [
+              "291",
+              2
+            ],
+            "target": {
+              "node": "194",
+              "input": "ref_target_masks",
+              "optional": true
+            },
+            "audioSlots": [
+              "125",
+              "357"
+            ],
+            "audioInputs": [
+              "audio_1",
+              "audio_2"
+            ],
+            "maskClasses": [
+              "MathExpression|pysssss",
+              "SolidMask",
+              "MaskComposite",
+              "MaskBatchMulti"
+            ],
+            "pixelMapping": "floor(left/top), ceil(right/bottom), on actual resized reference",
+            "allowPartialOverlap": true,
+            "required": true
+          },
+          "help": "按两路音频分别框选人物",
+          "uiGroup": "subject",
+          "transform": {
+            "operation": "speaker-regions"
+          }
         }
       ],
       "texts": [
@@ -19016,7 +21450,105 @@
       "outputs": [
         "131"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "outputLoopPolicies": [
+        {
+          "controlId": "131:loop_count",
+          "node": "131",
+          "format": "video/h264-mp4",
+          "audio": [
+            "194",
+            1
+          ],
+          "trimToAudio": false,
+          "min": 0,
+          "max": 100,
+          "semantics": "repeat-finished-audio-video",
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video"
+        }
+      ],
+      "infiniteReferenceGeometry": {
+        "kind": "review87-infinite-reference-geometry",
+        "slotId": "284",
+        "mediaKind": "image",
+        "longSideControlId": "321:value",
+        "defaultLongSide": 832,
+        "sourceMultiple": 1,
+        "layerMultiple": 16,
+        "scaleNode": "307",
+        "sizeNode": "291",
+        "modelNode": "192",
+        "widthLimits": {
+          "min": 64,
+          "max": 2048,
+          "step": 8
+        },
+        "heightLimits": {
+          "min": 64,
+          "max": 29048,
+          "step": 8
+        }
+      },
+      "speakerRegionsRecipe": {
+        "controlId": "194:speaker_regions",
+        "mediaSlotId": "284",
+        "speakerCount": 2,
+        "coordinateSpace": "normalized-reference",
+        "referenceImage": [
+          "291",
+          0
+        ],
+        "widthSource": [
+          "291",
+          1
+        ],
+        "heightSource": [
+          "291",
+          2
+        ],
+        "target": {
+          "node": "194",
+          "input": "ref_target_masks",
+          "optional": true
+        },
+        "audioSlots": [
+          "125",
+          "357"
+        ],
+        "audioInputs": [
+          "audio_1",
+          "audio_2"
+        ],
+        "maskClasses": [
+          "MathExpression|pysssss",
+          "SolidMask",
+          "MaskComposite",
+          "MaskBatchMulti"
+        ],
+        "pixelMapping": "floor(left/top), ceil(right/bottom), on actual resized reference",
+        "allowPartialOverlap": true,
+        "required": true
+      },
+      "review87_infinite": {
+        "fpsRepair": {
+          "node": "131",
+          "input": "frame_rate",
+          "from": 16,
+          "to": [
+            "367",
+            0
+          ]
+        },
+        "failure": "missing per-speaker ref_target_masks at MultiTalkWav2VecEmbeds194",
+        "liveVerified": false
+      },
+      "excluded": [],
       "normalizations": [
         {
           "node": "367",
@@ -19036,8 +21568,7 @@
       "external_api_account": false,
       "node_count": 36,
       "validation": "structural-verified",
-      "blocking_reason": "",
-      "excluded": []
+      "blocking_reason": ""
     },
     "local-card-102": {
       "id": "local-card-102",
@@ -19052,6 +21583,11 @@
       "media": [],
       "apiProfiles": [],
       "outputs": [],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "missing_nodes": [
         "MelBandRoFormerModelLoader",
         "MelBandRoFormerSampler"
@@ -19365,6 +21901,11 @@
       "outputs": [
         "113"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -19455,7 +21996,7 @@
         {
           "id": "21:denoise",
           "key": "denoise",
-          "label": "分支 1 · 细节重绘幅度",
+          "label": "放大重绘幅度",
           "node": "KSampler",
           "nodeId": "21",
           "value": 0.6,
@@ -19477,7 +22018,7 @@
         {
           "id": "26:width",
           "key": "width",
-          "label": "输出宽度（像素）",
+          "label": "基础生成宽度",
           "node": "EmptySD3LatentImage",
           "nodeId": "26",
           "value": 720,
@@ -19494,13 +22035,14 @@
           "help": "",
           "min": 16,
           "step": 16,
+          "unit": "px",
           "max": 16384,
           "integer": true
         },
         {
           "id": "26:height",
           "key": "height",
-          "label": "输出高度（像素）",
+          "label": "基础生成高度",
           "node": "EmptySD3LatentImage",
           "nodeId": "26",
           "value": 1280,
@@ -19517,13 +22059,14 @@
           "help": "",
           "min": 16,
           "step": 16,
+          "unit": "px",
           "max": 16384,
           "integer": true
         },
         {
           "id": "30:denoise",
           "key": "denoise",
-          "label": "分支 2 · 细节重绘幅度",
+          "label": "基础生成幅度",
           "node": "KSampler",
           "nodeId": "30",
           "value": 1,
@@ -19537,7 +22080,7 @@
               "input": "denoise"
             }
           ],
-          "help": "越大，重绘改动越多",
+          "help": "从空白生成，通常保持1",
           "min": 0,
           "step": 0.01,
           "max": 1
@@ -19583,6 +22126,11 @@
         "2",
         "24"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -19740,6 +22288,11 @@
       "outputs": [
         "200"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -19845,6 +22398,11 @@
       "outputs": [
         "110"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -19982,6 +22540,11 @@
       "outputs": [
         "110"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -20073,6 +22636,11 @@
       "outputs": [
         "110"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -20107,10 +22675,10 @@
               "input": "scale_to_length"
             }
           ],
-          "help": "",
+          "help": "自定义宽高优先",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -20187,7 +22755,7 @@
               "input": "face_strength"
             }
           ],
-          "help": "越大，面部动作跟随越强",
+          "help": "表情跟随；1为默认",
           "min": 0,
           "max": 10,
           "step": 0.001
@@ -20207,7 +22775,7 @@
               "input": "pose_strength"
             }
           ],
-          "help": "越大，动作跟随越强",
+          "help": "姿势跟随；1为默认",
           "min": 0,
           "max": 10,
           "step": 0.001
@@ -20227,9 +22795,9 @@
               "input": "a"
             }
           ],
-          "help": "",
+          "help": "16帧/秒加载参考",
           "min": 0,
-          "max": 48000,
+          "max": 624,
           "step": 1,
           "constraintSources": [
             {
@@ -20244,6 +22812,52 @@
             "fpsSource": "761:value"
           },
           "integer": true
+        },
+        {
+          "id": "783:custom_width",
+          "nodeId": "783",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "783",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "783:custom_height",
+          "nodeId": "783",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8096,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；自定义优先",
+          "title": "两项都为0沿用原尺寸链；改比例会居中裁切，按16像素对齐。",
+          "targets": [
+            {
+              "node": "783",
+              "input": "custom_height"
+            }
+          ]
         }
       ],
       "texts": [
@@ -20267,9 +22881,10 @@
           "id": "753:value",
           "key": "value",
           "node": "描述",
-          "label": "分割目标",
+          "label": "定位要修改的衣服",
           "role": "prompt",
-          "help": "用简短词描述目标",
+          "help": "定位原视频衣物；留空沿用",
+          "preserveWhenEmpty": true,
           "targets": [
             {
               "node": "753",
@@ -20277,7 +22892,7 @@
             }
           ],
           "default": "",
-          "preserveWhenEmpty": false
+          "sanitizeValue": true
         },
         {
           "id": "650:negative_prompt",
@@ -20331,7 +22946,31 @@
         "765",
         "712"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
+      "videoGeometryPolicy": {
+        "loader": "783",
+        "layer": "756",
+        "longId": "777:value",
+        "widthId": "783:custom_width",
+        "heightId": "783:custom_height",
+        "model": "771",
+        "modelClass": "WanVideoAnimateEmbeds",
+        "reference": [
+          "726"
+        ],
+        "intermediates": [],
+        "modelMinimum": 64,
+        "modelMaximum": 8096,
+        "originalMultiple": 16,
+        "customMultiple": 16,
+        "sourceMultiple": 8,
+        "defaultLong": 1024
+      },
       "normalizations": [
         {
           "node": "738",
@@ -20406,7 +23045,7 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0,
+          "max": 100000000,
           "integer": true
         },
         {
@@ -20578,6 +23217,11 @@
         "290",
         "302"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-117-save-selected-source-frames",
@@ -20805,6 +23449,77 @@
           "uiGroup": "clip",
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "13:custom_width",
+          "nodeId": "13",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "13",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "13:custom_height",
+          "nodeId": "13",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "13",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "24:loop_count",
+          "nodeId": "24",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "24",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [],
@@ -20827,6 +23542,11 @@
       "outputs": [
         "24"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-video-playback-rate",
@@ -20836,6 +23556,39 @@
           "to": 24
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "24:loop_count",
+          "sink": "24",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "13",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "13",
+        "widthControlId": "13:custom_width",
+        "heightControlId": "13:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "flash-input-times-scale"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 8,
@@ -20976,6 +23729,77 @@
           "uiGroup": "clip",
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "507:custom_width",
+          "nodeId": "507",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "507",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "507:custom_height",
+          "nodeId": "507",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "507",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "502:loop_count",
+          "nodeId": "502",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "502",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [],
@@ -20998,6 +23822,11 @@
       "outputs": [
         "502"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-video-playback-rate",
@@ -21037,6 +23866,39 @@
           ]
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "502:loop_count",
+          "sink": "502",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "507",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "507",
+        "widthControlId": "507:custom_width",
+        "heightControlId": "507:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "flash-input-times-scale"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 24,
@@ -21177,6 +24039,77 @@
           ],
           "uiGroup": "seed",
           "integer": true
+        },
+        {
+          "id": "18:custom_width",
+          "nodeId": "18",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "18",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "18:custom_height",
+          "nodeId": "18",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "18",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "3:loop_count",
+          "nodeId": "3",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "3",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [],
@@ -21199,6 +24132,11 @@
       "outputs": [
         "3"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-video-playback-rate",
@@ -21208,6 +24146,39 @@
           "to": 24
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "3:loop_count",
+          "sink": "3",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "18",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "18",
+        "widthControlId": "18:custom_width",
+        "heightControlId": "18:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 16,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "flash-input-times-scale"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 8,
@@ -21287,6 +24258,77 @@
           "uiGroup": "clip",
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "15:custom_width",
+          "nodeId": "15",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "15",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "15:custom_height",
+          "nodeId": "15",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "15",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "9:loop_count",
+          "nodeId": "9",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "9",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [],
@@ -21309,6 +24351,11 @@
       "outputs": [
         "9"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-video-playback-rate",
@@ -21341,6 +24388,39 @@
           ]
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "9:loop_count",
+          "sink": "9",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "15",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "15",
+        "widthControlId": "15:custom_width",
+        "heightControlId": "15:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "upscale-model-controls-final-size"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 15,
@@ -21481,6 +24561,77 @@
           "uiGroup": "output",
           "max": 16384,
           "integer": true
+        },
+        {
+          "id": "25:custom_width",
+          "nodeId": "25",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "25",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "25:custom_height",
+          "nodeId": "25",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入处理尺寸；最终尺寸仍由原工作流的模型或输出短边决定。",
+          "targets": [
+            {
+              "node": "25",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "28:loop_count",
+          "nodeId": "28",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "28",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [],
@@ -21503,6 +24654,11 @@
       "outputs": [
         "28"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-video-playback-rate",
@@ -21512,6 +24668,39 @@
           "to": 24
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "28:loop_count",
+          "sink": "28",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "25",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "25",
+        "widthControlId": "25:custom_width",
+        "heightControlId": "25:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": false,
+        "sizing": "seedvr-short-edge-controls-final-size"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 7,
@@ -21652,6 +24841,77 @@
           "uiGroup": "clip",
           "max": 9007199254740991,
           "integer": true
+        },
+        {
+          "id": "18:custom_width",
+          "nodeId": "18",
+          "node": "VHS_LoadVideo",
+          "key": "custom_width",
+          "label": "处理宽度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "width",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "18",
+              "input": "custom_width"
+            }
+          ]
+        },
+        {
+          "id": "18:custom_height",
+          "nodeId": "18",
+          "node": "VHS_LoadVideo",
+          "key": "custom_height",
+          "label": "处理高度",
+          "kind": "resolution",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 8192,
+          "step": 1,
+          "integer": true,
+          "dimensionGroup": "video-size",
+          "dimensionAxis": "height",
+          "help": "0沿用比例；放大前尺寸",
+          "title": "输入帧尺寸，0沿用原比例；Flash结果再乘放大倍率。",
+          "targets": [
+            {
+              "node": "18",
+              "input": "custom_height"
+            }
+          ]
+        },
+        {
+          "id": "16:loop_count",
+          "nodeId": "16",
+          "node": "VHS_VideoCombine",
+          "key": "loop_count",
+          "label": "输出循环次数",
+          "kind": "loop",
+          "type": "number",
+          "value": 0,
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "integer": true,
+          "uiGroup": "output",
+          "help": "0不循环；音画同步重复",
+          "title": "填写1会额外重复1遍，总共播放2遍；完整重复音画，不重复生成。",
+          "targets": [
+            {
+              "node": "16",
+              "input": "loop_count"
+            }
+          ]
         }
       ],
       "texts": [],
@@ -21674,6 +24934,11 @@
       "outputs": [
         "16"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-preserve-video-playback-rate",
@@ -21683,6 +24948,39 @@
           "to": 24
         }
       ],
+      "outputLoopPolicies": [
+        {
+          "controlId": "16:loop_count",
+          "sink": "16",
+          "format": "video/h264-mp4",
+          "audioLink": [
+            "18",
+            2
+          ],
+          "trimToAudio": false,
+          "nativeInput": "loop_count",
+          "semantics": "repeat-finished-audio-video",
+          "audioRepeats": true,
+          "playsFormula": "loop_count+1",
+          "audioSemantics": "repeat-complete-audio-video",
+          "nativeRange": {
+            "min": 0,
+            "max": 100,
+            "step": 1
+          }
+        }
+      ],
+      "videoSizePolicy": {
+        "kind": "review87-flash-vhs-dimensions",
+        "slotId": "18",
+        "widthControlId": "18:custom_width",
+        "heightControlId": "18:custom_height",
+        "sourceMultiple": 8,
+        "layerMultiple": 8,
+        "rounding": "ceil-layer",
+        "customBypassesNativeResize": true,
+        "sizing": "flash-input-times-scale"
+      },
       "normalizations": [],
       "external_api_account": false,
       "node_count": 9,
@@ -21879,6 +25177,11 @@
         "65",
         "34"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-gguf-fused-linear-compatibility",
@@ -21921,7 +25224,7 @@
         {
           "id": "208:value",
           "key": "value",
-          "label": "生成时长（秒）",
+          "label": "目标生成时长（秒）",
           "node": "Duration",
           "nodeId": "208",
           "value": 5,
@@ -21935,9 +25238,25 @@
               "input": "values.a"
             }
           ],
-          "help": "",
+          "help": "按模型帧数对齐",
           "min": 0,
-          "step": 1
+          "step": 1,
+          "frameFormula": {
+            "node": "233",
+            "expression": "a*b+1",
+            "fps": 25,
+            "fpsSource": "215:value"
+          },
+          "effectiveDuration": {
+            "kind": "ltx-frame-grid",
+            "fps": 25,
+            "minFrames": 1,
+            "stepFrames": 8,
+            "extraFrames": 1,
+            "offsetFrames": 1,
+            "rounding": "floor"
+          },
+          "max": 655
         },
         {
           "id": "206:noise_seed",
@@ -22152,6 +25471,11 @@
       "outputs": [
         "68"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "constraints": [
         {
@@ -22200,7 +25524,8 @@
           "help": "",
           "min": 4,
           "step": 1,
-          "max": 100000000.0
+          "max": 100000000,
+          "integer": true
         },
         {
           "id": "74:seed",
@@ -22362,6 +25687,11 @@
         "72",
         "39"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 2,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -22506,6 +25836,11 @@
       "outputs": [
         "174"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -22553,6 +25888,11 @@
         "18",
         "17"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 1,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,
@@ -22574,7 +25914,7 @@
           "id": "12:directory",
           "nodeId": "12",
           "key": "directory",
-          "label": "本地素材目录",
+          "label": "素材目录",
           "node": "LoadImageListFromDir //Inspire",
           "value": "",
           "type": "text",
@@ -22587,13 +25927,13 @@
               "input": "directory"
             }
           ],
-          "help": "填写运行端的目录",
+          "help": "填写运行端可访问的目录",
           "uiGroup": "location"
         },
         {
           "id": "10:frame_rate",
           "key": "frame_rate",
-          "label": "播放帧率",
+          "label": "GIF目标帧率（FPS）",
           "node": "VHS_VideoCombine",
           "nodeId": "10",
           "value": 6,
@@ -22607,15 +25947,17 @@
               "input": "frame_rate"
             }
           ],
-          "help": "只改速度，不补帧",
+          "help": "帧时长按10毫秒取整",
           "min": 1,
           "step": 1,
-          "uiGroup": "playback"
+          "uiGroup": "playback",
+          "integer": false,
+          "unit": "FPS"
         },
         {
           "id": "12:widget_1",
           "key": "image_load_cap",
-          "label": "读取图片上限（0 为不限）",
+          "label": "最多读取图片数（0 为全部）",
           "node": "LoadImageListFromDir //Inspire",
           "nodeId": "12",
           "value": 0,
@@ -22714,6 +26056,11 @@
       "outputs": [
         "10"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [
         {
           "id": "review73-explicit-directory-image-order",
@@ -22743,7 +26090,7 @@
           "id": "70:value",
           "nodeId": "70",
           "key": "value",
-          "label": "本地素材目录",
+          "label": "素材目录",
           "node": "PrimitiveStringMultiline",
           "value": "/root/ComfyUI/input",
           "type": "text",
@@ -22760,7 +26107,7 @@
               "input": "string_1"
             }
           ],
-          "help": "填写运行端的目录",
+          "help": "填写运行端可访问的目录",
           "uiGroup": "location"
         },
         {
@@ -22786,7 +26133,7 @@
         {
           "id": "61:seed",
           "key": "seed",
-          "label": "素材抽取种子",
+          "label": "随机选取种子",
           "node": "LoadVideoBatchFrame",
           "nodeId": "61",
           "value": 942414489519193,
@@ -22803,7 +26150,7 @@
           "min": 0,
           "max": 9007199254740991,
           "step": 1,
-          "help": "",
+          "help": "随机选择视频时生效",
           "members": [
             {
               "id": "61:seed",
@@ -22823,7 +26170,7 @@
         {
           "id": "61:frame",
           "key": "frame",
-          "label": "预览起始帧",
+          "label": "目录预览帧（隐藏并保留默认）",
           "node": "LoadVideoBatchFrame",
           "nodeId": "61",
           "value": 0,
@@ -22841,13 +26188,14 @@
           "min": 0,
           "step": 1,
           "uiGroup": "read",
+          "hidden": true,
           "max": 999999,
           "integer": true
         },
         {
           "id": "62:value",
           "key": "value",
-          "label": "文件选择索引",
+          "label": "视频文件索引",
           "node": "PrimitiveNode",
           "nodeId": "62",
           "value": 0,
@@ -22885,16 +26233,17 @@
               "input": "force_rate"
             }
           ],
-          "help": "",
+          "help": "重采样读取视频帧",
           "min": 0,
           "step": 1,
           "uiGroup": "read",
-          "max": 60
+          "max": 60,
+          "integer": false
         },
         {
           "id": "68:frame_load_cap",
           "key": "frame_load_cap",
-          "label": "读取帧数上限（0 为不限）",
+          "label": "最多读取视频帧数（0 为全部）",
           "node": "VHS_LoadVideoPath",
           "nodeId": "68",
           "value": 0,
@@ -22918,7 +26267,7 @@
         {
           "id": "68:skip_first_frames",
           "key": "skip_first_frames",
-          "label": "跳过开头帧数",
+          "label": "跳过开头视频帧数",
           "node": "VHS_LoadVideoPath",
           "nodeId": "68",
           "value": 0,
@@ -22942,7 +26291,7 @@
         {
           "id": "80:frame_rate",
           "key": "frame_rate",
-          "label": "播放帧率",
+          "label": "导出帧率（FPS）",
           "node": "VHS_VideoCombine",
           "nodeId": "80",
           "value": 16,
@@ -22956,10 +26305,12 @@
               "input": "frame_rate"
             }
           ],
-          "help": "只改速度，不补帧",
+          "help": "只改播放速度，不补帧",
           "min": 1,
           "step": 1,
-          "uiGroup": "playback"
+          "uiGroup": "playback",
+          "integer": false,
+          "unit": "FPS"
         },
         {
           "id": "61:mode",
@@ -22978,7 +26329,7 @@
               "input": "mode"
             }
           ],
-          "help": "随机模式使用种子选择视频",
+          "help": "每次仅读取一个视频",
           "options": [
             {
               "value": "single_video",
@@ -22986,7 +26337,7 @@
             },
             {
               "value": "incremental_video",
-              "label": "顺序索引"
+              "label": "按索引（越界回首）"
             },
             {
               "value": "random",
@@ -23002,6 +26353,11 @@
       "outputs": [
         "80"
       ],
+      "referencePolicy": {
+        "mode": "graph-ports",
+        "imageSlots": 0,
+        "help": "按该工作流有效输入端口接收素材；额外上限须由真实模型协议确认。"
+      },
       "execution_repairs": [],
       "normalizations": [],
       "external_api_account": false,

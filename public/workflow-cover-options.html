@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#09090b">
+  <title>工作流封面方案 · 映序</title>
+  <link rel="icon" href="assets/brand-mark.svg">
+  <link rel="stylesheet" href="workflow-cover-options.css?v=2">
+</head>
+<body>
+  <a class="skip-link" href="#options">跳到封面方案</a>
+  <header class="page-top">
+    <a class="brand" href="studio.html#workflows" aria-label="映序创作工具"><img src="assets/brand-mark.svg" alt=""><span>映序</span></a>
+    <a class="back-link" href="studio.html#workflows"><span aria-hidden="true">←</span> 返回创作工具</a>
+  </header>
+  <main>
+    <div class="page-heading">
+      <div><h1>工作流封面，三种方向</h1><p>同一组工具，比较封面如何表达各自的特点。</p></div>
+      <span class="preview-label">C 已应用到本地</span>
+    </div>
+    <div class="options-bar">
+      <div class="view-switch" role="group" aria-label="查看封面方案">
+        <button type="button" data-view="all" aria-pressed="true">并排对比</button>
+        <button type="button" data-view="a" aria-pressed="false">A · 作品海报</button>
+        <button type="button" data-view="b" aria-pressed="false">B · 用途图形</button>
+        <button type="button" data-view="c" aria-pressed="false">C · 操作封面</button>
+      </div>
+      <p class="source-note">图片为现有示例素材；图形表达用途，均非工作流效果对照。</p>
+    </div>
+    <p class="mobile-hint">左右滑动，比较同一工具的三种封面。</p>
+    <section id="options" class="comparison-surface" aria-label="工作流封面方案对比" tabindex="0">
+      <div id="comparison" class="comparison-grid" data-view="all" aria-busy="true"><p class="loading" role="status">正在载入工作流…</p></div>
+    </section>
+    <p id="load-error" class="load-error" role="alert" hidden></p>
+    <p class="page-foot">C 已用于正式工作流封面；这里的切换仅供对比。</p>
+    <noscript><p class="load-error">请开启 JavaScript 查看三种封面方案。</p></noscript>
+  </main>
+  <script type="module" src="workflow-cover-options.js?v=2"></script>
+</body>
+</html>

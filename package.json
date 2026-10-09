@@ -1,13 +1,13 @@
 {
   "name": "yingxu-studio",
-  "version": "0.81.1",
+  "version": "0.88.0",
   "private": true,
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "test": "node --test scripts/test_reference_actions.mjs scripts/test_reference_numbering.mjs scripts/test_workflow_experience.mjs scripts/test_workflow_guidance.mjs scripts/test_h3_duration_guidance.mjs scripts/test_workflow_interactions.mjs scripts/test_workflow_interfaces.mjs scripts/test_workspace_media.mjs scripts/test_catalog_submission.mjs scripts/test_point_picker.mjs scripts/test_workspace_save.mjs scripts/test_submission_feedback.mjs scripts/test_output_reference_reuse.mjs scripts/test_account_menu.mjs scripts/test_admin_workspace.mjs scripts/test_generation_cost.mjs scripts/test_numeric_contract.mjs",
+    "test": "node --test scripts/test_reference_actions.mjs scripts/test_reference_numbering.mjs scripts/test_workflow_experience.mjs scripts/test_workflow_guidance.mjs scripts/test_h3_duration_guidance.mjs scripts/test_workflow_interactions.mjs scripts/test_workflow_interfaces.mjs scripts/test_workspace_media.mjs scripts/test_catalog_submission.mjs scripts/test_point_picker.mjs scripts/test_workspace_save.mjs scripts/test_submission_feedback.mjs scripts/test_output_reference_reuse.mjs scripts/test_account_menu.mjs scripts/test_admin_workspace.mjs scripts/test_generation_cost.mjs scripts/test_numeric_contract.mjs scripts/test_workflow_cover_art.mjs scripts/test_workflow_branch_controls.mjs scripts/test_result_output_facts.mjs scripts/test_catalog_reference_slots.mjs scripts/test_review86_geometry.mjs scripts/test_speaker_regions.mjs scripts/test_review88_timecode.mjs",
     "test:live-layout": "node scripts/test_workflow_inline_live.mjs"
   }
 }

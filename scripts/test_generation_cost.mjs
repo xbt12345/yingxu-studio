@@ -171,3 +171,30 @@ test('fetch consent headers use the server quote and never charge retrieve opera
  await f.context.fetch('/api/jobs',{method:'POST',body:JSON.stringify({workflow_id:'tool-one'})});const submit=f.network.find(call=>call.input==='/api/jobs');assert.equal(submit.init.headers.get('X-Expected-Credits'),'17');assert.equal(submit.init.headers.get('X-CSRF-Token'),'csrf-one');
  await f.context.fetch('/api/jobs/job-one/retrieve',{method:'POST'});const retrieve=f.network.find(call=>String(call.input).endsWith('/retrieve'));assert.equal(retrieve.init.headers.get('X-Expected-Credits'),null);
 });
+
+test('local workflow generation never requests a quote or changes its available button',async()=>{
+ const f=fixture(undefined,{label:'生成'});vm.runInContext('platform.localMode=true;',f.context);
+ await f.context.refreshGenerationQuote('tool-one');assert.equal(f.network.length,0);assert.equal(f.button.textContent,'生成');assert.equal(f.button.disabled,false);assert.equal(f.button.classes.has('platform-priced-generation'),false);
+});
+
+test('local creation checks only provider availability and preserves an unavailable real service',async()=>{
+ const f=fixture((input,init)=>json({...JSON.parse(init.body),available:false,availability_reason:'该模型尚未接入生成服务，暂不能生成。',local_mode:true}),{label:'生成',creationGeneration:true});vm.runInContext('platform.localMode=true;installApiFetch();',f.context);
+ await f.context.refreshCreationQuote(draft);const call=f.network[0];
+ assert.equal(call.input,'/api/account/creation-availability');assert.deepEqual(JSON.parse(call.init.body),{model:'seedream-4.5',kind:'image',quality:'2K',count:2,duration:null});
+ assert.equal(call.init.headers.get('X-CSRF-Token'),'csrf-one');assert.equal(call.init.headers.get('X-Expected-Credits'),null);assert.equal(f.button.textContent,'生成');assert.equal(f.button.disabled,true);assert.match(f.button.getAttribute('title'),/尚未接入/);assert.match(f.footer.textContent,/尚未接入/);assert.doesNotMatch(f.footer.textContent,/费用|积分|免费|演示/);
+ await f.context.refreshCreationQuote(draft);assert.equal(f.network.length,1);
+});
+
+test('local creation enables only explicit current provider availability and does not overwrite busy state',async()=>{
+ let release;const f=fixture((input,init)=>new Promise(resolve=>{release=()=>resolve(json({...JSON.parse(init.body),available:true,local_mode:true}));}),{label:'生成',disabled:true,creationGeneration:true});vm.runInContext('platform.localMode=true;',f.context);
+ const pending=f.context.refreshCreationQuote(draft);assert.equal(f.button.disabled,true);assert.match(f.button.getAttribute('title'),/核对生成服务/);release();await pending;
+ assert.equal(f.button.textContent,'生成');assert.equal(f.button.disabled,false);assert.equal(f.footer.textContent,'');
+ f.button.setAttribute('aria-busy','true');f.button.disabled=true;f.button.textContent='正在提交…';await f.context.refreshCreationQuote(draft);assert.equal(f.button.textContent,'正在提交…');assert.equal(f.button.disabled,true);
+});
+
+test('local failed or conflicting availability stays unavailable without price wording',async()=>{
+ for(const handler of [()=>json({detail:'offline'},503),()=>json({available:true,model:'wrong-model'}),()=>json({local_mode:true})]){
+  const f=fixture(handler,{label:'生成',creationGeneration:true});vm.runInContext('platform.localMode=true;',f.context);await f.context.refreshCreationQuote(draft);
+  assert.equal(f.button.textContent,'生成');assert.equal(f.button.disabled,true);assert.doesNotMatch(f.footer.textContent,/费用|积分|免费|演示/);
+ }
+});

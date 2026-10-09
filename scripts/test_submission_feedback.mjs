@@ -86,11 +86,11 @@ test('the explicit read-only comparison URL never writes state or reports a save
 
 const mergeSource=source('function mergeCatalogJob(','\nasync function retrieveLiveOutputs(');
 const recoverySource=source('async function retrieveLiveOutputs(','\nasync function submitLive(');
-const statusSource=source('function liveJobStatus(','\nfunction mergeCatalogJob(');
+const statusSource=source('function localGenerationError(','\nfunction mergeCatalogJob(');
 const buttonSource=app.split('\n').find(line=>line.startsWith('const B='));assert(buttonSource);
-function recovery({response,requestError}={}){
+function recovery({response,requestError,localMode=false}={}){
  const w={id:'catalog',catalogConnected:true,output:'image',catalogConnection:{adapter:'generic'},interface:{controls:[],texts:[],media:[]}},requests=[],messages=[];
- const context=vm.createContext({workflows:[w],workspace:{assets:[]},effectiveCatalogInterface,catalogHistorySnapshot,catalogReferenceSnapshots,catalogValuesFromSettings:(tool,settings)=>catalogHistorySnapshot(tool,{settings}).catalogValues,mergeReferenceSnapshots:()=>[],cloneDraft:structuredClone,crypto:globalThis.crypto,refreshFeed(){},sidebar(){},scheduleSave(){},toast:message=>messages.push(message),liveJson:value=>value,liveApi:async(path,options)=>{requests.push({path,options});if(requestError)throw requestError;return typeof response==='function'?response():response;},esc,I:()=>'',formatTime:()=>'',Promise,Date});
+ const context=vm.createContext({isLocalPlatform:()=>localMode,workflows:[w],workspace:{assets:[]},effectiveCatalogInterface,catalogHistorySnapshot,catalogReferenceSnapshots,catalogValuesFromSettings:(tool,settings)=>catalogHistorySnapshot(tool,{settings}).catalogValues,mergeReferenceSnapshots:()=>[],cloneDraft:structuredClone,crypto:globalThis.crypto,refreshFeed(){},sidebar(){},scheduleSave(){},toast:message=>messages.push(message),liveJson:value=>value,liveApi:async(path,options)=>{requests.push({path,options});if(requestError)throw requestError;return typeof response==='function'?response():response;},esc,I:()=>'',formatTime:()=>'',Promise,Date});
  vm.runInContext(buttonSource+'\n'+mergeSource+'\n'+recoverySource+'\n'+statusSource,context);return {context,requests,messages,w};
 }
 const receipt=(status='done',extra={})=>({id:'remote-job',workflow_id:'catalog',status,stage:'作品已保存',prompt:'original input',prompt_id:'original-prompt',settings:{},catalog_values:{},catalog_texts:{},catalog_assets:{},outputs:[],...extra});
@@ -194,8 +194,41 @@ test('unconnected free batch creation preserves every prompt and the open dialog
 });
 
 test('a cancelled real task describes platform credit handling without asserting an unverified refund',()=>{
- const context=vm.createContext({esc,B:()=>'',Date,formatTime:()=>''});vm.runInContext(source('function liveJobStatus(','\nfunction mergeCatalogJob('),context);
+ const context=vm.createContext({isLocalPlatform:()=>false,esc,B:()=>'',Date,formatTime:()=>''});vm.runInContext(statusSource,context);
  const html=context.liveJobStatus({status:'cancelled'});assert.match(html,/平台冻结积分按取消结果处理/);assert.doesNotMatch(html,/已用费用不退|已退|已退款/);
+});
+
+test('local legacy price errors offer a plain retry without rewriting the preserved history record',()=>{
+ const local=recovery({localMode:true}),cloud=recovery();
+ for(const error of ['费用未配置，请联系管理员；免费演示仍可使用。','积分不足，请充值。','积分报价已变化，请确认当前费用后重试。']){
+  const job={...outputFailure(),failurePhase:null,error},before=structuredClone(job),html=local.context.liveJobStatus(job);
+  assert.match(html,/这条记录尚未提交，请重新生成。/);assert.match(html,/data-action="retry"/);assert.doesNotMatch(html,/费用|计费|积分|充值|免费演示/);assert.deepEqual(job,before);
+  assert.match(cloud.context.liveJobStatus(job),new RegExp(esc(error).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')));
+ }
+ const execution=local.context.liveJobStatus({...outputFailure(),failurePhase:null,error:'输入图片无法读取'});assert.match(execution,/输入图片无法读取/);
+ const retrieval=local.context.liveJobStatus(outputFailure());assert.match(retrieval,/重新取回作品/);assert.doesNotMatch(retrieval,/data-action="retry"/);
+ assert.equal(local.requests.length,0);
+});
+
+test('local cancellation and generator footer omit pricing while cloud keeps its existing terms',()=>{
+ for(const localMode of [true,false]){
+  const r=recovery({localMode}),cancelled=r.context.liveJobStatus({status:'cancelled'});
+  if(localMode){assert.match(cancelled,/任务已取消/);assert.doesNotMatch(cancelled,/积分|费用|计费/);}else assert.match(cancelled,/平台冻结积分按取消结果处理/);
+  const context=vm.createContext({isLocalPlatform:()=>localMode,liveSettings:()=>({long_side:768,duration:5}),refsMarkup:()=>'',issueHTML:()=>'',uploadControl:()=>'',esc,I:()=>''});
+  vm.runInContext(buttonSource+'\n'+source('function liveComposer(','\nfunction liveField('),context);
+  const markup=context.liveComposer({draft:{prompt:'原描述',refs:[]},jobs:[]},{id:'bernini-edit',name:'视频编辑',placeholder:'描述修改'});
+  if(localMode){assert.match(markup,/data-action="generate"\s*>生成 /);assert.doesNotMatch(markup,/费用|计费|积分|报价/);}else{assert.match(markup,/生成 · 算力卡计费/);assert.match(markup,/费用以提交前报价为准/);}
+ }
+});
+
+test('local real-task cancellation confirmation preserves material and removes credit and cost instructions',async()=>{
+ for(const localMode of [true,false]){
+  const job={id:'job-one',real:true,status:'running',snapshot:{refs:[{id:'reference'}]}},before=structuredClone(job),confirmations=[];
+  const context=vm.createContext({isLocalPlatform:()=>localMode,handleWorkspaceAction:()=>false,findJob:()=>({j:job}),confirmAction:options=>{confirmations.push(options);return Promise.resolve(false);},cancelLive(){assert.fail('declined cancellation must not reach the API');}});
+  vm.runInContext(actionSource,context);context.handleAction('cancel',{dataset:{job:job.id}});await Promise.resolve();
+  assert.equal(confirmations.length,1);assert.match(confirmations[0].message,/提示词和素材保留/);assert.deepEqual(job,before);
+  if(localMode)assert.doesNotMatch(confirmations[0].message,/费用|计费|积分|收费/);else assert.match(confirmations[0].message,/冻结积分/);
+ }
 });
 
 test('all demo review routes seed free jobs without a removed cost calculator',()=>{

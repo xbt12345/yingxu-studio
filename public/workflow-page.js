@@ -1,7 +1,7 @@
-import {rangeHint} from './control-guidance.js?v=60.1';
+import {rangeHint} from './control-guidance.js?v=88.0';
 import {megapixelControl} from './parameter-controls.js?v=75.1';
 import {I,esc} from './data.js';
-import {controlSection,dimensionOptions} from './workflow-controls.js?v=81.0';
+import {controlSection,dimensionOptions} from './workflow-controls.js?v=88.0';
 
 const options=(key,items,value,format=x=>x)=>`<div class="wf-options" role="group">${items.map(x=>`<button type="button" data-wf-choice="${key}" data-value="${esc(x)}" aria-pressed="${String(value)===String(x)}">${format(x)}</button>`).join('')}</div>`;
 const section=(title,body,sub='')=>`<section class="wf-section"><div class="wf-section-title"><strong>${title}</strong>${sub?`<span>${sub}</span>`:''}</div>${body}</section>`;
@@ -21,7 +21,7 @@ const referenceLabel=w=>({
  'video-upscale':'参考素材'
 }[w?.id]||'参考图片');
 
-export function liveWorkflowEditor({w,d,values,refs,error,upload,imageUpload=upload,sourceUpload=upload,submitting}){
+export function liveWorkflowEditor({w,d,values,refs,error,upload,imageUpload=upload,sourceUpload=upload,submitting,localMode=false}){
  const isEdit=w.id==='bernini-edit',source=d.refs.find(r=>r.kind==='video');
  const limit=Math.min(3615,Math.max(1,Math.floor((Number(d.sourceDuration)||15)*100)/100));
  const start=Math.min(Number(values.trim_start)||0,Math.max(0,limit-1)),end=Math.min(limit,start+Math.max(1,Number(values.duration)||1));
@@ -29,7 +29,7 @@ export function liveWorkflowEditor({w,d,values,refs,error,upload,imageUpload=upl
  const referencePanel=section(isEdit?'修改参考图':'参考素材',(refs&&d.refs.some(r=>!isEdit||r.kind==='image')?refs:imageUpload));
  const prompt=section(isEdit?'修改指令':'镜头描述',`<div class="writing-row"><div class="writing-area"><textarea id="prompt" aria-label="${isEdit?'修改指令':'镜头描述'}" spellcheck="false" maxlength="6000" placeholder="${esc(w.placeholder)}" rows="4">${esc(d.prompt||'')}</textarea></div></div>`);
  const controls=controlSection('',workflowPicturePanel(w,d,values)+(isEdit?'':liveDurationControl(w,values)))+controlSection('随机种子',liveSeedControl(w,d,values))+(isEdit?controlSection('反向提示词',`<textarea id="negative" class="negative-input" aria-label="反向提示词" placeholder="不希望出现的内容（可选）" rows="3">${esc(d.negative||'')}</textarea>`):'');
- return `<div class="wf-editor-scroll"><div class="wf-editor-inner">${sourcePanel+referencePanel+prompt+controls}${error}</div></div><footer class="wf-editor-footer"><button class="button primary generate" type="button" data-action="generate" ${submitting?'disabled':''}>${I('spark')}${submitting?'正在提交…':'生成 · 算力卡计费'} ${I('arrow')}</button></footer>`;
+ return `<div class="wf-editor-scroll"><div class="wf-editor-inner">${sourcePanel+referencePanel+prompt+controls}${error}</div></div><footer class="wf-editor-footer"><button class="button primary generate" type="button" data-action="generate" ${submitting?'disabled':''}>${I('spark')}${submitting?'正在提交…':localMode?'生成':'生成 · 算力卡计费'} ${I('arrow')}</button></footer>`;
 }
 
 export function liveDurationControl(w,v){

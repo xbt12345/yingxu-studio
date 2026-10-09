@@ -4,6 +4,14 @@
 !scripts/
 !scripts/reviewed_native_seed_limits.py
 !scripts/review75_generation_sizes.py
+!scripts/review84_portrait_controls.py
+!scripts/review86_h3_controls.py
+!scripts/review86_ltx_controls.py
+!scripts/review86_scail_controls.py
+!scripts/review87_video_controls.py
+!scripts/review87_flash_controls.py
+!scripts/review87_infinite_controls.py
+!scripts/review87_output_loops.py
 !public/
 !public/**
 !workflows/

@@ -6,13 +6,20 @@ export function rangeText(f){
  const min=Number.isFinite(r.min)?r.min:null,max=Number.isFinite(r.max)?r.max:null;
  const bounds=min!==null&&max!==null?`${min}–${max}`:min!==null?`≥ ${min}`:max!==null?`≤ ${max}`:'';
  if(!bounds)return '';
- const unit=f.kind==='resolution'?(f.key==='megapixels'?' MP':f.key==='output_pixels'?' 千像素':' px'):f.kind==='duration'?' 秒':'';
+ const unit=f.unit?' '+f.unit:f.kind==='resolution'?(f.key==='megapixels'?' MP':f.key==='output_pixels'?' 千像素':' px'):f.kind==='duration'?' 秒':'';
  return `范围 ${bounds}${unit}${Number.isFinite(r.step)?` · 步长 ${r.step}`:''}`;
 }
 // Reviewed H3 metadata describes a frame grid, never executable expressions.
 export function pythonRound(value){const low=Math.floor(value),fraction=value-low;return fraction===.5?(low%2===0?low:low+1):Math.round(value);}
 export function expectedDuration(f,value=f.value){
  const recipe=f.effectiveDuration;
+ if(recipe?.kind==='ltx-frame-grid'&&recipe.fps===25&&recipe.stepFrames===8&&recipe.extraFrames===1&&recipe.rounding==='floor'){
+  if(!['number','string'].includes(typeof value)||typeof value==='string'&&!value.trim())return null;
+  const seconds=Number(value),requested=seconds*recipe.fps+recipe.extraFrames;
+  if(!Number.isFinite(seconds)||seconds<0||!Number.isSafeInteger(requested))return null;
+  const frames=Math.floor((requested-recipe.extraFrames)/recipe.stepFrames)*recipe.stepFrames+recipe.extraFrames;
+  return {frames,fps:recipe.fps,seconds:frames/recipe.fps};
+ }
  if(recipe?.kind!=='h3-frame-grid'||recipe.fps!==24||recipe.minFrames!==5||recipe.stepFrames!==17||recipe.rounding!=='python-round')return null;
  if(!['number','string'].includes(typeof value)||typeof value==='string'&&!value.trim())return null;
  const seconds=Number(value);if(!Number.isFinite(seconds)||seconds<0||seconds*recipe.fps>Number.MAX_SAFE_INTEGER)return null;

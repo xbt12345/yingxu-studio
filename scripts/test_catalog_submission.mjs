@@ -59,6 +59,7 @@ assert(!catalogEditor({...catalog.find(w=>w.id==='local-card-133'),interface:sch
 for(const item of catalog){
  const w={...item,interface:schemas[item.id],catalogConnected:true,catalogConnection:{adapter:'generic',validation:'structural-verified'}};
  const catalogValues=Object.fromEntries(w.interface.controls.filter(f=>f.kind==='points').map(f=>[f.id,'{"positive":[{"x":0.5,"y":0.5}],"negative":[]}']));
+ const regions=w.interface.controls.find(f=>f.kind==='speaker_regions');if(regions)catalogValues[regions.id]='[{"x":0.05,"y":0.1,"width":0.35,"height":0.8},{"x":0.6,"y":0.1,"width":0.35,"height":0.8}]';
  const draft=prepareCatalogSnapshot(w,{prompt:'契约验证',refs:[],catalogValues,catalogTexts:{},catalogSeedModes:{}}),payload=catalogSubmission(w,draft);
  assert.deepEqual(Object.keys(payload.catalog_values).sort(),w.interface.controls.map(f=>f.id).sort(),w.id+' loses a control identity');
  assert.deepEqual(Object.keys(payload.catalog_texts).sort(),w.interface.texts.map(t=>t.id).sort(),w.id+' loses a text branch');
@@ -179,7 +180,7 @@ for(const bad of ['all','-1','0,-2','1.5','1e3','0,,2','0,','0，2','0 2'])asser
 for(const [toolId,ids] of [['local-card-22',['197:object_indices','579:object_indices']],['local-card-23',['527:object_indices']]]){
  const indexTool={...catalog.find(item=>item.id===toolId),interface:schemas[toolId],catalogConnected:true,catalogConnection:{adapter:'generic',validation:'structural-verified'}};
  const indexFields=indexTool.interface.controls.filter(f=>f.kind==='indices');assert.deepEqual(indexFields.map(f=>f.id).sort(),ids.sort());
- for(const field of indexFields){assert.equal(field.type,'string');assert.equal(field.value,'');const html=controlField({refs:[],catalogValues:{}},field);assert.match(html,/type="text"/);assert.match(html,/placeholder="全部对象；或填写 0,2"/);assert.match(html,/检测/);assert(!html.includes(' max=')&&!html.includes('required')&&!html.includes('<img'),'object bounds and previews need detector evidence');}
+ for(const field of indexFields){assert.equal(field.type,'string');assert.equal(field.value,'');const html=controlField({refs:[],catalogValues:{}},field);assert.match(html,/type="text"/);assert.ok(html.includes(`placeholder="${field.placeholder||'全部对象；或填写 0,2'}"`));assert.match(html,/当前最多跟踪1人/);assert.match(html,/检测/);assert(!html.includes(' max=')&&!html.includes('required')&&!html.includes('<img'),'object bounds and previews need detector evidence');}
  const indexDraft={prompt:'对象契约验证',refs:indexTool.interface.media.map((slot,index)=>({id:'参考'+index,catalogSlot:slot.id,kind:slot.kind,src:'/test-'+index,serverAssetId:'test-'+index})),catalogValues:{},catalogTexts:{},catalogSeedModes:{}};
  let indexSnapshot=prepareCatalogSnapshot(indexTool,cloneDraft(indexDraft));let indexPayload=catalogSubmission(indexTool,indexSnapshot);for(const id of ids)assert.equal(indexPayload.catalog_values[id],'','empty delegates all objects to the node');
  indexDraft.catalogValues=Object.fromEntries(ids.map((id,index)=>[id,index?'1':'0, 2']));indexSnapshot=prepareCatalogSnapshot(indexTool,cloneDraft(indexDraft));indexPayload=catalogSubmission(indexTool,indexSnapshot);for(const [index,id] of ids.entries())assert.equal(indexPayload.catalog_values[id],index?'1':'0,2','equal keys retain independent node identities');

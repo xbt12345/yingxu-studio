@@ -1,5 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $projectPath = $PSScriptRoot
+$env:YINGXU_LOCAL_MODE = '1'
+$env:HOST = '127.0.0.1'
 $pythonPath = Join-Path $projectPath '.venv\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $pythonPath)) { $pythonPath = (Get-Command python).Source }
 $dataPath = Join-Path $projectPath 'private'

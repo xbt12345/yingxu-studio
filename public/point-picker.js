@@ -49,7 +49,20 @@ export function coverCropRect(width,height,targetWidth,targetHeight){
 }
 export function previewPointInSource(point,crop){return {x:crop.x+point.x*crop.width,y:crop.y+point.y*crop.height};}
 export function processingPreviewGeometry(width,height,recipe,longSide=recipe.longSide??1024){
- const source=sourceFrameSize(width,height,recipe.sourceMultiple??0),layerTarget=processingFrameSize(source.width,source.height,longSide,recipe.multiple??32),target=postScaledFrameSize(layerTarget.width,layerTarget.height,recipe.postScale??1);
+ let source,layerTarget;
+ const customWidth=Number(recipe.customWidth??0),customHeight=Number(recipe.customHeight??0);
+ if(recipe.customGeometryPolicy==='vhs-center-crop-then-layer-none-v1'&&![customWidth,customHeight].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=8192))throw new Error('自定义处理宽高需要填写 0–8192 的整数。');
+ if(recipe.customGeometryPolicy==='vhs-center-crop-then-layer-none-v1'&&(customWidth>0||customHeight>0)){
+  const loadWidth=customWidth||width*customHeight/height,loadHeight=customHeight||height*customWidth/width;
+  source=sourceFrameSize(loadWidth,loadHeight,recipe.sourceMultiple??8);
+  const multiple=recipe.multiple??32;
+  layerTarget={width:Math.ceil(source.width/multiple)*multiple,height:Math.ceil(source.height/multiple)*multiple};
+ }else{
+  source=sourceFrameSize(width,height,recipe.sourceMultiple??0);layerTarget=processingFrameSize(source.width,source.height,longSide,recipe.multiple??32);
+ }
+ const target=postScaledFrameSize(layerTarget.width,layerTarget.height,recipe.postScale??1);
+ if(recipe.customGeometryPolicy==='vhs-center-crop-then-layer-none-v1'&&Math.min(target.width,target.height)<64)throw new Error('缩放后的处理宽高至少需要 64 像素，请增大自定义尺寸。');
+ if(recipe.customGeometryPolicy==='vhs-center-crop-then-layer-none-v1'&&Math.max(target.width,target.height)>16384)throw new Error('缩放后的处理宽高不能超过 16384 像素，请减小自定义尺寸。');
  const first=coverCropRect(width,height,source.width,source.height),second=coverCropRect(source.width,source.height,layerTarget.width,layerTarget.height);
  const crop={x:first.x+second.x/source.width*first.width,y:first.y+second.y/source.height*first.height,width:second.width/source.width*first.width,height:second.height/source.height*first.height};
  const scale=Math.max(layerTarget.width/source.width,layerTarget.height/source.height);
@@ -70,14 +83,16 @@ export function previewFrameTime(recipe,skipFrames=0,duration=Infinity){
 export function clearPointsForMedia(d,w,slotId){
  for(const field of w?.interface?.controls||[]){
   if(field.kind==='points'&&field.mediaSlotId===slotId){d.catalogValues||={};d.catalogValues[field.id]=serializePointSelection(emptyPointSelection());}
+  if(field.kind==='speaker_regions'&&field.mediaSlotId===slotId){d.catalogValues||={};d.catalogValues[field.id]='[]';}
  }
 }
 
 export function pointPickerControl(d,f,value,id){
  const ref=(d.refs||[]).find(r=>r.catalogSlot===f.mediaSlotId&&r.kind==='video'&&r.src&&r.available!==false),recipe=f.previewRecipe||{},longSide=d.catalogValues?.[recipe.longSideControlId]??recipe.longSide??1024,skipFrames=d.catalogValues?.[recipe.skipControlId]??recipe.skipFrames??0;
+ const customWidth=d.catalogValues?.[recipe.customWidthControlId]??0,customHeight=d.catalogValues?.[recipe.customHeightControlId]??0;
  // Invalid saved input stays visible as an error; it is never silently coerced.
  let stored,error='';try{stored=serializePointSelection(value);}catch(err){stored=String(value??'');error=err.message;}
- return `<section class="catalog-field catalog-point-picker" data-point-picker data-point-mode="positive" data-point-recipe="${esc(JSON.stringify({...recipe,longSide,skipFrames}))}"><strong>${esc(f.label||'选择跟踪主体')}</strong><input type="hidden" id="${id}" data-catalog-field="${esc(f.id)}" value="${esc(stored)}"><div class="point-picker-tools" role="group" aria-label="点选方式"><button type="button" data-point-mode="positive" aria-pressed="true"><i class="point-positive-dot" aria-hidden="true"></i>保留主体</button><button type="button" data-point-mode="negative" aria-pressed="false"><i class="point-negative-dot" aria-hidden="true"></i>排除区域</button><button type="button" data-point-clear>清空</button><span data-point-count>0 / 0</span></div>${ref?`<div class="point-picker-stage" data-point-stage tabindex="0" role="group" aria-label="视频起始帧点选；方向键移动位置，回车添加；点击已有点移除"><div class="point-picker-source-frame" data-point-source-frame><video src="${esc(ref.src)}" muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video></div><div class="point-picker-layer" data-point-layer></div><span class="point-picker-cursor" data-point-cursor hidden aria-hidden="true"></span><span class="point-picker-loading" data-point-loading>正在读取视频起始帧…</span></div>`:'<div class="point-picker-empty">先添加原视频，再点击起始帧选择主体</div>'}<small class="catalog-field-help">绿点保留，红点排除；点击点可移除，每类最多 ${POINT_LIMIT} 个。</small>${f.id==='1095:points'?'<small class="catalog-field-help">选区用于跟踪与生成引导；其他区域也可能变化。</small>':''}<p class="point-picker-error" data-point-error role="alert" ${error?'':'hidden'}>${esc(error)}</p></section>`;
+ return `<section class="catalog-field catalog-point-picker" data-point-picker data-point-mode="positive" data-point-recipe="${esc(JSON.stringify({...recipe,longSide,skipFrames,customWidth,customHeight}))}"><strong>${esc(f.label||'选择跟踪主体')}</strong><input type="hidden" id="${id}" data-catalog-field="${esc(f.id)}" value="${esc(stored)}"><div class="point-picker-tools" role="group" aria-label="点选方式"><button type="button" data-point-mode="positive" aria-pressed="true"><i class="point-positive-dot" aria-hidden="true"></i>保留主体</button><button type="button" data-point-mode="negative" aria-pressed="false"><i class="point-negative-dot" aria-hidden="true"></i>排除区域</button><button type="button" data-point-clear>清空</button><span data-point-count>0 / 0</span></div>${ref?`<div class="point-picker-stage" data-point-stage tabindex="0" role="group" aria-label="视频起始帧点选；方向键移动位置，回车添加；点击已有点移除"><div class="point-picker-source-frame" data-point-source-frame><video src="${esc(ref.src)}" muted playsinline preload="auto" aria-hidden="true" tabindex="-1"></video></div><div class="point-picker-layer" data-point-layer></div><span class="point-picker-cursor" data-point-cursor hidden aria-hidden="true"></span><span class="point-picker-loading" data-point-loading>正在读取视频起始帧…</span></div>`:'<div class="point-picker-empty">先添加原视频，再点击起始帧选择主体</div>'}<small class="catalog-field-help">绿点保留，红点排除；点击点可移除，每类最多 ${POINT_LIMIT} 个。</small>${f.id==='1095:points'?'<small class="catalog-field-help">选区用于跟踪与生成引导；其他区域也可能变化。</small>':''}<p class="point-picker-error" data-point-error role="alert" ${error?'':'hidden'}>${esc(error)}</p></section>`;
 }
 
 const installed=new WeakSet();
@@ -108,12 +123,18 @@ function syncFrame(box){
  const recipe=JSON.parse(box.dataset.pointRecipe),scope=box.closest('.catalog-editor')||box.closest('.library-example')||box;
  const sizeInput=[...scope.querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===recipe.longSideControlId);
  const skipInput=[...scope.querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===recipe.skipControlId);
+ const customWidthInput=[...scope.querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===recipe.customWidthControlId);
+ const customHeightInput=[...scope.querySelectorAll('[data-catalog-field]')].find(n=>n.dataset.catalogField===recipe.customHeightControlId);
+ recipe.customWidth=customWidthInput?Number(customWidthInput.value):Number(recipe.customWidth??0);
+ recipe.customHeight=customHeightInput?Number(customHeightInput.value):Number(recipe.customHeight??0);
  const longSide=sizeInput?Number(sizeInput.value):Number(recipe.longSide??1024),loading=box.querySelector('[data-point-loading]');
  try{
   const geometry=processingPreviewGeometry(video.videoWidth,video.videoHeight,recipe,longSide),size=geometry.target;
   const targetTime=previewFrameTime(recipe,skipInput?Number(skipInput.value):Number(recipe.skipFrames??0),video.duration),state=nodeState.get(box)||{};
-  nodeState.set(box,{...(nodeState.get(box)||{}),targetTime});
-  if(state.targetTime!==undefined&&state.targetTime!==targetTime)writePoints(box,emptyPointSelection());
+  const cropKey=[geometry.crop.x/video.videoWidth,geometry.crop.y/video.videoHeight,geometry.crop.width/video.videoWidth,geometry.crop.height/video.videoHeight].map(n=>n.toFixed(6)).join(',');
+  const cropChanged=state.cropKey!==undefined&&state.cropKey!==cropKey;
+  nodeState.set(box,{...(nodeState.get(box)||{}),targetTime,cropKey});
+  if(state.targetTime!==undefined&&state.targetTime!==targetTime||cropChanged)writePoints(box,emptyPointSelection());
   stage.style.aspectRatio=`${size.width} / ${size.height}`;stage.style.maxWidth=`${Math.min(500,280*size.width/size.height)}px`;
   const sourceFrame=box.querySelector('[data-point-source-frame]');sourceFrame.style.width=geometry.framePercent.width+'%';sourceFrame.style.height=geometry.framePercent.height+'%';
   stage.dataset.pointWidth=size.width;stage.dataset.pointHeight=size.height;
@@ -140,7 +161,7 @@ export function installPointPickers(root=document){
   if(!event.target.dataset.catalogField)return;
   const own=event.target.closest('[data-point-picker]');if(own){drawPoints(own);return;}
   for(const box of roots(event.target.closest('.catalog-editor')||event.target.closest('.library-example')||root)){
-   const recipe=JSON.parse(box.dataset.pointRecipe);if([recipe.longSideControlId,recipe.skipControlId].includes(event.target.dataset.catalogField))syncFrame(box);
+   const recipe=JSON.parse(box.dataset.pointRecipe);if([recipe.longSideControlId,recipe.skipControlId,recipe.customWidthControlId,recipe.customHeightControlId].includes(event.target.dataset.catalogField))syncFrame(box);
   }
  });
  root.addEventListener('click',event=>{

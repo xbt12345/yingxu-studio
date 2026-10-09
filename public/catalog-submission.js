@@ -1,7 +1,8 @@
 // Catalog IDs are the binding identity. Display keys may repeat across branches.
-import {normalizeObjectIndices} from './object-indices.js?v=81.0';
-import {referenceProvenance} from './live-history.js?v=81.0';
+import {normalizeObjectIndices} from './object-indices.js?v=88.0';
+import {referenceProvenance} from './live-history.js?v=88.0';
 import {browserNumericControl,validateBrowserNumbers} from './numeric-contract.js?v=81.0';
+import {normalizeSpeakerRegions,serializeSpeakerRegions} from './speaker-regions.js?v=88.0';
 const browserInterface=cfg=>({...cfg,controls:(cfg.controls||[]).map(browserNumericControl)});
 export function effectiveCatalogInterface(w){
  const cfg=w?.interface||{controls:[],texts:[],media:[]},connection=w?.catalogConnection;
@@ -14,21 +15,30 @@ export function effectiveCatalogInterface(w){
   return {...slot,...remote,...(required===undefined?{}:{required})};
  });
  const profiles=Array.isArray(connection.apiProfiles)?(cfg.apiProfiles||[]).filter(profile=>connection.apiProfiles.some(item=>item.id===profile.id)):cfg.apiProfiles||[];
- return browserInterface({...cfg,controls:merge(select(cfg.controls,connection.supportedControlIds),connection.controls),texts:merge(select(cfg.texts,connection.textIds??connection.supportedTextIds),connection.texts),media,apiProfiles:merge(profiles,connection.apiProfiles)});
+ return browserInterface({...cfg,...(Object.keys(connection.referencePolicy||{}).length?{referencePolicy:connection.referencePolicy}:{}),controls:merge(select(cfg.controls,connection.supportedControlIds),connection.controls),texts:merge(select(cfg.texts,connection.textIds??connection.supportedTextIds),connection.texts),media,apiProfiles:merge(profiles,connection.apiProfiles)});
 }
 
-export function catalogConnectionState(w){
+export function catalogConnectionState(w,{hideCosts=false}={}){
+ const visible=result=>hideCosts?{...result,button:'生成',detail:result.detail.replace(/ · 外部 API 可能另收费/,'')}:result;
  const c=w?.catalogConnection,blocked=c?.validation==='blocked'||c?.available===false,verified=c?.validation==='live-verified',external=c?.adapter==='generic'&&c.external_api_account===true,feeNote=external?' · 外部 API 可能另收费':'',button=external?'生成 · 算力 / API 计费':'生成 · 算力卡计费';
- if(blocked)return {blocked:true,label:'暂不可生成',detail:c.blocking_reason||'需要先补齐运行依赖',button:'暂不可生成'};
- if(w?.catalogPendingApi)return {blocked:false,label:'待自有 API 验证',detail:'平台 API 额度不足 · 可填写自有 API'+feeNote,button:external?button:'生成 · 自有 API 计费'};
- if(w?.catalogConnected)return {blocked:false,label:verified?'已实测':'已接入 · 待实测',detail:(verified?'已有生成验证':'参数与执行图已核对，尚未生成验证')+feeNote,button};
- return {blocked:false,label:'演示模式',detail:'内置素材 · 不调用模型',button:'演示生成 · 免费'};
+ if(blocked)return visible({blocked:true,label:'暂不可生成',detail:c.blocking_reason||'需要先补齐运行依赖',button:'暂不可生成'});
+ if(w?.catalogPendingApi)return visible({blocked:false,label:'待自有 API 验证',detail:'平台 API 额度不足 · 可填写自有 API'+feeNote,button:external?button:'生成 · 自有 API 计费'});
+ if(w?.catalogConnected)return visible({blocked:false,label:verified?'已实测':'已接入',detail:(verified?'已有生成验证':'参数与执行图已核对')+feeNote,button});
+ return visible({blocked:false,label:'演示模式',detail:'内置素材 · 不调用模型',button:'演示生成 · 免费'});
 }
 
 export function validateCatalogConstraints(w,d){
  const connection=w?.catalogConnection;if(connection?.adapter!=='generic')return;
  const cfg=effectiveCatalogInterface(w);
  for(const rule of connection.constraints||[]){
+  if(rule.type==='paired-size'){
+   const width=cfg.controls.find(f=>f.id===rule.width),height=cfg.controls.find(f=>f.id===rule.height);
+   if(!width||!height)throw new Error('自定义尺寸配置缺失，请刷新后重试。');
+   const pair=[width,height].map(f=>Number(d.catalogValues?.[f.id]??f.value));
+   if(pair.every(n=>n===0))continue;
+   if(pair.some(n=>!Number.isSafeInteger(n)||n<rule.min_nonzero||n>rule.max||n%rule.multiple))throw new Error(`自定义宽高需一起填写 ${rule.min_nonzero}–${rule.max} 的 ${rule.multiple} 倍数；都填 0 沿用原配置。`);
+   continue;
+  }
   if(rule.type!=='nonzero-size')continue;
   const width=cfg.controls.find(f=>f.id===rule.width),height=cfg.controls.find(f=>f.id===rule.height);
   if(!width||!height)throw new Error('工作流尺寸校验配置缺失，请刷新后重试。');
@@ -56,7 +66,8 @@ export function catalogSubmission(w,d,assetMap={}){
  const cfg=effectiveCatalogInterface(w);
  validateBrowserNumbers(cfg,d);
  validateCatalogOptions(cfg,d);
- const values=Object.fromEntries(cfg.controls.map(f=>{const value=d.catalogValues?.[f.id]??f.value;return [f.id,f.kind==='indices'?normalizeObjectIndices(value):value];}));
+ for(const f of cfg.controls||[])if(f.kind==='speaker_regions')normalizeSpeakerRegions(d.catalogValues?.[f.id]??f.value,{complete:true});
+ const values=Object.fromEntries(cfg.controls.map(f=>{const value=d.catalogValues?.[f.id]??f.value;return [f.id,f.kind==='indices'?normalizeObjectIndices(value):f.kind==='speaker_regions'?serializeSpeakerRegions(value):value];}));
  const texts=catalogTextValues(cfg,d);
  const assets=Object.fromEntries(cfg.media.filter(slot=>assetMap[slot.id]).map(slot=>[slot.id,assetMap[slot.id]]));
  return {catalog_values:values,catalog_texts:texts,catalog_assets:assets};

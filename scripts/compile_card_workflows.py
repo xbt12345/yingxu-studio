@@ -17,6 +17,12 @@ from workflow_customization import preserves_system_instruction, reviewed_text_p
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from reviewed_repairs import apply_reviewed_repairs, ReviewedRepairError
+from review86_scail_controls import finalize_scail_schema
+from review86_ltx_controls import finalize_ltx_schema
+from review87_video_controls import finalize_video_schema
+from review87_flash_controls import finalize_flash_schema
+from review87_infinite_controls import finalize_infinite_schema
+from workflow_result_contracts import finalize_prompt_helper_outputs
 CACHE = ROOT / 'private/research/card-20261004'
 
 
@@ -566,7 +572,9 @@ def sanitize(graph, editable_texts, media):
             if isinstance(value, str):
                 out[nid]['inputs'][key] = ''
     for field in editable_texts:
-        if field.get('preserveWhenEmpty'):
+        # A locator may keep its native fallback at execution time, while its
+        # editable user value remains blank in the portable API template.
+        if field.get('preserveWhenEmpty') and not field.get('sanitizeValue'):
             continue
         for target in field['targets']:
             out[target['node']]['inputs'][target['input']] = ''
@@ -606,6 +614,7 @@ def main():
         raw = original_graphs[wid]
         spec = {key: entry[key] for key in ('id', 'name', 'output')}
         spec.update(source=names[index], source_hash=cfg['sourceHash'], adapter='generic', template=wid + '.api.json', controls=[], texts=[], media=[], apiProfiles=[], outputs=[])
+        spec['referencePolicy'] = copy.deepcopy(cfg.get('referencePolicy', {}))
         errors, excluded = [], []
         if wid in legacy:
             audit.append({**spec, 'validation': 'legacy-adapter', 'controls': len(cfg['controls']), 'texts': len(cfg['texts']), 'media': len(cfg['media'])})
@@ -656,6 +665,7 @@ def main():
                     # The saved source connects only the positive output. The
                     # reviewed point tool also exposes the existing SeC negative
                     # input; keep both behaviours backed by the real node schema.
+                    spec['pointsRecipe'].update({key: recipe[key] for key in ('customWidthControlId','customHeightControlId','customGeometryPolicy') if key in recipe})
                     if '1062' not in compiler.compiled or 'negative_points' not in schemas[compiler.compiled['1062']['class_type']].get('input', {}).get('optional', {}):
                         raise CompileError('Subject tracking negative-point input is unavailable')
                     compiler.compiled['1062']['inputs']['negative_points'] = [targets[0]['node'], 1]
@@ -756,6 +766,12 @@ def main():
                     spec['apiProfiles'].append(new)
             errors.extend(compiler.dependency_errors())
             spec['execution_repairs'] = apply_reviewed_repairs(compiler.compiled, spec, for_template=True)
+            spec = finalize_scail_schema(spec, template=compiler.compiled)
+            spec = finalize_ltx_schema(spec, template=compiler.compiled)
+            spec = finalize_video_schema(spec, template=compiler.compiled)
+            spec = finalize_flash_schema(spec, template=compiler.compiled)
+            spec = finalize_infinite_schema(spec, template=compiler.compiled, cfg=cfg, schemas=schemas)
+            spec = finalize_prompt_helper_outputs(spec, compiler.compiled)
             if wid == 'local-card-125':
                 spec['constraints'] = [{'type': 'nonzero-size', 'width': '225:value', 'height': '226:value'}]
             spec['normalizations'] = compiler.normalized
@@ -769,7 +785,7 @@ def main():
             public_graph = sanitize(compiler.compiled, spec['texts'], spec['media'])
             (ROOT / 'workflows/api' / spec['template']).write_text(json.dumps(public_graph, ensure_ascii=False, indent=2), 'utf-8', newline='\n')
             spec['node_count'] = len(compiler.compiled)
-        except (CompileError, ReviewedRepairError, KeyError, IndexError, TypeError) as e:
+        except (CompileError, ReviewedRepairError, KeyError, IndexError, TypeError, ValueError) as e:
             if isinstance(e, CompileError) and str(e).startswith('Card node unavailable:'):
                 graph = Graph(raw)
                 frontend_only = {'Reroute', 'SetNode', 'GetNode', 'PrimitiveNode', 'Note', 'MarkdownNote'}
@@ -783,7 +799,7 @@ def main():
                 errors.append(str(e))
         spec['validation'] = 'blocked' if errors else 'structural-verified'
         spec['blocking_reason'] = '；'.join(errors) if errors else ''
-        spec['excluded'] = excluded
+        spec['excluded'] = [field for field in excluded if not (field.get('id')=='194:speaker_regions' and spec.get('speakerRegionsRecipe'))]
         registry[wid] = spec
         audit.append({**spec, 'errors': errors})
     registry_path = ROOT / 'workflows/compiled-registry.json'
