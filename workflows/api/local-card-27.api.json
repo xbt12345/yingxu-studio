@@ -234,7 +234,7 @@
   "753": {
     "class_type": "PrimitiveStringMultiline",
     "inputs": {
-      "value": ""
+      "value": "cloths"
     },
     "_meta": {
       "title": "PrimitiveStringMultiline"

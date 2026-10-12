@@ -15,9 +15,14 @@ export function missingMentions(text,refs){
  return [...new Set((text||'').match(/@(图片|视频|音频)\d+/g)||[])].filter(token=>!ids.has(token));
 }
 
-// Clear content only after an accepted submission. Keep model/output preferences.
-export function clearSubmittedContent(session,{retry=false}={}){
+// Upload receipts enrich these identities without changing the user's content.
+const contentSignature=draft=>JSON.stringify([draft.prompt,draft.negative,(draft.refs||[]).map(({serverAssetId,originalServerAssetId,originalAvailable,...ref})=>ref)]);
+export function captureSubmittedContent(draft){return Object.freeze({draft,signature:contentSignature(draft)});}
+
+// Clear only the accepted content; a later edit or replacement draft owns itself.
+export function clearSubmittedContent(session,{retry=false,baseline}={}){
  if(session.scope!=='model'||retry)return false;
+ if(baseline&&(session.draft!==baseline.draft||contentSignature(session.draft)!==baseline.signature))return false;
  Object.assign(session.draft,{prompt:'',negative:'',refs:[],error:null});
  return true;
 }

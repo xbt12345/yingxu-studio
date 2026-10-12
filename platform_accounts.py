@@ -1114,9 +1114,13 @@ class PlatformAccounts:
             self._audit(db, actor_id, 'resolve_payment_review', review_id, {'decision': decision, 'note': note.strip(), 'refund_reference': refund_reference})
             return dict(db.execute('SELECT * FROM platform_payment_resolutions WHERE review_id=?', (review_id,)).fetchone())
 
-    def reserve(self, account_id, job_id, workflow_id, connection=None, retry_released=False):
+    def reserve(self, account_id, job_id, workflow_id, connection=None, retry_released=False,
+                quoted_credits=None):
+        """Use an internal server quote when supplied; existing holds keep their amount."""
         self._identifier(job_id, '任务编号')
         self._identifier(workflow_id, '工作流编号')
+        if quoted_credits is not None:
+            quoted_credits = self._integer(quoted_credits, '积分报价')
         with self._write(connection) as db:
             self._account(db, account_id)
             existing = db.execute('SELECT * FROM platform_reservations WHERE job_id = ?', (job_id,)).fetchone()
@@ -1130,7 +1134,9 @@ class PlatformAccounts:
                     raise AccountError(409, 'reservation_released', '该任务的预扣已释放，重试必须重新确认预扣。')
                 credits, attempt = existing['credits'], existing['attempt'] + 1
             else:
-                credits, attempt = self.pricing(workflow_id, connection=db)['credits'], 1
+                credits = (quoted_credits if quoted_credits is not None else
+                           self.pricing(workflow_id, connection=db)['credits'])
+                attempt = 1
             changed = db.execute('UPDATE platform_accounts SET balance = balance - ?,held = held + ? WHERE id = ? AND enabled = 1 AND balance >= ?',
                                  (credits, credits, account_id, credits)).rowcount
             if not changed:

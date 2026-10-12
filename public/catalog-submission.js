@@ -1,6 +1,6 @@
 // Catalog IDs are the binding identity. Display keys may repeat across branches.
 import {normalizeObjectIndices} from './object-indices.js?v=88.0';
-import {referenceProvenance} from './live-history.js?v=88.0';
+import {referenceProvenance} from './live-history.js?v=91.1';
 import {browserNumericControl,validateBrowserNumbers} from './numeric-contract.js?v=81.0';
 import {normalizeSpeakerRegions,serializeSpeakerRegions} from './speaker-regions.js?v=88.0';
 const browserInterface=cfg=>({...cfg,controls:(cfg.controls||[]).map(browserNumericControl)});
@@ -19,7 +19,7 @@ export function effectiveCatalogInterface(w){
 }
 
 export function catalogConnectionState(w,{hideCosts=false}={}){
- const visible=result=>hideCosts?{...result,button:'生成',detail:result.detail.replace(/ · 外部 API 可能另收费/,'')}:result;
+ const visible=result=>hideCosts?{...result,button:result.button.replace(/ · (?:免费|算力 \/ API 计费|算力卡计费|自有 API 计费)$/,''),detail:result.detail.replace(/ · 外部 API 可能另收费/,'')}:result;
  const c=w?.catalogConnection,blocked=c?.validation==='blocked'||c?.available===false,verified=c?.validation==='live-verified',external=c?.adapter==='generic'&&c.external_api_account===true,feeNote=external?' · 外部 API 可能另收费':'',button=external?'生成 · 算力 / API 计费':'生成 · 算力卡计费';
  if(blocked)return visible({blocked:true,label:'暂不可生成',detail:c.blocking_reason||'需要先补齐运行依赖',button:'暂不可生成'});
  if(w?.catalogPendingApi)return visible({blocked:false,label:'待自有 API 验证',detail:'平台 API 额度不足 · 可填写自有 API'+feeNote,button:external?button:'生成 · 自有 API 计费'});
@@ -47,7 +47,29 @@ export function validateCatalogConstraints(w,d){
 }
 
 export function validateCatalogOptions(cfg,d){
- for(const field of cfg.controls||[]){const value=d.catalogValues?.[field.id]??field.value,option=field.options?.find(option=>String(option?.value??option)===String(value));if(option?.disabled===true)throw new Error(option.reason||`${field.label}的此选项暂不可用，请选择其他方式。`);}
+ for(const field of cfg.controls||[]){const value=d.catalogValues?.[field.id]??field.value,option=field.options?.find(option=>String(option?.value??option)===String(value));if(field.options&&!field.customRange&&option===undefined)throw new Error(`请选择有效的${field.label}。`);if(option?.disabled===true)throw new Error(option.reason||`${field.label}的此选项暂不可用，请选择其他方式。`);}
+}
+
+// Branch controls remain in the execution contract. Repair only invalid, inactive
+// values in the submission copy; never replace the user's editable draft values.
+export function catalogValuesForSubmission(cfg,d){
+ const values={...(d.catalogValues||{})};
+ for(const field of cfg.controls||[]){
+  const rule=field.visibleWhen;if(!rule)continue;
+  const controller=cfg.controls.find(other=>other.id===rule.controlId),current=values[rule.controlId]??controller?.value??rule.defaultValue;
+  if(String(current)===String(rule.equals))continue;
+  const raw=values[field.id]??field.value,range=field.customRange||field;
+  let valid=true;
+  if(field.type==='number'){
+   valid=['number','string'].includes(typeof raw)&&String(raw).trim()!=='';
+   if(valid){try{validateBrowserNumbers({controls:[field]},{catalogValues:{[field.id]:raw}});}catch{valid=false;}}
+   const step=Number(range.step),base=Number(range.min??0);
+   if(valid&&Number.isFinite(step)&&step>0){const steps=(Number(raw)-base)/step;valid=Math.abs(steps-Math.round(steps))<1e-6;}
+  }
+  if(valid&&field.options&&!field.customRange){const option=field.options.find(option=>String(option?.value??option)===String(raw));valid=option!==undefined&&option?.disabled!==true;}
+  if(!valid)values[field.id]=field.value;
+ }
+ return values;
 }
 
 function catalogTextValues(cfg,d){
@@ -62,8 +84,9 @@ export function catalogPromptProblem(w,d){
 }
 
 export function catalogSubmission(w,d,assetMap={}){
- validateCatalogConstraints(w,d);
  const cfg=effectiveCatalogInterface(w);
+ d={...d,catalogValues:catalogValuesForSubmission(cfg,d)};
+ validateCatalogConstraints(w,d);
  validateBrowserNumbers(cfg,d);
  validateCatalogOptions(cfg,d);
  for(const f of cfg.controls||[])if(f.kind==='speaker_regions')normalizeSpeakerRegions(d.catalogValues?.[f.id]??f.value,{complete:true});

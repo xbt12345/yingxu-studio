@@ -322,7 +322,7 @@
       "source": "动漫系列生图/0427Anima文生图.json",
       "source_hash": "dd292b96f8e6f02fab2ccdb63b9e29b5e95976fbd26b71a8415fc139da571ef1",
       "template": "local-card-85.api.json",
-      "template_sha256": "880ba08e58096f437a061e3b8a65c23f6d85214db79c633920dfbcba3e5cb0b9",
+      "template_sha256": "ced773a1b66e44689c37a59bb03d4d9f522c9302837df35254895debac522d41",
       "requires_custom_api": false,
       "node_types": [
         "CLIPLoader",
@@ -720,7 +720,7 @@
       "source": "动漫和真人转换/0111qwen2511动漫转真人.json",
       "source_hash": "9e36f21f798e2a6d437c28118ef69323b48eadca7c152e22d6b549bb7f7fb1cd",
       "template": "local-card-82.api.json",
-      "template_sha256": "22fffa7b50768d420b3b7b9d345d13d0ee35645541ead3ea0aef43b318ce69f1",
+      "template_sha256": "54d4e5ed619d33e440f839bf0e0af3eca56283f64f1bd79b70804e056fdcd87e",
       "requires_custom_api": true,
       "node_types": [
         "CFGNorm",
@@ -854,7 +854,7 @@
       "source": "文生图/0608image_ideogram4_t2i -破.json",
       "source_hash": "f0ea70c0c25837b9c2fe5e79604bb0ed5dca9896c824f3db083231690c9d9eeb",
       "template": "local-card-105.api.json",
-      "template_sha256": "16bcd581922febe0bd88e57fd27990c7096f1ca45b278099ca4b2b6264c8b045",
+      "template_sha256": "61170ab3a1a0ceb8b34fbd320da83723ed5c1fe50e716e5ac4c9d20ffca8c4aa",
       "requires_custom_api": true,
       "node_types": [
         "CFGOverride",
@@ -900,7 +900,7 @@
       "source": "文生图/0608image_ideogram4_t2i .json",
       "source_hash": "77992d83327c2bf1bb68d1f33a4632a937f171b5b6a066409cc7ba229bb832f2",
       "template": "local-card-106.api.json",
-      "template_sha256": "4d2cf9f28c5b50f78dc2f8fa7c88fd41f13724f1ab89ab8afb062b0c97481f4c",
+      "template_sha256": "c6cf72eef0f5b8e4539cba0e883145cdb49978a8ec4f968dec116b43bc41e146",
       "requires_custom_api": true,
       "node_types": [
         "CFGOverride",
@@ -978,7 +978,7 @@
       "source": "文生图/文生图_krea2_turbo_t2i.json",
       "source_hash": "7160984252903e474a53f61e9effa339223cd0bae6dc9400fd5e63405def9de1",
       "template": "local-card-108.api.json",
-      "template_sha256": "390f8b29bf1984028e82d01385c6a81bdfd97029a9d3b92e72563eaa18df1cd4",
+      "template_sha256": "87e326dc31adacf5051c5baa7c7a43e3116c8b8d4952868dce880823846a503c",
       "requires_custom_api": false,
       "node_types": [
         "CLIPLoader",
@@ -1557,7 +1557,7 @@
       "output": "video",
       "template": "local-card-24.api.json",
       "source_hash": "a1e69dc545ea63073ca8705efb5824d3f3eb762b1fd338700e70ba51fc14b54a",
-      "template_sha256": "6cdcbd69ed7b529c2da77a793bc7fc868666be8ee2c92ef9fd0c4b3aeef18bbb",
+      "template_sha256": "689f1432548c9aa5a1fd9dccddf2590bef6aa1a3b8077e4ebb3ac4eaafdc50c8",
       "requires_custom_api": false,
       "node_types": [
         "Any Switch (rgthree)",
@@ -1619,7 +1619,7 @@
       "output": "video",
       "template": "local-card-25.api.json",
       "source_hash": "12e1b1cad67733bcb99ffb9777b560216fa53633bbd5b238857f989af1449d7d",
-      "template_sha256": "60eeea76849479e4b409ee9516f285714546e2c136f3d91ec04b818062175f5d",
+      "template_sha256": "e48f58bec7b727758caaaed260d7c1a0905711bb9f05da61484fbfa7b229440e",
       "requires_custom_api": false,
       "node_types": [
         "Any Switch (rgthree)",
@@ -1731,7 +1731,7 @@
       "output": "video",
       "template": "local-card-27.api.json",
       "source_hash": "ded45c025eeccf3c67b793e1ee73c859b29038b0fe3b8e8a838f65835ce0c449",
-      "template_sha256": "bff39e121e0a7c53cc18c7dec446f8b04c705a6f7e428eb3aace88767daa39de",
+      "template_sha256": "f480500343cfe9f34da1d06be113ec78db6ef8d8fb43257d4d421bdc1e459c15",
       "requires_custom_api": false,
       "node_types": [
         "Any Switch (rgthree)",
@@ -1792,7 +1792,7 @@
       "output": "video",
       "template": "local-card-28.api.json",
       "source_hash": "c8b4de0c30b61edcd8b430ed44be76461e7d52cc2aadf332080b7df401aba53e",
-      "template_sha256": "d0941de3614fe3464a05dfe15b858a048e13edf1dee08e9613c8919deb8d1ade",
+      "template_sha256": "6dab5d9f6bb6ff0203e253f0947ecf03cf5d77fb98a549b78f4e543f75c5f052",
       "requires_custom_api": false,
       "node_types": [
         "Any Switch (rgthree)",
@@ -4799,7 +4799,7 @@
       "output": "video",
       "template": "local-card-116.api.json",
       "source_hash": "c1f298110654069dd391f1ecd8422a952ca0b3deee229d234ca1ff3a53ab073d",
-      "template_sha256": "22d225d13390fe283bfb8bdb151ee7f8df67ee5b0146049a3ec27693b0bad621",
+      "template_sha256": "15ca1c794a7ace16ae1d8998695d88cafda0aff72623b04e35535bfeec288a0e",
       "requires_custom_api": false,
       "node_types": [
         "Any Switch (rgthree)",

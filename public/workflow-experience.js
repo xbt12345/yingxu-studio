@@ -1,6 +1,17 @@
 import {renderWorkflowCover} from './workflow-cover-art.js?v=88.0';
 
 // Group by the operation a user wants, while preserving each workflow's schema.
+// These source names contain shared pipeline prefixes such as “人物替换姿势控制”.
+// Use their reviewed input/output purpose before matching those incidental words.
+const reviewedOperations={
+ 'local-card-24':{key:'video-background',title:'视频背景替换'},
+ 'local-card-25':{key:'face',title:'视频人物替换'},
+ 'local-card-27':{key:'outfit',title:'视频换衣'},
+ 'local-card-31':{key:'face',title:'视频换脸'},
+ 'local-card-49':{key:'outfit',title:'视频换衣'},
+ 'local-card-61':{key:'outfit',title:'视频换衣'},
+ 'local-card-116':{key:'outfit',title:'视频换衣'}
+};
 const operations=[
  ['outfit','图片换衣',/换衣|服装|穿衣|换装/],
  ['outpaint','图像扩展',/图像扩展|扩图/],
@@ -12,6 +23,8 @@ const operations=[
  ['color','漫画上色',/漫画|韩漫|上色|去码|去白码/]
 ];
 export function taskOperation(w){
+ const reviewed=reviewedOperations[w?.id];
+ if(reviewed)return {...reviewed};
  const name=w?.name||'';
  const known=operations.find(([, ,pattern])=>pattern.test(name));
  if(known)return {key:known[0],title:known[1]};

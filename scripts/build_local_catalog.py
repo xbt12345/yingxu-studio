@@ -3,8 +3,6 @@ from pathlib import Path
 import json, hashlib, re, collections
 ROOT=Path(__file__).resolve().parents[1]
 CACHE=ROOT/'private/research/card-20260923'
-TAX=json.loads((ROOT/'design-workflow-v1/taxonomy.json').read_text('utf8'))
-NAMES=json.loads((CACHE/'files.json').read_text('utf8'))
 LABELS={'width':'宽度 px','height':'高度 px','megapixels':'像素预算 MP','aspect_ratio':'画面比例','steps':'采样步数','cfg':'提示词引导 CFG','denoise':'重绘幅度','seed':'随机种子','noise_seed':'噪声种子','batch_size':'批次数量','length':'帧数','num_frames':'帧数','frames_number':'帧数','duration':'时长 秒','fps':'帧率','frame_rate':'输出帧率','force_rate':'重采样帧率','frame_load_cap':'最多加载帧数','skip_first_frames':'跳过前 N 帧','select_every_nth':'每 N 帧取一帧','scale_by':'放大倍率','scale_to_length':'目标长边 px','ref_image_size':'参考图处理尺寸','ref_max_size':'参考图上限 px','ref_image_size_mode':'参考图尺寸方式','ref_image_size_value':'参考图尺寸','ref_image_size_megapixels':'参考像素预算','ref_size':'参考尺寸','strength':'强度','strength_model':'模型作用强度','strength_clip':'文本编码强度','shift':'采样偏移','shift_video':'视频采样偏移','shift_audio':'音频采样偏移','temperature':'文本温度','max_tokens':'最大文本长度','crf':'视频 CRF','loop_count':'循环次数','pingpong':'往返播放','trim_to_audio':'按音频裁切','sampler_name':'采样器','scheduler':'调度器','format':'输出格式','method':'缩放算法','fit':'适配方式','crop':'裁切方式','multiple':'尺寸对齐倍数','resolution':'处理分辨率','max_resolution':'最大分辨率','tile_size':'分块大小','overlap':'重叠区域','temporal_overlap':'时间重叠','context_length':'上下文帧数','context_overlap':'上下文重叠','start_percent':'起始比例','end_percent':'结束比例','start_index':'起始序号','batch_index':'批次序号','start_at_step':'起始采样步','end_at_step':'结束采样步','add_noise':'添加噪声','boolean':'开关','value':'数值','Number':'数值','match_image_size':'匹配图像尺寸'}
 LABELS.update({'start_time':'音频起点','end_time':'音频终点','top_p':'文本 Top P','top_k':'文本 Top K','min_p':'文本 Min P','repetition_penalty':'重复惩罚','rescale_factor':'缩放倍率','guide_size':'引导尺寸','max_size':'尺寸上限','feather':'羽化像素','noise_aug_strength':'噪声增强'})
 SAFE_STR={'start_time','end_time','aspect_ratio','ref_image_size','ref_size','sampler_name','scheduler','format','method','fit','crop'}
@@ -69,6 +67,10 @@ def extract(g,cat):
  return fields,media
 
 def main():
+ # Maintenance inputs are needed only when rebuilding the catalog, not when
+ # importing pure fingerprint helpers in a clean-checkout contract check.
+ TAX=json.loads((ROOT/'design-workflow-v1/taxonomy.json').read_text('utf8'))
+ NAMES=json.loads((CACHE/'files.json').read_text('utf8'))
  candidates=[];missing=[]
  for i,name in enumerate(NAMES):
   cat=next((t['id'] for t in TAX if i in t['indices']),classify(name))

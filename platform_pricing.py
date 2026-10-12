@@ -16,6 +16,8 @@ MODEL_CAPABILITIES = {
     'flux-2-pro': {'kind': 'image', 'qualities': ['1K', '1.5K', '2K']},
     'seedance-2.0': {'kind': 'video', 'qualities': ['480p', '720p', '1080p'], 'durations': {'min': 4, 'max': 15}},
     'veo-3.1': {'kind': 'video', 'qualities': ['480p', '720p', '1080p'], 'durations': [4, 6, 8]},
+    'baidu-sd2': {'kind': 'video', 'qualities': ['480p', '720p', '1080p'], 'durations': {'min': 4, 'max': 15}},
+    'baidu-sd2.5': {'kind': 'video', 'qualities': ['480p', '720p'], 'durations': {'min': 4, 'max': 30}},
 }
 UNAVAILABLE = '参考费率尚未配置或配置暂不可用。'
 REFERENCE_LABEL = '生成费用预估'
@@ -102,18 +104,24 @@ def load_pricing_policy(path=None):
                     raise ValueError('invalid video qualities')
                 sanitized_prices = {q: str(_price(p)) for q, p in prices.items()}
                 durations = raw['durations']
+                capability_durations = cap.get('durations', {'min': 4, 'max': 15})
+                minimum = capability_durations['min'] if isinstance(capability_durations, dict) else min(capability_durations)
+                maximum = capability_durations['max'] if isinstance(capability_durations, dict) else max(capability_durations)
                 if isinstance(durations, dict):
                     if (type(durations.get('min')) is not int or type(durations.get('max')) is not int
-                            or not 4 <= durations['min'] <= durations['max'] <= 15):
+                            or not minimum <= durations['min'] <= durations['max'] <= maximum):
                         raise ValueError('invalid video duration range')
                     safe_durations = {'min': durations['min'], 'max': durations['max']}
                 elif (isinstance(durations, list) and durations
-                      and all(type(n) is int and 4 <= n <= 15 for n in durations)):
+                      and all(type(n) is int and minimum <= n <= maximum for n in durations)):
                     safe_durations = sorted(set(durations))
                 else:
                     raise ValueError('invalid video durations')
                 model.update(unit='second', quality_amount_minor=sanitized_prices, durations=safe_durations)
             model.update(configured=True)
+            if identifier in ('baidu-sd2', 'baidu-sd2.5'):
+                from baidu_video import model_availability
+                model.update(mode='charge', **model_availability(identifier))
             model.pop('reason', None)
             for name in ('source', 'verified_on', 'scope'):
                 if _text(raw.get(name)):
@@ -137,9 +145,11 @@ def _validate_request(model, kind, quality, count, duration):
         raise PricingValidationError('图像数量须为 1 至 8 张。')
     if kind == 'image' and duration is not None:
         raise PricingValidationError('图像生成不需要视频时长。')
-    if kind == 'video' and (count != 1 or type(duration) is not int or not 4 <= duration <= 15):
-        raise PricingValidationError('视频须为 1 个，时长须为 4 至 15 秒的整数。')
     cap = MODEL_CAPABILITIES.get(model)
+    bounds = cap.get('durations', {'min': 4, 'max': 15}) if cap else {'min': 4, 'max': 15}
+    minimum, maximum = (bounds['min'], bounds['max']) if isinstance(bounds, dict) else (min(bounds), max(bounds))
+    if kind == 'video' and (count != 1 or type(duration) is not int or not minimum <= duration <= maximum):
+        raise PricingValidationError(f'视频须为 1 个，时长须为 {minimum} 至 {maximum} 秒的整数。')
     if cap:
         if cap['kind'] != kind:
             raise PricingValidationError('模型与创作类型不匹配。')
@@ -158,10 +168,15 @@ def creation_quote(model, kind, quality, count, duration, policy=None):
               'amount_minor': None, 'currency': credit['currency'], 'mode': 'reference',
               'label': REFERENCE_LABEL, 'credit_policy': credit,
               'available': False, 'availability_reason': CREATION_UNAVAILABLE}
+    if model in ('baidu-sd2', 'baidu-sd2.5'):
+        quoted.update(mode='charge', label='本次生成费用')
     tariff = policy['creation_pricing']['models'].get(model)
     if not tariff or not tariff.get('configured'):
         quoted['reason'] = tariff.get('reason', UNAVAILABLE) if tariff else '该模型参考费率待核实。'
         return quoted
+    if model in ('baidu-sd2', 'baidu-sd2.5'):
+        from baidu_video import model_availability
+        quoted.update(**model_availability(model))
     if kind == 'image':
         if 'quality_amount_minor' in tariff:
             unit = tariff['quality_amount_minor'].get(quality)

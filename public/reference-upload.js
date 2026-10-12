@@ -1,4 +1,4 @@
-import {legacyStrokesToRegions,paintSelections} from './reference-editor.js?v=88.0';
+import {legacyStrokesToRegions,paintSelections} from './reference-editor.js?v=91.1';
 
 export const MASK_ENCODING='rgb-mask-v1';
 const editedMask=ref=>ref.annotationMode==='mask';

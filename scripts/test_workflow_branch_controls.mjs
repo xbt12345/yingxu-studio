@@ -22,24 +22,29 @@ const branches=[['local-card-86','705:value',30],['local-card-87','711:value',40
 // implements attribute selection/mutation, never visibility or value logic.
 // Production syncControlChoices decides visibility and selected preset state.
 function renderedPanel(html){
- const nodes=[];
- for(const match of html.matchAll(/<(?:div|input|button)\b([^>]*)>/g)){
-  const attributes=new Map([...match[1].matchAll(/([\w:-]+)(?:="([^"]*)")?/g)].map(m=>[m[1],m[2]??'']));
+ const nodes=[],stack=[];
+ for(const match of html.matchAll(/<(\/?)(div|input|button)\b([^>]*)>/g)){
+  if(match[1]){while(stack.length&&stack.pop().tag!==match[2]){}continue;}
+  const attributes=new Map([...match[3].matchAll(/([\w:-]+)(?:="([^"]*)")?/g)].map(m=>[m[1],m[2]??'']));
   const classes=new Set((attributes.get('class')||'').split(/\s+/).filter(Boolean));
   const node={
-   attributes,dataset:Object.fromEntries([...attributes].filter(([key])=>key.startsWith('data-')).map(([key,value])=>[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase()),value])),
+   attributes,tag:match[2],parent:stack.at(-1),dataset:Object.fromEntries([...attributes].filter(([key])=>key.startsWith('data-')).map(([key,value])=>[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase()),value])),
    value:attributes.get('value')||'',hidden:attributes.has('hidden'),type:attributes.get('type'),
    disabled:attributes.has('disabled'),checked:attributes.has('checked'),
    getAttribute(key){return attributes.get(key)??null;},
    setAttribute(key,value){attributes.set(key,String(value));},
+   removeAttribute(key){attributes.delete(key);},
+   querySelectorAll(selector){return nodes.filter(node=>{let parent=node.parent;while(parent&&parent!==this)parent=parent.parent;return parent===this&&selector.split(',').some(part=>matches(node,part.trim()));});},
    classList:{toggle(key,on){if(on)classes.add(key);else classes.delete(key);},contains(key){return classes.has(key);}},
    replaceChildren(){assert.fail('Sync must preserve the existing input tree');},
    set innerHTML(_){assert.fail('Sync must preserve input DOM identity');},
    set outerHTML(_){assert.fail('Sync must preserve input DOM identity');},
   };
   nodes.push(node);
+  if(match[2]!=='input')stack.push(node);
  }
  const matches=(node,selector)=>{
+  if(/^[a-z]+$/.test(selector))return node.tag===selector;
   const match=selector.match(/^\[([^\]=]+)(?:="([^"]*)")?\]$/);
   return match&&node.attributes.has(match[1])&&(match[2]===undefined||node.attributes.get(match[1])===match[2]);
  };
@@ -91,11 +96,13 @@ test('switching Turbo updates visibility in place and preserves each edited step
   assert.deepEqual(draft,before,'Sync reads draft state without changing stored branch values');
   assert.deepEqual(visibleBranch(panel),['false']);
   assert.equal(normal.value,String(standard));
+  assert.equal(normal.disabled,false);assert.equal(turbo.disabled,true);
   normal.value='17';draft.catalogValues['sub0/107:value']=17;
   draft.catalogValues[toggle]=true;
   syncControlChoices(panel,w,draft);
   assert.deepEqual(visibleBranch(panel),['true']);
   assert.equal(turbo.value,'12');assert.equal(normal.value,'17');
+  assert.equal(turbo.disabled,false);assert.equal(normal.disabled,true);
   const selectedTurbo=panel.querySelectorAll('[data-catalog-preset="sub0/108:value"]').filter(button=>button.getAttribute('aria-pressed')==='true');
   assert.deepEqual(selectedTurbo.map(button=>Number(button.dataset.value)),[12]);
   draft.catalogValues[toggle]=false;syncControlChoices(panel,w,draft);

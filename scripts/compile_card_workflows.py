@@ -24,6 +24,14 @@ from review87_flash_controls import finalize_flash_schema
 from review87_infinite_controls import finalize_infinite_schema
 from workflow_result_contracts import finalize_prompt_helper_outputs
 CACHE = ROOT / 'private/research/card-20261004'
+# These reviewed SAM locator fallbacks are execution defaults, not saved prompts.
+PORTABLE_LOCATOR_DEFAULTS = {
+    'local-card-24': ('3724', 'human'),
+    'local-card-25': ('623', 'human'),
+    'local-card-27': ('753', 'cloths'),
+    'local-card-28': ('443', 'human'),
+    'local-card-116': ('753', 'cloths'),
+}
 
 
 class CompileError(ValueError):
@@ -532,7 +540,7 @@ class Compiler:
         return result
 
 
-def sanitize(graph, editable_texts, media):
+def sanitize(graph, editable_texts, media, *, workflow_id=None):
     out = copy.deepcopy(graph)
     credential_sources = set()
     for nid, node in out.items():
@@ -572,8 +580,17 @@ def sanitize(graph, editable_texts, media):
             if isinstance(value, str):
                 out[nid]['inputs'][key] = ''
     for field in editable_texts:
-        # A locator may keep its native fallback at execution time, while its
-        # editable user value remains blank in the portable API template.
+        # Replace a saved locator with its reviewed generic fallback. Keeping
+        # the user's saved text leaks it; clearing it breaks preserveWhenEmpty.
+        locator = PORTABLE_LOCATOR_DEFAULTS.get(workflow_id)
+        if locator and field.get('preserveWhenEmpty') and field.get('sanitizeValue'):
+            nid, default = locator
+            if (field.get('id') == nid + ':value'
+                    and field.get('targets') == [{'node':nid, 'input':'value'}]
+                    and out.get(nid, {}).get('class_type') == 'PrimitiveStringMultiline'
+                    and nid not in credential_sources):
+                out[nid]['inputs']['value'] = default
+                continue
         if field.get('preserveWhenEmpty') and not field.get('sanitizeValue'):
             continue
         for target in field['targets']:
@@ -782,7 +799,7 @@ def main():
             private_dir = ROOT / 'private/card-compiled'
             private_dir.mkdir(exist_ok=True)
             (private_dir / spec['template']).write_text(json.dumps(compiler.compiled, ensure_ascii=False, indent=2), 'utf-8')
-            public_graph = sanitize(compiler.compiled, spec['texts'], spec['media'])
+            public_graph = sanitize(compiler.compiled, spec['texts'], spec['media'], workflow_id=wid)
             (ROOT / 'workflows/api' / spec['template']).write_text(json.dumps(public_graph, ensure_ascii=False, indent=2), 'utf-8', newline='\n')
             spec['node_count'] = len(compiler.compiled)
         except (CompileError, ReviewedRepairError, KeyError, IndexError, TypeError, ValueError) as e:

@@ -21,6 +21,7 @@ from adapters import CATALOG_WORKFLOWS  # noqa: E402
 from configuration import workflow_path  # noqa: E402
 import schema_adapters  # noqa: E402
 from workflow_customization import dance_ratio_protocol_form  # noqa: E402
+from scripts.review84_portrait_controls import CONTRACTS as PORTRAIT_CONTRACTS, reviewed_portrait_controls  # noqa: E402
 GENERIC = schema_adapters.registry()
 MANIFEST_IDS = {item['id'] for item in json.loads((ROOT / 'workflows/manifest.json').read_text('utf-8'))['workflows']}
 LEGACY_IDS = {item['id'] for item in CATALOG_WORKFLOWS}
@@ -128,6 +129,14 @@ def text_coverage(workflow_id, text_id, graph, config, source_hash=None):
         dance_ratio_protocol_form(copy.deepcopy(config['controls']), config['texts'],
                                   graph=graph, source_hash=source_hash)
         return 'reviewed-orientation-protocol-constant'
+    portrait = PORTRAIT_CONTRACTS.get(workflow_id)
+    if portrait and text_id in {nid + ':text' for nid in portrait['internal']}:
+        # These are the LLM's role protocol, not independent creative inputs.
+        # Recheck source identity, consumers and count bindings before counting
+        # an omitted field as intentional; changed graphs must still fail.
+        reviewed_portrait_controls({'id': workflow_id}, config['controls'], config['texts'],
+                                   graph=graph, source_hash=source_hash)
+        return 'reviewed-portrait-protocol-constant'
     index = int(workflow_id.split('-')[-1]) if workflow_id.startswith('local-card-') else -1
     if node_id in INTERNAL.get(index, set()):
         return 'internal-template'

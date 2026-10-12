@@ -14,6 +14,30 @@ from scripts.review87_infinite_controls import derive_infinite_reference_geometr
 server=None
 
 
+def text_value(graph, value, outputs=None):
+    """Evaluate only the shipped string plumbing, never a model/API node."""
+    if not isinstance(value, list):
+        return str(value)
+    node_id, output = value
+    if outputs and node_id in outputs:
+        return outputs[node_id][output]
+    node = graph[node_id]
+    fields = node['inputs']
+    resolve = lambda item: text_value(graph, item, outputs)
+    if node['class_type'] == 'PrimitiveStringMultiline':
+        return fields['value']
+    if node['class_type'] == 'StringReplace':
+        return resolve(fields['string']).replace(resolve(fields['find']), resolve(fields['replace']))
+    if node['class_type'] == 'PreviewAny':
+        return resolve(fields['source'])
+    if node['class_type'] == 'StringConcatenate':
+        return resolve(fields['string_a']) + fields['delimiter'] + resolve(fields['string_b'])
+    if node['class_type'] == 'JoinStringMulti':
+        return fields['delimiter'].join(resolve(fields['string_'+str(index)])
+                                         for index in range(1, fields['inputcount'] + 1))
+    raise AssertionError('Unexpected text plumbing: '+node['class_type'])
+
+
 class PortableContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -94,6 +118,91 @@ class PortableContracts(unittest.TestCase):
                         for value in node['inputs'].values():
                             if isinstance(value, list) and len(value) == 2 and isinstance(value[0], str):
                                 self.assertIn(value[0], graph)
+
+    def shipped_graph(self, identifier, prompt='a copper observatory above the clouds', negative=''):
+        entry = next(item for item in server.WORKFLOWS + server.CATALOG_WORKFLOWS if item['id'] == identifier)
+        assets = [{'kind':kind, 'remote':f'anonymous-{index}.{extension}', 'has_edit_mask':True}
+                  for kind, count, extension in [('image', entry['minImages'], 'png'),
+                                                  ('video', entry['minVideos'], 'mp4')]
+                  for index in range(count)]
+        with patch.object(configuration, 'ROOT', Path('/nonexistent-yingxu-source')):
+            return build_graph(identifier, prompt, negative, settings_for(entry, {}), assets, 'portable-text')
+
+    def test_clean_ideogram_templates_deliver_user_idea_and_ratio_to_the_llm(self):
+        prompt = 'a copper observatory above the clouds'
+        for identifier, prefix, llm in [('local-card-105', '186:', '190'), ('local-card-106', '134:', '178')]:
+            with self.subTest(workflow=identifier):
+                graph = self.shipped_graph(identifier, prompt)
+                rendered = text_value(graph, graph[llm]['inputs']['prompt'],
+                    {prefix+'164':['640'], prefix+'165':['360']})
+                self.assertIn('User idea: '+prompt, rendered)
+                self.assertIn('TARGET IMAGE ASPECT RATIO: 640:360', rendered)
+                self.assertIn('"compositional_deconstruction"', rendered)
+                self.assertNotIn('{{original_prompt}}', rendered)
+                self.assertNotIn('{{width}}', rendered)
+                self.assertNotIn('{{height}}', rendered)
+
+    def test_clean_krea_template_keeps_optimizer_rules_separate_from_the_user_prompt(self):
+        prompt = 'a copper observatory above the clouds'
+        graph = self.shipped_graph('local-card-108', prompt)
+        rendered = text_value(graph, graph['60']['inputs']['prompt'])
+        self.assertIn('Then output a single expanded prompt paragraph.', rendered)
+        self.assertTrue(rendered.endswith("User's Input:\n\n"+prompt))
+        self.assertEqual(prompt, text_value(graph, graph['65']['inputs']['on_false']))
+
+    def test_clean_anime_conversion_retains_image_description_instructions_but_no_saved_results(self):
+        graph = self.shipped_graph('local-card-82')
+        role = text_value(graph, graph['161']['inputs']['role'])
+        self.assertIn('中文提示词', role)
+        self.assertIn('400字以内', role)
+        self.assertEqual('', graph['164']['inputs']['text_0'])
+        self.assertEqual('', graph['166']['inputs']['text'])
+
+    def test_clean_anima_template_preserves_quality_defaults_and_explicit_negative_override(self):
+        graph = self.shipped_graph('local-card-85')
+        self.assertIn('best quality', text_value(graph, ['46', 0]))
+        self.assertIn('watermark', graph['66']['inputs']['text'])
+        overridden = self.shipped_graph('local-card-85', negative='visible compression blocks')
+        self.assertEqual('visible compression blocks', overridden['66']['inputs']['text'])
+
+    def test_clean_locator_templates_keep_default_targets_until_explicitly_changed(self):
+        locators = [('local-card-24', '3724', 'human', '3720'),
+                    ('local-card-25', '623', 'human', '619'),
+                    ('local-card-27', '753', 'cloths', '749'),
+                    ('local-card-28', '443', 'human', '433'),
+                    ('local-card-116', '753', 'cloths', '749')]
+        with patch.object(schema_adapters, 'ROOT', Path('/nonexistent-yingxu-source')), patch.object(configuration, 'ROOT', Path('/nonexistent-yingxu-source')):
+            for identifier, node, default, consumer in locators:
+                spec = schema_adapters.manifest(identifier)
+                records = {slot['id']: {'kind':slot['kind'], 'remote':'anonymous.' +
+                    {'image':'png', 'video':'mp4', 'audio':'wav'}[slot['kind']]} for slot in spec['media']}
+                seeds = {field['id']:0 for field in spec['controls'] if field.get('kind') == 'seed'}
+                for supplied, expected in [(None, default), ('', default), (' \t ', default), ('red jacket', 'red jacket')]:
+                    with self.subTest(workflow=identifier, supplied=supplied):
+                        texts = {} if supplied is None else {node+':value':supplied}
+                        graph, _, _ = schema_adapters.build(spec, seeds, texts, records, {},
+                            'portable-locator', prompt='Preserve the original motion and background.')
+                        self.assertEqual(graph[node]['inputs']['value'], expected)
+                        self.assertEqual(graph[consumer]['inputs']['prompt'], [node, 0])
+
+    def test_recompiling_locator_templates_uses_generic_targets_without_saved_user_text(self):
+        import sys
+        with patch.object(sys, 'path', [str(configuration.ROOT / 'scripts'), *sys.path]):
+            from scripts.compile_card_workflows import sanitize
+        for identifier, node, expected in [('local-card-24', '3724', 'human'),
+                                           ('local-card-25', '623', 'human'),
+                                           ('local-card-27', '753', 'cloths'),
+                                           ('local-card-28', '443', 'human'),
+                                           ('local-card-116', '753', 'cloths')]:
+            with self.subTest(workflow=identifier):
+                spec = schema_adapters.manifest(identifier)
+                graph = json.loads((configuration.ROOT / 'workflows/api' / spec['template']).read_text('utf-8'))
+                graph[node]['inputs']['value'] = 'owner-specific target from saved footage'
+                sanitized = sanitize(graph, spec['texts'], spec['media'], workflow_id=identifier)
+                self.assertEqual(sanitized[node]['inputs']['value'], expected)
+                self.assertEqual(graph[node]['inputs']['value'], 'owner-specific target from saved footage')
+                unknown = sanitize(graph, spec['texts'], spec['media'], workflow_id='unknown-workflow')
+                self.assertEqual(unknown[node]['inputs']['value'], '')
 
 
 if __name__ == '__main__':

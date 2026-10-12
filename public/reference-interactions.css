@@ -1,6 +1,21 @@
 /* Public Jimeng reference-group geometry; hover expands right without moving the prompt. */
 .production .api-prompt-layout{display:grid;grid-template-columns:80px minmax(0,1fr);gap:10px 14px;align-items:start;min-width:0;position:relative}
 .production .api-prompt-layout>.writing-row{grid-column:1/-1;min-width:0;margin:0}
+.production .api-prompt-layout:has(>.api-frame-pair){grid-template-columns:minmax(170px,220px) minmax(0,1fr)}
+.production .api-prompt-layout:has(>.api-frame-pair)>.writing-row{grid-column:2}
+.production .api-composer .api-frame-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;align-items:start;max-height:none;overflow:visible;padding:0}
+.production .api-frame-pair .pair-frame-slot{min-width:0}
+.production .api-frame-pair .pair-cell{width:100%;height:auto;aspect-ratio:4/3;background:#15131a;border:1px solid #ffffff1a}
+.production .api-frame-pair .pair-cell .upload-tile{position:absolute;inset:0}
+.production .api-frame-pair .pair-preview{position:absolute;inset:0;min-width:0;min-height:0;overflow:hidden;border-radius:9px}
+.production .api-frame-pair .pair-preview img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;border-radius:9px}
+.production .api-frame-pair .pair-frame-actions{display:flex;align-items:center;gap:4px;margin-top:6px}
+.production .api-frame-pair .pair-frame-actions .text-control{min-height:30px;padding:5px 6px;font-size:10px;white-space:nowrap}
+.production .api-frame-pair .pair-frame-upload{display:inline-flex;align-items:center;justify-content:center;position:relative;cursor:pointer;border:1px solid #ffffff1a}
+.production .api-frame-pair .pair-frame-upload input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.production .api-frame-pair .pair-frame-upload:focus-within{outline:2px solid #cfb5f0;outline-offset:2px}
+.production .api-frame-pair .ref-note{grid-column:1/-1;padding:0;white-space:normal;line-height:1.6}
+@media(max-width:720px){.production .api-prompt-layout:has(>.api-frame-pair){grid-template-columns:minmax(0,1fr)}.production .api-prompt-layout:has(>.api-frame-pair)>.writing-row{grid-column:1}.production .api-composer .api-frame-pair{width:100%;max-width:280px}.production .api-frame-pair .pair-frame-actions .text-control{min-height:34px}}
 .production .api-prompt-layout:has(>.api-reference-shelf:not(.pinned))>.writing-row{grid-column:2}
 .production .api-reference-shelf{position:relative;z-index:3;width:80px;height:106px;min-width:0;margin:0;padding:0;border:0;--reference-available-width:100%;--reference-transition:.3s cubic-bezier(.4,0,.2,1)}
 .production .api-reference-shelf.pinned{display:flex;align-items:center;gap:8px;width:100%;height:84px;grid-column:1/-1}

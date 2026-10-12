@@ -22,6 +22,7 @@ jobs:
           node-version: '22'
       - run: python -m pip install -r requirements-dev.txt
       - run: python -m unittest discover -v
+      - run: python -m pytest -q tests
       - run: python scripts/check_setup.py
       - run: npm test
   container:

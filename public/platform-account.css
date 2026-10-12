@@ -185,6 +185,8 @@ body.platform-auth-required { padding:0!important; overflow:auto; }
  .platform-summary>.platform-button { padding:8px 10px; font-size:11px; }
 }
 .platform-local-profile { max-width:720px; padding:22px 24px; border:1px solid #b798ce24; border-radius:18px; background:#b997ce06; }
+.platform-local-recovery .platform-auth-help { margin-top:24px; }
+.platform-local-recovery .platform-auth-help .platform-button { width:100%; min-height:42px; padding:9px 13px; font-size:12px; }
 .platform-local-profile .platform-profile { padding-bottom:20px; border-bottom:1px solid #b798ce1c; }
 .platform-local-details { display:grid; grid-template-columns:1fr 1fr; gap:24px; margin:20px 0 0; }
 .platform-local-details dt { color:#a28eaf; font-size:11px; margin-bottom:7px; }

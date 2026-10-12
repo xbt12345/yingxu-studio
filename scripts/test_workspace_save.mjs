@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {declaration,installCreationSelectors} from './test_app_source.mjs';
 import {mergeWorkspaceSnapshots} from '../public/workspace-merge.js';
 import {openStorage,readState,writeState} from '../public/storage.js';
 import {referenceProvenance,mergeReferenceSnapshots,matchesLiveRecord,reconcileLiveJobs,sameLiveJob} from '../public/live-history.js';
@@ -74,6 +75,7 @@ const historyTool={id:'history-tool',catalogConnected:true,output:'image',catalo
 const independent={...clone(optimistic),id:'live-independent-uuid',remoteId:otherServerId,token:'other-token',snapshot:clone(optimistic.snapshot)};
 let pollSaves=0;const pollContext=vm.createContext({publicPreview:false,production:true,liveCatalog:[historyTool],workflows:[historyTool],workspace:{assets:[]},state:{sessions:[{id:'original-session',scope:'wf:history-tool',draft:{refs:[]},jobs:[clone(optimistic),clone(ghost),independent]}]},referenceProvenance,mergeReferenceSnapshots,matchesLiveRecord,reconcileLiveJobs,effectiveCatalogInterface,catalogHistorySnapshot,catalogReferenceSnapshots,catalogValuesFromSettings:()=>({}),newDraft:type=>({type,refs:[]}),liveApi:async()=>[receipt],Date,crypto:globalThis.crypto,scheduleSave(){pollSaves++;},sidebar(){},$:()=>null,dialog:{open:false},route:()=>({name:'home'})});
 const mergeStart=app.indexOf('function mergeCatalogJob('),mergeEnd=app.indexOf('\nasync function rerunLive(',mergeStart),pollStart=app.indexOf('let livePollBusy='),pollEnd=app.indexOf('\nasync function cancelLive(',pollStart);
+installCreationSelectors(pollContext,app);
 vm.runInContext(app.slice(mergeStart,mergeEnd)+'\n'+app.slice(pollStart,pollEnd),pollContext);await pollContext.syncLiveJobs();
 const afterPoll=pollContext.state.sessions.flatMap(s=>s.jobs),completed=afterPoll.find(j=>j.remoteId===serverId);assert.equal(afterPoll.length,2,'equal prompt/seed with a different attempt identity remains distinct');assert.equal(completed.id,optimistic.id);assert.equal(completed.status,'done');assert.equal(completed.outputs.length,1);assert.equal(completed.snapshot.refs[0].originalAssetId,'local-original');assert.equal(completed.snapshot.refs[0].originalServerAssetId,originalId);assert.equal(completed.snapshot.refs[0].annotationMode,'mask');assert.equal(completed.token,receipt.request_token);assert.equal(afterPoll.find(j=>j.remoteId===otherServerId).status,'running');assert.equal(pollSaves,1);
 assert.equal(completed.snapshot.refs[0].name,'原始蓝图.png','production polling plus duplicate reconciliation retains the original local display name');

@@ -7,6 +7,10 @@ services:
       HOST: 0.0.0.0
       PORT: 8770
       CHENYU_CARD_URL: ${CHENYU_CARD_URL:-}
+      BAIDU_VOD_API_KEY: ${BAIDU_VOD_API_KEY:-}
+      # Container ingress is not a direct loopback connection. Keep account
+      # behavior consistent for host browsers and in-container diagnostics.
+      YINGXU_LOCAL_MODE: "0"
       YINGXU_DATA_DIR: /app/private
       YINGXU_ALLOWED_ORIGINS: ${YINGXU_ALLOWED_ORIGINS:-}
     volumes:

@@ -9,7 +9,7 @@ import {liveWorkflowEditor} from '../public/workflow-page.js';
 // Audit the actual rendered forms, including the non-catalog entry points.
 const catalog=JSON.parse(readFileSync('public/local-catalog.json')).workflows;
 const schemas=JSON.parse(readFileSync('public/workflow-interfaces.json')).workflows;
-const kinds={},totals={controls:0,texts:0,media:0,apis:0,exactSharedFields:0,sharedContextFields:0},rows=[];
+const kinds={},totals={controls:0,hiddenControls:0,texts:0,media:0,apis:0,exactSharedFields:0,sharedContextFields:0},rows=[];
 const styleSheets=path=>[...readFileSync(path,'utf8').matchAll(/href="([^"]+\.css\?v=[^"]+)"/g)].map(m=>m[1]);
 const productionStyles=styleSheets('public/studio.html');
 const libraryStyles=styleSheets('public/workflow-control-library.html');
@@ -17,7 +17,7 @@ assert.deepEqual(libraryStyles.filter(x=>x.split('?')[0]!=='workflow-control-lib
 for(const w of catalog){
  const cfg=schemas[w.id],draft={prompt:'',refs:[],catalogValues:{}},html=catalogEditor({...w,interface:cfg},draft);
  const ids=[...html.matchAll(/data-catalog-field="([^"]+)"/g)].map(x=>x[1]);
- assert.deepEqual(ids.toSorted(),cfg.controls.map(f=>f.id).toSorted(),w.id+' field identity');
+ assert.deepEqual(ids.toSorted(),cfg.controls.filter(f=>f.hidden!==true).map(f=>f.id).toSorted(),w.id+' field identity');
  assert.equal(ids.length,new Set(ids).size,w.id+' duplicate values');
  const selects=[...html.matchAll(/<select\b[^>]*>/g)].map(x=>x[0]);
  assert.ok(selects.every(s=>s.includes('wf-select-value')),w.id+' native parameter menu');
@@ -26,6 +26,7 @@ for(const w of catalog){
  for(const f of cfg.controls){
   kinds[f.kind]=(kinds[f.kind]||0)+1;
   const markup=controlField(draft,f);
+  if(f.hidden===true){assert.equal(markup,'',w.id+' '+f.id+' internal control rendered');totals.hiddenControls++;variants.push({id:f.id,kind:f.kind,sharedRender:'retained-in-contract'});continue;}
   const variant=markup.match(/^<(?:div|label|section)\b[^>]*class="([^"]+)"/)?.[1]||markup.slice(0,70);
   const exact=html.includes(markup);
   const sharedContext=f.kind==='seed'||(f.kind==='camera'&&cfg.controls.filter(x=>x.kind==='camera').length>3);

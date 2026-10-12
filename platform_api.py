@@ -21,12 +21,34 @@ from pydantic import BaseModel, ConfigDict, Field
 from platform_accounts import PlatformAccounts, AccountError
 from payment_gateway import PaymentGateway, PaymentError
 from platform_pricing import load_pricing_policy, creation_quote, enrich_workflow_quote, PricingValidationError
-from deployment_access import railway_origin
+from deployment_access import railway_origin, trusted_origins
 
 CURRENT_USER = ContextVar('yingxu_account', default=None)
 SUBMISSION_IDENTITY = ContextVar('yingxu_submission_identity', default=None)
 EXPECTED_CREDITS = ContextVar('yingxu_expected_credits', default=None)
 COOKIE = 'yingxu_session'
+PAYMENT_BODY_LIMIT = 64 * 1024
+
+
+async def payment_body(request):
+    """Enforce the notification limit before buffering or parsing its body."""
+    declared = request.headers.get('content-length')
+    if declared is not None:
+        try:
+            length = int(declared)
+        except ValueError:
+            raise HTTPException(400, '通知长度无效。') from None
+        if length < 0:
+            raise HTTPException(400, '通知长度无效。')
+        if length > PAYMENT_BODY_LIMIT:
+            raise HTTPException(413, '支付通知超过 64 KiB。')
+    chunks, size = [], 0
+    async for chunk in request.stream():
+        size += len(chunk)
+        if size > PAYMENT_BODY_LIMIT:
+            raise HTTPException(413, '支付通知超过 64 KiB。')
+        chunks.append(chunk)
+    return b''.join(chunks)
 
 
 class Credentials(BaseModel):
@@ -69,7 +91,7 @@ class CreationQuoteRequest(BaseModel):
     kind: Literal['image', 'video']
     quality: str = Field(min_length=1, max_length=20, strict=True)
     count: int = Field(ge=1, le=8, strict=True)
-    duration: int | None = Field(ge=4, le=15, strict=True)
+    duration: int | None = Field(ge=4, le=30, strict=True)
 
 
 class Confirmation(BaseModel):
@@ -119,8 +141,8 @@ def public_user(user):
 
 
 def local_mode_enabled():
-    """Explicit desktop-only setting; deployed instances keep account billing."""
-    return (os.environ.get('YINGXU_LOCAL_MODE') == '1' and
+    """Default desktop entry; loopback checks and deployment guards still apply."""
+    return (os.environ.get('YINGXU_LOCAL_MODE', '1') == '1' and
             not os.environ.get('RAILWAY_ENVIRONMENT_ID') and
             not os.environ.get('RAILWAY_PUBLIC_DOMAIN'))
 
@@ -209,9 +231,10 @@ class PlatformIntegration:
         if path.startswith('/api/admin/'):
             return method not in ('GET', 'HEAD') or path not in (
                 '/api/admin/users', '/api/admin/dashboard')
+        # Provider generation still requires its confirmed quote in local mode;
+        # that read-only endpoint keeps the normal owner, origin and CSRF guards.
         return (path in ('/api/account/login','/api/account/register','/api/account/logout',
-                         '/api/account/password','/api/account/pricing-policy',
-                         '/api/account/creation-quote') or
+                         '/api/account/password','/api/account/pricing-policy') or
                 path.startswith('/api/account/quote/') or
                 path == '/api/account/orders' or path.startswith('/api/account/orders/'))
 
@@ -262,6 +285,24 @@ class PlatformIntegration:
             if count >= 10:raise AccountError(429,'registration_limited','注册请求过于频繁，请稍后重试。')
             db.execute('INSERT INTO platform_auth_attempts(key,attempted_at) VALUES(?,?)',(key,now))
 
+    def require_workflow_access(self, user, workflow_id, original=None):
+        if user['role'] == 'admin':
+            return
+        # Both sources are server-owned: the current compiler capability and
+        # the retained execution contract. A rebuild must not erase the
+        # authority required by an older task's saved graph.
+        current = self.backend.schema_adapters.manifest(workflow_id) or {}
+        saved = (original or {}).get('schema_spec') or {}
+        filesystem = any(field.get('kind') == 'filesystem'
+                         for spec in (current, saved) for field in spec.get('controls', []))
+        # Compatibility for jobs saved before filesystem classification existed.
+        directory_loaders = {'LoadImageListFromDir //Inspire', 'LoadVideoBatchFrame',
+                             'VHS_LoadVideoPath'}
+        filesystem = filesystem or any(node.get('class_type') in directory_loaders
+            for node in (original or {}).get('graph', {}).values())
+        if filesystem:
+            raise HTTPException(403, '运行端目录工具仅限管理员使用，请使用自己上传的素材。')
+
     def prepare_submission(self, body, original_id=None):
         user = CURRENT_USER.get()
         if not user:
@@ -276,8 +317,11 @@ class PlatformIntegration:
                 p.get('base_url') for p in getattr(body, 'api_profiles', {}).values() if isinstance(p, dict)):
             raise HTTPException(403, '自定义 API 地址须由管理员核对；可以继续使用已配置的服务。')
         workflow_id = getattr(body, 'workflow_id', None)
+        original = None
         if workflow_id is None:
-            workflow_id = self.backend.job(original_id)['workflow_id']
+            original = self.backend.job(original_id)
+            workflow_id = original['workflow_id']
+        self.require_workflow_access(user, workflow_id, original)
         # Check duplicates before price changes or balance checks can invalidate retries.
         with self.backend.database() as db:
             old = db.execute('SELECT data FROM jobs WHERE token=?', (scoped,)).fetchone()
@@ -297,6 +341,43 @@ class PlatformIntegration:
             raise HTTPException(409, '积分报价已更新，请刷新费用提示后再提交。')
         SUBMISSION_IDENTITY.get()['quoted_credits'] = quote['credits']
 
+    def prepare_creation_submission(self, body, original_id=None):
+        user = CURRENT_USER.get()
+        if not user:
+            SUBMISSION_IDENTITY.set(None)
+            raise HTTPException(401, '请先登录后再生成。')
+        data = body.model_dump(mode='json')
+        raw_token = data.pop('token')
+        fingerprint = hashlib.sha256(json.dumps({'input':data, 'rerun_of':original_id},
+            ensure_ascii=False, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
+        scoped = hashlib.sha256((user['id']+'\0'+raw_token).encode()).hexdigest()
+        identity = {'owner_id':user['id'], 'client_token':raw_token,
+            'request_fingerprint':fingerprint, 'scoped_token':scoped}
+        SUBMISSION_IDENTITY.set(identity)
+        body.token = scoped
+        # A durable duplicate owns its original quote, even if prices changed.
+        with self.backend.database() as db:
+            old = db.execute('SELECT data FROM jobs WHERE token=?', (scoped,)).fetchone()
+        if old:
+            self.checked_replay(old[0])
+            return
+        params = {key:data[key] for key in ('model','kind','quality','count','duration')}
+        try:
+            quote = creation_quote(**params)
+        except PricingValidationError as error:
+            raise HTTPException(422, str(error)) from error
+        if quote.get('configured') is not True or quote.get('available') is not True:
+            raise HTTPException(409, quote.get('availability_reason') or quote.get('reason') or
+                                '此模型的生成服务或费用尚未配置。')
+        credits = PlatformAccounts._integer(quote.get('credits'), '积分报价')
+        amount_minor = PlatformAccounts._integer(quote.get('amount_minor'), '报价金额')
+        if EXPECTED_CREDITS.get() != str(credits):
+            raise HTTPException(409, '积分报价已更新，请刷新费用提示后再提交。')
+        identity.update(_creation_quote_params=params, quoted_credits=credits,
+                        quoted_amount_minor=amount_minor)
+        if user.get('_local_mode'):
+            identity['local_mode'] = True
+
     def checked_replay(self, data):
         record = json.loads(data) if isinstance(data, str) else data
         identity = SUBMISSION_IDENTITY.get()
@@ -308,18 +389,47 @@ class PlatformIntegration:
     def persist_job(self, record):
         identity = SUBMISSION_IDENTITY.get()
         if not identity:
+            if record.get('creation'):
+                raise HTTPException(401, '缺少生成任务的账户与报价上下文。')
             with self.backend.lock, self.backend.database() as db:
                 db.execute('INSERT INTO jobs(id,token,data) VALUES(?,?,?)',
                     (record['id'], record['token'], json.dumps(record, ensure_ascii=False)))
             return record
-        record.update({k:v for k,v in identity.items() if k not in ('scoped_token','quoted_credits')})
+        record.update({k:v for k,v in identity.items() if k not in (
+            'scoped_token','quoted_credits','quoted_amount_minor','_creation_quote_params')})
         accounts = self.accounts()
         with self.backend.lock, accounts.transaction() as db:
             old = db.execute('SELECT data FROM jobs WHERE token=?', (record['token'],)).fetchone()
             if old:
                 replay = self.checked_replay(old[0])
                 return {**replay, '_platform_replay':True}
-            if not identity.get('local_mode'):
+            if record.get('creation'):
+                settings = record.get('settings', {})
+                params = {'model':record['workflow_id'],
+                          'kind':settings.get('kind', record.get('kind', 'video')),
+                          'quality':settings.get('quality'),
+                          'count':settings.get('count', record.get('count', 1)),
+                          'duration':settings.get('duration')}
+                if (record.get('backend') != 'baidu-video' or
+                        params != identity.get('_creation_quote_params')):
+                    raise HTTPException(409, '生成任务参数与已确认的报价不一致。')
+                try:
+                    quote = creation_quote(**params)
+                except PricingValidationError as error:
+                    raise HTTPException(422, str(error)) from error
+                if (quote.get('configured') is not True or quote.get('available') is not True or
+                        quote.get('credits') != identity.get('quoted_credits') or
+                        quote.get('amount_minor') != identity.get('quoted_amount_minor')):
+                    raise HTTPException(409, '生成费用或服务配置在准备期间发生变化，请确认新报价后重新提交。')
+                record['quote_credits'] = identity['quoted_credits']
+                record['quote_amount_minor'] = identity['quoted_amount_minor']
+                if not identity.get('local_mode'):
+                    reservation = accounts.reserve(identity['owner_id'], record['id'],
+                        record['workflow_id'], connection=db, quoted_credits=identity['quoted_credits'])
+                    record['credit_cost'] = reservation['credits']
+            elif '_creation_quote_params' in identity:
+                raise HTTPException(409, '生成任务类型与已确认的报价不一致。')
+            elif not identity.get('local_mode'):
                 if accounts.pricing(record['workflow_id'], connection=db)['credits'] != identity['quoted_credits']:
                     raise HTTPException(409, '积分价格在准备期间发生变化，请确认新报价后重新提交。')
                 reservation = accounts.reserve(identity['owner_id'], record['id'], record['workflow_id'], connection=db)
@@ -394,11 +504,9 @@ class PlatformIntegration:
                 return await call_next(request)
             origin = request.headers.get('origin')
             unsafe = request.method not in ('GET', 'HEAD', 'OPTIONS')
-            # Railway terminates HTTPS before forwarding to the internal HTTP
-            # listener. Use its configured domain, never caller-supplied proxy
-            # headers, as the public origin for account and CSRF checks.
-            expected_origin = railway_origin() or str(request.base_url).rstrip('/')
-            if unsafe and (not origin or origin.rstrip('/') != expected_origin):
+            # Both guards share explicit deployment aliases and loopback rules;
+            # caller-supplied Host/Forwarded headers cannot trust external sites.
+            if unsafe and (not origin or origin.rstrip('/') not in trusted_origins(request, self.backend.PRIVATE)):
                 return JSONResponse({'detail':'请从当前网站进行此操作。', 'code':'invalid_origin'}, 403)
             if path in public_api:
                 if path == '/api/account/register':
@@ -438,7 +546,10 @@ class PlatformIntegration:
                     CURRENT_USER.reset(token)
                     EXPECTED_CREDITS.reset(quote_token)
             except AccountError as error:
-                return JSONResponse({'detail':error.message, 'code':error.code}, error.status)
+                payload = {'detail':error.message, 'code':error.code}
+                if path == '/api/account/me':
+                    payload['local_mode'] = local
+                return JSONResponse(payload, error.status)
             except HTTPException as error:
                 return JSONResponse({'detail':error.detail}, error.status_code)
 
@@ -650,9 +761,13 @@ class PlatformIntegration:
         @app.post('/api/payments/webhooks/alipay')
         async def alipay_notification(request:Request):
             try:
-                if len(await request.body()) > 64*1024:return Response('failure',status_code=400,media_type='text/plain')
-                form = await request.form()
-                result = self.gateway.verify_alipay(form)
+                raw = await payment_body(request)
+                # Parse the bounded bytes with the existing Starlette form
+                # semantics, including UTF-8, multipart and duplicate fields.
+                async def replay_body():
+                    return {'type':'http.request', 'body':raw, 'more_body':False}
+                async with Request(request.scope, replay_body).form() as form:
+                    result = self.gateway.verify_alipay(form)
                 self.accounts().credit_verified_order(result['id'], result['provider'], result['amount_minor'], result['currency'], result['transaction_id'])
                 return Response('success', media_type='text/plain')
             except (PaymentError, AccountError):
@@ -661,9 +776,7 @@ class PlatformIntegration:
         @app.post('/api/payments/webhooks/wechat')
         async def wechat_notification(request:Request):
             try:
-                raw = await request.body()
-                if len(raw) > 64*1024:
-                    return JSONResponse({'code':'FAIL','message':'通知过大'}, 400)
+                raw = await payment_body(request)
                 result = self.gateway.verify_wechat(request.headers, raw)
                 self.accounts().credit_verified_order(result['id'], result['provider'], result['amount_minor'], result['currency'], result['transaction_id'])
                 return Response(status_code=204)

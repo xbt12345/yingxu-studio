@@ -203,7 +203,7 @@
       "workflow_id": "local-card-28",
       "credits": 10,
       "source_hash": "c8b4de0c30b61edcd8b430ed44be76461e7d52cc2aadf332080b7df401aba53e",
-      "template_sha256": "d0941de3614fe3464a05dfe15b858a048e13edf1dee08e9613c8919deb8d1ade",
+      "template_sha256": "6dab5d9f6bb6ff0203e253f0947ecf03cf5d77fb98a549b78f4e543f75c5f052",
       "samples": 1,
       "median_seconds": "59.736"
     },
@@ -435,7 +435,7 @@
       "workflow_id": "local-card-82",
       "credits": 10,
       "source_hash": "9e36f21f798e2a6d437c28118ef69323b48eadca7c152e22d6b549bb7f7fb1cd",
-      "template_sha256": "22fffa7b50768d420b3b7b9d345d13d0ee35645541ead3ea0aef43b318ce69f1",
+      "template_sha256": "54d4e5ed619d33e440f839bf0e0af3eca56283f64f1bd79b70804e056fdcd87e",
       "samples": 4,
       "median_seconds": "57.449"
     },
@@ -459,7 +459,7 @@
       "workflow_id": "local-card-85",
       "credits": 6,
       "source_hash": "dd292b96f8e6f02fab2ccdb63b9e29b5e95976fbd26b71a8415fc139da571ef1",
-      "template_sha256": "880ba08e58096f437a061e3b8a65c23f6d85214db79c633920dfbcba3e5cb0b9",
+      "template_sha256": "ced773a1b66e44689c37a59bb03d4d9f522c9302837df35254895debac522d41",
       "samples": 2,
       "median_seconds": "30.887"
     },
@@ -579,7 +579,7 @@
       "workflow_id": "local-card-108",
       "credits": 5,
       "source_hash": "7160984252903e474a53f61e9effa339223cd0bae6dc9400fd5e63405def9de1",
-      "template_sha256": "390f8b29bf1984028e82d01385c6a81bdfd97029a9d3b92e72563eaa18df1cd4",
+      "template_sha256": "87e326dc31adacf5051c5baa7c7a43e3116c8b8d4952868dce880823846a503c",
       "samples": 4,
       "median_seconds": "24.434"
     },

@@ -198,3 +198,35 @@ test('local failed or conflicting availability stays unavailable without price w
   assert.equal(f.button.textContent,'生成');assert.equal(f.button.disabled,true);assert.doesNotMatch(f.footer.textContent,/费用|积分|免费|演示/);
  }
 });
+
+const baiduDraft={model:'baidu-sd2',type:'video',quality:'480p',count:1,duration:'4 秒'};
+const providerQuote=(parameters,amount=24)=>({...parameters,mode:'charge',configured:true,available:true,credits:amount,amount_minor:amount,currency:'CNY'});
+test('local Baidu displays the provider amount and submits with its quote, owner and CSRF',async()=>{
+ const f=fixture((path,init)=>path==='/api/account/creation-quote'?json(providerQuote(JSON.parse(init.body))):json({id:'synthetic-job',status:'queued'}),{label:'生成',disabled:true,creationGeneration:true});
+ vm.runInContext('platform.localMode=true;installApiFetch();',f.context);await f.context.refreshCreationQuote(baiduDraft);
+ assert.equal(f.button.disabled,false);assert.match(f.button.textContent,/¥0\.24/);assert.doesNotMatch(f.button.textContent,/积分/);assert.match(f.footer.textContent,/本次报价/);
+ const payload={model:'baidu-sd2',kind:'video',quality:'480p',count:1,duration:4,ratio:'16:9',mode:'text',prompt:'synthetic scene',token:'synthetic-submit'};
+ const response=await f.context.fetch('/api/creation/jobs',{method:'POST',headers:{'X-Expected-Credits':'999'},body:JSON.stringify(payload)});assert.equal(response.status,200);
+ assert.deepEqual(f.network.map(call=>call.input),['/api/account/creation-quote','/api/creation/jobs']);
+ const headers=f.network.at(-1).init.headers;assert.equal(headers.get('X-Platform-Account'),'user-one');assert.equal(headers.get('X-CSRF-Token'),'csrf-one');assert.equal(headers.get('X-Expected-Credits'),'24');
+ assert.equal(vm.runInContext('platform.balanceTimer',f.context),null);
+});
+
+test('local Baidu refuses a changed displayed amount before sending the creation request',async()=>{
+ let amount=24;const f=fixture((path,init)=>json(providerQuote(JSON.parse(init.body),amount)),{label:'生成',disabled:true,creationGeneration:true});
+ vm.runInContext('platform.localMode=true;installApiFetch();',f.context);await f.context.refreshCreationQuote(baiduDraft);amount=25;
+ vm.runInContext('for(const quote of platform.creationQuotes.values())quote.readAt=0;',f.context);
+ const response=await f.context.fetch('/api/creation/jobs',{method:'POST',body:JSON.stringify({...baiduDraft,kind:'video',duration:4})});
+ assert.equal(response.status,409);assert.match((await response.json()).detail,/费用已变化/);assert(!f.network.some(call=>call.input==='/api/creation/jobs'));
+});
+
+test('local Baidu rerun retains provider quotation and refuses a changed original amount',async()=>{
+ for(const amount of [24,25]){
+  const f=fixture((path,init)=>path==='/api/jobs/original'?json({creation:true,backend:'baidu-video',workflow_id:'baidu-sd2',settings:{kind:'video',quality:'480p',count:1,duration:4},quote_amount_minor:24}):path==='/api/account/creation-quote'?json(providerQuote(JSON.parse(init.body),amount)):json({id:'synthetic-rerun'}));
+  vm.runInContext('platform.localMode=true;installApiFetch();',f.context);
+  const response=await f.context.fetch('/api/jobs/original/rerun',{method:'POST',body:JSON.stringify({token:'synthetic-rerun'})});
+  const submissions=f.network.filter(call=>call.input==='/api/jobs/original/rerun');
+  assert.equal(response.status,amount===24?200:409);assert.equal(submissions.length,amount===24?1:0);
+  if(submissions.length){const headers=submissions[0].init.headers;assert.equal(headers.get('X-Expected-Credits'),'24');assert.equal(headers.get('X-Platform-Account'),'user-one');assert.equal(headers.get('X-CSRF-Token'),'csrf-one');}
+ }
+});

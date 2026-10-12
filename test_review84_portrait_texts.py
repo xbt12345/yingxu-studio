@@ -2,6 +2,7 @@
 import copy
 import json
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -69,6 +70,22 @@ class PortraitTextContractTests(unittest.TestCase):
             spec, _, _, _ = self.fixture(wid)
             self.assertEqual(runtime.validate_texts(spec, {}, 'A neutral creative request.'),
                 {c['user'] + ':prompt': 'A neutral creative request.'})
+
+    def test_source_audit_recognizes_only_verified_portrait_protocols(self):
+        with patch.object(sys, 'path', [str(ROOT/'scripts'), *sys.path]):
+            from scripts.audit_workflow_source_coverage import text_coverage
+        for wid, c in CONTRACTS.items():
+            spec, graph, _, _ = self.fixture(wid, legacy=False)
+            for nid in c['internal']:
+                self.assertEqual(text_coverage(wid, nid+':text', graph, spec, c['source_hash']),
+                                 'reviewed-portrait-protocol-constant')
+            self.assertEqual(text_coverage(wid, c['user']+':prompt', graph, spec, c['source_hash']), 'direct')
+            with self.assertRaisesRegex(ValueError, '来源已改变'):
+                text_coverage(wid, c['internal'][0]+':text', graph, spec, 'changed-source')
+            changed = copy.deepcopy(graph)
+            changed[c['user']]['inputs']['role'] = 'unreviewed consumer'
+            with self.assertRaisesRegex(ValueError, '消费者已改变'):
+                text_coverage(wid, c['internal'][0]+':text', changed, spec, c['source_hash'])
 
     def test_saved_legacy_rerun_restores_only_protocol_texts(self):
         for wid, c in CONTRACTS.items():

@@ -35,7 +35,7 @@ from adapters import ROOT, WORKFLOWS, CATALOG_WORKFLOWS, manifest, settings_for,
 from local_directory import choose_directory
 from portable import embed_workflow
 from configuration import DATA_DIR, workflow_path
-from deployment_access import access_denied, railway_origin
+from deployment_access import access_denied, trusted_origins
 import schema_adapters
 from region_preservation import preserve_region_output
 from reviewed_repairs import preserve_117_source_audio
@@ -407,6 +407,9 @@ def public(j,*,include_media_metadata=False):
         try:reference=public_asset(asset(id))
         except HTTPException:reference=dict(id=id,available=False,kind='unknown',name='原素材缺失',src='')
         if index<len(catalog_slots):reference['catalogSlot']=catalog_slots[index]
+        if j.get('creation'):
+            slots=j.get('reference_slots',[])
+            reference['slot']=slots[index] if index<len(slots) else None
         references.append(reference)
     recovered=history_seed_values(j)
     outputs=historical_output_presentation(j)
@@ -1222,8 +1225,9 @@ def reconcile_unknown(j,q):
     return j
 
 def poll_once():
-    active=[j for j in jobs() if j['status'] not in ['done','failed','cancelled','abandoned']]
+    active=[j for j in jobs() if not j.get('creation') and j['status'] not in ['done','failed','cancelled','abandoned']]
     if not active:return
+    if not BASE:return
     q=requests.get(BASE+'/queue',timeout=15);q.raise_for_status();q=q.json()
     running={x[1] for x in q.get('queue_running',[])}
     pending=[x[1] for x in q.get('queue_pending',[])]
@@ -1265,7 +1269,7 @@ def monitor():
         try:poll_once()
         except Exception:
             for j in jobs():
-                if j['status'] not in ['done','failed','cancelled','abandoned']:update(j['id'],connection_error='算力卡暂时不可达，正在重连；已完成文件保留在本地。')
+                if not j.get('creation') and j['status'] not in ['done','failed','cancelled','abandoned']:update(j['id'],connection_error='算力卡暂时不可达，正在重连；已完成文件保留在本地。')
         stopping.wait(3)
 
 def listen():
@@ -1280,7 +1284,7 @@ def listen():
                 event=json.loads(raw);kind=event.get('type');d=event.get('data',{})
                 if kind not in ['executing','progress','execution_start']:continue
                 pid=d.get('prompt_id')
-                j=next((j for j in jobs() if j.get('prompt_id')==pid and j['status'] not in ['done','failed','cancelled','abandoned']),None)
+                j=next((j for j in jobs() if not j.get('creation') and j.get('prompt_id')==pid and j['status'] not in ['done','failed','cancelled','abandoned']),None)
                 if not j or j.get('cancel_requested'):continue
                 if kind=='progress':update(j['id'],status='running',stage='生成中',progress=None,connection_error=None)
                 elif kind=='executing' and d.get('node'):
@@ -1293,6 +1297,7 @@ def listen():
 @asynccontextmanager
 async def lifespan(app):
     stopping.clear()
+    threading.Thread(target=creation_backend.monitor,daemon=True).start()
     if BASE:
         threading.Thread(target=monitor,daemon=True).start()
         threading.Thread(target=listen,daemon=True).start()
@@ -1323,18 +1328,8 @@ async def local_origin(request:Request,call_next):
     if denied is not None:return denied
     # Authentication and the origin guard serve different purposes.
     origin=request.headers.get('origin')
-    allowed={f'http://127.0.0.1:{request.url.port}',f'http://localhost:{request.url.port}'}
-    allowed.update(x.strip().rstrip('/') for x in os.environ.get('YINGXU_ALLOWED_ORIGINS','').split(',') if x.strip())
-    public_origin=railway_origin()
-    if public_origin:allowed.add(public_origin)
-    try:
-        private_origin=json.loads((PRIVATE/'access.json').read_text('utf-8-sig')).get('origin','')
-        from urllib.parse import urlparse
-        parsed=urlparse(private_origin)
-        if parsed.scheme=='https' and (parsed.hostname or '').endswith('.ts.net') and parsed.path in ('','/') and not parsed.query and not parsed.fragment and not parsed.username:
-            allowed.add(private_origin.rstrip('/'))
-    except (OSError,ValueError,AttributeError):pass
-    if request.url.path.startswith('/api') and not request.url.path.startswith('/api/payments/webhooks/') and origin and origin not in allowed:
+    allowed=trusted_origins(request,PRIVATE)
+    if request.url.path.startswith('/api') and not request.url.path.startswith('/api/payments/webhooks/') and origin and origin.rstrip('/') not in allowed:
         from fastapi.responses import JSONResponse
         return JSONResponse({'detail':'不允许跨站调用。'},403)
     response=await call_next(request)
@@ -1447,7 +1442,8 @@ def retain_unmasked_image(data,ext,name):
 
 
 @app.post('/api/assets')
-async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None)):
+async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None),target:str='comfy'):
+    if target not in ('comfy','creation'):raise HTTPException(400,'素材上传目标无效。')
     ext=Path(file.filename or '').suffix.lower()
     if ext not in MEDIA_KINDS or MEDIA_KINDS[ext]=='text':raise HTTPException(400,'支持 PNG、JPG、WebP、GIF 图片，MP4 / WebM 视频，以及 WAV、MP3、FLAC、OGG、M4A 音频。')
     chunks=[];size=0
@@ -1457,6 +1453,8 @@ async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None)):
         chunks.append(chunk)
     data=b''.join(chunks)
     kind=MEDIA_KINDS[ext]
+    if target=='creation' and (kind!='image' or mask is not None):
+        raise HTTPException(400,'视频模型参考素材需要未标注的图片。')
     content_type=file.content_type
     name=(file.filename or '')[:150]
     provenance={}
@@ -1490,6 +1488,12 @@ async def upload(file:UploadFile=File(...),mask:UploadFile|None=File(None)):
     local=PRIVATE/'uploads'/(id+ext);local.write_bytes(data)
     with lock,database() as db:row=db.execute('SELECT data FROM assets WHERE id=?',(id,)).fetchone()
     cached=json.loads(row[0]) if row else None
+    if target=='creation':
+        a=dict(id=id,kind=kind,name=name,bytes=size,remote=cached.get('remote','') if cached else '',**provenance)
+        with lock,database() as db:
+            db.execute('INSERT OR REPLACE INTO assets(id,data) VALUES (?,?)',(id,json.dumps(a,ensure_ascii=False)))
+            platform_bridge.remember_asset(a,connection=db)
+        return public_asset(a)
     if cached:
         # Identical uploaded bytes prove ownership; names/provenance remain per account.
         cached={**cached,'name':name,'original_asset_id':None,'annotation_mode':None,**provenance}
@@ -1747,6 +1751,7 @@ class Rerun(BaseModel):
 @app.post('/api/jobs/{id}/rerun')
 def rerun(id:str,body:Rerun):
     original=job(id)
+    if original.get('creation'):return creation_backend.rerun(id,body)
     if original.get('failure_phase')=='output':
         raise HTTPException(409,'生成已结束，请重新取回作品；如需重新生成，请恢复本次输入后明确提交。')
     platform_bridge.prepare_submission(body,id)
@@ -1923,6 +1928,7 @@ def public_media_path(path):
 
 @app.get('/api/jobs/{id}/workflow')
 def workflow_download(id:str):
+    if job(id).get('creation'):raise HTTPException(404,'此作品由视频模型 API 生成，没有 ComfyUI 执行图。')
     j=job(id)
     return JSONResponse(public_graph(j['graph']),headers={'Content-Disposition':f'attachment; filename="yingxu-{id[:8]}-workflow-api.json"'})
 
@@ -1933,6 +1939,7 @@ def get_job(id:str):return public(job(id),include_media_metadata=True)
 
 @app.post('/api/jobs/{id}/retrieve')
 def retrieve(id:str):
+    if job(id).get('creation'):return creation_backend.retrieve(id)
     if not BASE:raise HTTPException(503,'尚未配置算力服务，无法重新取回作品。')
     with output_collection(id) as acquired:
         if not acquired:raise HTTPException(409,'作品正在取回，请等待当前操作完成。')
@@ -1985,6 +1992,7 @@ def attempt_cancel(j,q=None):
 
 @app.post('/api/jobs/{id}/cancel')
 def cancel(id:str):
+    if job(id).get('creation'):return creation_backend.cancel(id)
     with lock:
         j=job(id)
         if j['status'] in ['done','failed','cancelled','abandoned'] or j.get('cancel_requested'):return public(j)
@@ -2008,8 +2016,8 @@ def abandon(id:str):
     with lock:
         j=job(id)
         if j['status'] in ['done','failed','cancelled','abandoned']:return public(j)
-        if not j.get('cancel_requested'):raise HTTPException(409,'请先请求取消任务。')
-        return public(update(id,status='abandoned',stage='已停止本地等待 · 远端状态未确认',ended=time.time()*1000,connection_error=None,error='远端任务可能仍运行并产生费用，请在算力卡端确认。'))
+        if not j.get('creation') and not j.get('cancel_requested'):raise HTTPException(409,'请先请求取消任务。')
+        return public(update(id,status='abandoned',stage='已停止本地等待 · 远端状态未确认',ended=time.time()*1000,connection_error=None,error='远端任务可能仍运行并产生费用，请在供应商处确认。' if j.get('creation') else '远端任务可能仍运行并产生费用，请在算力卡端确认。'))
 
 @app.get('/api/media/{id}/{filename}')
 def media(id:str,filename:str):
@@ -2017,7 +2025,7 @@ def media(id:str,filename:str):
     if filename not in [Path(o['src']).name for o in j.get('outputs',[])]:raise HTTPException(404,'找不到作品。')
     p=PRIVATE/'outputs'/j['id']/filename
     if not p.is_file():raise HTTPException(404,'本地作品文件已被移除。')
-    if p.suffix.lower()!='.mp4':
+    if p.suffix.lower()!='.mp4' or j.get('creation'):
         p=public_media_path(p)
         return FileResponse(p,media_type=mimetypes.guess_type(str(p))[0],filename=f'映序-{id[:8]}-{filename}',content_disposition_type='inline')
     with lock:
@@ -2046,6 +2054,8 @@ async def image_cutout(file:UploadFile=File(...),bounds:str=Form('{}')):
 
 from platform_api import install_platform
 platform_bridge=install_platform(app,sys.modules[__name__])
+from creation_jobs import install_creation
+creation_backend=install_creation(app,sys.modules[__name__])
 app.mount('/',StaticFiles(directory=ROOT/'public',html=True),name='site')
 
 if __name__=='__main__':

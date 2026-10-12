@@ -1,6 +1,9 @@
 const nativeFetch=globalThis.fetch.bind(globalThis);
-const platform={user:null,identity:null,preview:false,localMode:false,installed:false,wrapped:false,authMode:'login',quotes:new Map(),quoteRequests:new Map(),currentWorkflow:null,creationQuotes:new Map(),creationQuoteRequests:new Map(),currentCreation:null,quoteView:null,pricingPolicy:null,pricingPolicyRequest:null,balanceLastAt:0,balancePending:null,balanceTimer:null,balanceDirty:false,balanceStopped:false,menuAnchor:null,recordTabs:{account:'ledger',recharge:'orders'}};
+const platform={user:null,identity:null,preview:false,localMode:false,modeKnown:false,installed:false,wrapped:false,authMode:'login',quotes:new Map(),quoteRequests:new Map(),currentWorkflow:null,creationQuotes:new Map(),creationQuoteRequests:new Map(),currentCreation:null,quoteView:null,pricingPolicy:null,pricingPolicyRequest:null,balanceLastAt:0,balancePending:null,balanceTimer:null,balanceDirty:false,balanceStopped:false,menuAnchor:null,recordTabs:{account:'ledger',recharge:'orders'}};
 export const isLocalPlatform=()=>platform.localMode;
+// This hint chooses recovery copy only; the server still establishes identity,
+// mode and CSRF before any workspace API is usable.
+const isLoopbackEntry=()=>{const host=new URL(location.href).hostname;return host==='localhost'||host==='[::1]'||/^127(?:\.\d{1,3}){3}$/.test(host);};
 const escapeHtml=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
 const credits=value=>value===null||value===undefined||value===''?'—':Number.isFinite(Number(value))?Number(value).toLocaleString('zh-CN'):'—';
 const available=user=>user?.available??user?.balance;
@@ -14,6 +17,7 @@ const button=(label,action,attrs='',primary=false)=>`<button type="button" class
 const errorRegion=()=>'<p class="platform-error" data-platform-error role="alert" hidden></p>';
 const empty=message=>`<p class="platform-empty">${escapeHtml(message)}</p>`;
 const rows=value=>Array.isArray(value)?value:[];
+const chargedCreationModel=model=>['baidu-sd2','baidu-sd2.5'].includes(model);
 
 function apiMessage(data,fallback){
  const detail=data?.detail??data?.error;
@@ -40,8 +44,22 @@ function installApiFetch(){
   headers.set('X-Platform-Account',String(identity.id));
   if(method!=='GET')headers.set('X-CSRF-Token',identity.csrfToken);
   if(platform.localMode)headers.delete('X-Expected-Credits');
-  let workflowId;
-  if(!platform.localMode&&method==='POST'&&(url.pathname==='/api/jobs'||/^\/api\/jobs\/[^/]+\/rerun$/.test(url.pathname))){
+  let workflowId,creationKey;
+  if(method==='POST'&&(url.pathname==='/api/creation/jobs'||/^\/api\/jobs\/[^/]+\/rerun$/.test(url.pathname))){
+   try{
+    const body=url.pathname==='/api/creation/jobs'?(typeof init?.body==='string'?JSON.parse(init.body):typeof Request!=='undefined'&&input instanceof Request?await input.clone().json():null):await request(url.pathname.replace(/\/rerun$/,''));
+    if(url.pathname==='/api/creation/jobs'||body?.creation===true||body?.backend==='baidu-video'){
+     const parameters=creationParameters(url.pathname==='/api/creation/jobs'?{...body,type:body.kind}: {...body.settings,model:body.model||body.workflow_id,type:'video',count:1});
+     creationKey=JSON.stringify(parameters);
+     const displayed=platform.creationQuotes.get(creationKey),quote=await readCreationQuote(parameters);
+     if(!quote.configured||!quote.available)return blockedSubmission(quote.availabilityReason||'当前生成服务或费用不可用。');
+     if(displayed?.displayed&&displayed.credits!==quote.credits){platform.creationQuotes.delete(creationKey);if(platform.currentCreation===creationKey)refreshCreationQuote({...parameters,type:parameters.kind});return blockedSubmission('本次费用已变化，请核对生成按钮上的新费用后重新提交。');}
+     if(url.pathname!=='/api/creation/jobs'&&body.quote_amount_minor!==quote.amountMinor)return blockedSubmission('本次费用已变化，请重新编辑，并核对生成按钮上的新费用后提交。');
+     headers.set('X-Expected-Credits',String(quote.credits));
+    }
+   }catch(error){return blockedSubmission(error.message||'无法核对本次生成费用。');}
+  }
+  if(!creationKey&&!platform.localMode&&method==='POST'&&(url.pathname==='/api/jobs'||/^\/api\/jobs\/[^/]+\/rerun$/.test(url.pathname))){
    try{
     if(url.pathname==='/api/jobs'){
      const body=typeof init?.body==='string'?JSON.parse(init.body):typeof Request!=='undefined'&&input instanceof Request?await input.clone().json():null;
@@ -65,11 +83,12 @@ function installApiFetch(){
     const data=await response.clone().json(),message=apiMessage(data,''),code=data?.detail?.code||data?.code||'';
     if(response.status===401&&(code==='login_required'||/请先登录|登录.*过期|请重新登录/.test(message))){showAuthentication('登录已过期，请重新登录。');location.reload();}
     else if(code==='csrf_failed'||/account[_-]?(changed|mismatch)/i.test(code)||/账号.*切换|账户.*切换/.test(message)){showAuthentication('登录状态已变化，正在重新读取账号。');location.reload();}
+    else if(creationKey&&response.status===409&&/报价|价格|费用|积分/.test(message)){platform.creationQuotes.delete(creationKey);if(platform.currentCreation===creationKey)refreshCreationQuote(JSON.parse(creationKey));}
     else if(workflowId&&response.status===409&&/积分报价|积分价格|积分费用|费用.*配置/.test(message)){platform.quotes.delete(workflowId);if(platform.currentWorkflow===workflowId)refreshGenerationQuote(workflowId);}
    }catch{}
   }
   const balanceRead=method==='GET'&&(url.pathname==='/api/jobs'||/^\/api\/jobs\/[^/]+$/.test(url.pathname));
-  const balanceWrite=method==='POST'&&(url.pathname==='/api/jobs'||/^\/api\/jobs\/[^/]+\/(rerun|cancel|abandon|retrieve)$/.test(url.pathname));
+  const balanceWrite=method==='POST'&&(url.pathname==='/api/jobs'||url.pathname==='/api/creation/jobs'||/^\/api\/jobs\/[^/]+\/(rerun|cancel|abandon|retrieve)$/.test(url.pathname));
   if(response.ok&&(balanceRead||balanceWrite))scheduleBalanceRefresh();
   return response;
  };
@@ -151,10 +170,10 @@ function beginQuoteView(generate,kind,key){
 function quoteViewCurrent(view){return platform.quoteView===view&&view.button.isConnected&&document.querySelector('[data-action="generate"]')===view.button;}
 function generationBusy(view){return view.button.getAttribute('aria-busy')==='true'||view.button.disabled&&/正在提交|提交中|正在生成|正在上传/.test(view.original.textContent+' '+view.button.textContent);}
 function paintQuote(view,state,quote=null){
- if(platform.localMode||!quoteViewCurrent(view)||generationBusy(view))return false;
+ if((platform.localMode&&view.kind!=='creation')||!quoteViewCurrent(view)||generationBusy(view))return false;
  const creation=view.kind==='creation',configured=state==='ready'&&quote?.configured===true;
  const label='生成';
- const cost=configured?`${creation?'参考 ':''}${credits(quote.credits)} 积分`:`${state==='loading'?'核对费用…':state==='error'?'费用读取失败':'费用待定'}`;
+ const cost=configured?(quote.mode==='charge'?`${money(quote.amountMinor)}${platform.localMode?'':` · ${credits(quote.credits)} 积分`}`:`${creation?'参考 ':''}${credits(quote.credits)} 积分`):`${state==='loading'?'核对费用…':state==='error'?'费用读取失败':'费用待定'}`;
  const copy=document.createElement('span');copy.className='platform-generation-copy';
  const title=document.createElement('span');title.className='platform-generation-title';title.textContent=label;
  const detail=document.createElement('small');detail.className='platform-generation-cost';detail.textContent=cost;copy.append(title,detail);
@@ -163,10 +182,11 @@ function paintQuote(view,state,quote=null){
  view.button.classList.add('platform-priced-generation');view.button.dataset.platformPriceState=state;
  if(creation){view.button.disabled=!(configured&&quote.available===true);if(view.button.disabled)view.button.setAttribute('title',state==='loading'?'正在核对费用与生成服务。':state==='error'?'暂时无法核对生成服务，请稍后重试。':quote?.availabilityReason||'该模型尚未接入生成服务，暂不能生成。');else view.button.removeAttribute('title');}
  if(view.footer){
-  const monetary=configured&&quote.amountMinor!==null?` · 约 ${money(quote.amountMinor)}`:'';
-  if(creation&&state==='ready'&&quote?.available!==true)view.footer.innerHTML='该模型尚未接入 · <a class="text-control control" href="#workflows">查看创作工具</a>';
+  const monetary=configured&&quote.amountMinor!==null&&quote.mode!=='charge'?` · 约 ${money(quote.amountMinor)}`:'';
+  if(creation&&state==='ready'&&quote?.available!==true)view.footer.textContent=quote?.availabilityReason||'当前生成服务不可用。';
   else view.footer.textContent=creation?(configured?`费用以本次报价为准${monetary}`:state==='loading'?'正在核对费用与生成服务。':state==='error'?'暂时无法核对生成服务，请稍后重试。':'尚未定价，请联系管理员。'):configured?`费用以本次报价为准${monetary}`:state==='loading'?'正在核对本次费用。':state==='error'?'无法核对费用，请稍后重试。':'尚未定价，请联系管理员。';
  }
+ if(configured)quote.displayed=true;
  return true;
 }
 export async function refreshGenerationQuote(workflowId){
@@ -184,7 +204,8 @@ export async function refreshGenerationQuote(workflowId){
  }catch(error){platform.quotes.delete(workflowId);if(platform.currentWorkflow===String(workflowId))paintQuote(view,'error');return null;}
 }
 function creationParameters(draft){
- return {model:String(draft.model||''),kind:String(draft.type||''),quality:String(draft.quality||''),count:draft.type==='video'?1:Number(draft.count??1),duration:draft.type==='video'?Number.parseInt(draft.duration,10):null};
+ const kind=String(draft.type||draft.kind||'');
+ return {model:String(draft.model||''),kind,quality:String(draft.quality||''),count:kind==='video'?1:Number(draft.count??1),duration:kind==='video'?Number.parseInt(draft.duration,10):null};
 }
 async function readCreationQuote(parameters){
  const key=JSON.stringify(parameters),cached=platform.creationQuotes.get(key);
@@ -194,16 +215,16 @@ async function readCreationQuote(parameters){
   const data=await request('/api/account/creation-quote',{method:'POST',body:parameters});
   const echoed=data.request||data.parameters||data;
   for(const [name,value] of Object.entries(parameters))if(echoed[name]!==undefined&&String(echoed[name])!==String(value))throw new Error('参考费用与当前创作参数不一致。');
-  if(data.mode!=='reference')throw new Error('无法确认创作参考费率。');
+  if(!['reference','charge'].includes(data.mode)||chargedCreationModel(parameters.model)&&data.mode!=='charge')throw new Error('无法确认本次生成费率。');
   if(data.configured===true&&(!Number.isSafeInteger(data.credits)||data.credits<0))throw new Error('参考费率无效。');
-  const quote={configured:data.configured===true,available:data.available===true,availabilityReason:typeof data.availability_reason==='string'?data.availability_reason:'该模型尚未接入生成服务，暂不能生成。',credits:data.configured===true?data.credits:null,amountMinor:quoteAmount(data),readAt:Date.now()};platform.creationQuotes.set(key,quote);return quote;
+  const quote={configured:data.configured===true,available:data.available===true,availabilityReason:typeof data.availability_reason==='string'?data.availability_reason:'该模型尚未接入生成服务，暂不能生成。',credits:data.configured===true?data.credits:null,amountMinor:quoteAmount(data),mode:data.mode,displayed:false,readAt:Date.now()};if(quote.configured&&quote.amountMinor===null)throw new Error('本次生成金额无效。');platform.creationQuotes.set(key,quote);return quote;
  })();
  platform.creationQuoteRequests.set(key,pending);try{return await pending;}finally{platform.creationQuoteRequests.delete(key);}
 }
 export async function refreshCreationQuote(draft){
  const generate=document.querySelector('[data-action="generate"]');
  if(!draft||platform.preview||!platform.user||!generate||generate.dataset.creationGeneration===undefined){clearCreationQuote();return null;}
- if(platform.localMode)return refreshLocalCreationAvailability(draft,generate);
+ if(platform.localMode&&!chargedCreationModel(draft.model))return refreshLocalCreationAvailability(draft,generate);
  const parameters=creationParameters(draft),key=JSON.stringify(parameters);platform.currentCreation=key;
  const view=beginQuoteView(generate,'creation',key),cached=platform.creationQuotes.get(key);
  paintQuote(view,cached&&Date.now()-cached.readAt<30000?'ready':'loading',cached);
@@ -260,7 +281,8 @@ export async function initializePlatform({publicPreview=false}={}){
  try{
   const response=await nativeFetch('/api/account/me',{credentials:'same-origin'});
   let data;try{data=await response.json();}catch{throw new Error('账号服务暂时不可用，请稍后重试。');}
-  platform.localMode=data.local_mode===true;
+  if(typeof data.local_mode==='boolean'){platform.localMode=data.local_mode;platform.modeKnown=true;}
+  else if(response.ok&&data.user){platform.localMode=false;platform.modeKnown=true;}
   if(response.status===401||!data.user){showAuthentication(response.ok?'':apiMessage(data,''));return null;}
   if(!response.ok)throw new Error(apiMessage(data,'无法读取账号信息，请稍后重试。'));
   if(!data.csrf_token)throw new Error('账号校验信息不完整，请重新登录。');
@@ -276,20 +298,23 @@ function showAuthentication(message=''){
  platform.balanceStopped=true;platform.balanceDirty=false;if(platform.balanceTimer){clearTimeout(platform.balanceTimer);platform.balanceTimer=null;}
  document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
  document.body.classList.add('platform-auth-required');
- let screen=document.getElementById('platform-auth-screen');if(screen&&screen.dataset.platformAuthMode===platform.authMode&&message){setError(screen,message);return;}
- if(!screen){screen=document.createElement('section');screen.id='platform-auth-screen';screen.className='platform-auth-screen';document.body.append(screen);}screen.dataset.platformAuthMode=platform.authMode;
- if(platform.localMode){screen.innerHTML=`<div class="platform-auth-brand">映序 <small>YINGXU</small></div><div class="platform-auth-card"><h1>连接本地服务</h1><p class="platform-error" data-platform-error role="alert">${escapeHtml(message||'本地用户信息暂时不可用，请重新连接。')}</p><div class="platform-auth-help">${button('重新连接服务','retry-auth')}</div></div>`;return;}
+ const localRecovery=platform.localMode||(!platform.modeKnown&&isLoopbackEntry()),accessMode=localRecovery?'local':'account';
+ if(localRecovery&&(!message||/账号|账户|密码|登录|注册|Failed to fetch|NetworkError|fetch failed/i.test(message)))message='暂时无法连接本地工作区，请确认本地服务已启动后重试。';
+ let screen=document.getElementById('platform-auth-screen');if(screen&&screen.dataset.platformAuthMode===platform.authMode&&screen.dataset.platformAccessMode===accessMode&&message){setError(screen,message);return;}
+ if(!screen){screen=document.createElement('section');screen.id='platform-auth-screen';document.body.append(screen);}screen.className='platform-auth-screen'+(localRecovery?' platform-local-recovery':'');screen.dataset.platformAuthMode=platform.authMode;screen.dataset.platformAccessMode=accessMode;
+ if(localRecovery){screen.innerHTML=`<div class="platform-auth-brand">映序 <small>YINGXU</small></div><div class="platform-auth-card"><h1>连接本地工作区</h1><p class="platform-error" data-platform-error role="alert">${escapeHtml(message)}</p><div class="platform-auth-help">${button('重新连接工作区','retry-auth','',true)}</div></div>`;return;}
  const register=platform.authMode==='register';
  screen.innerHTML=`<div class="platform-auth-brand">映序 <small>YINGXU</small></div><div class="platform-auth-card"><h1>${register?'创建账号':'登录映序'}</h1><div class="platform-auth-tabs" role="group" aria-label="登录或注册">${button('登录','auth-mode','data-mode="login" aria-pressed="'+!register+'"')}${button('注册','auth-mode','data-mode="register" aria-pressed="'+register+'"')}</div><form data-platform-form="${register?'register':'login'}"><label>用户名<input name="username" autocomplete="username" required maxlength="80" autofocus></label><label>${register?'密码（至少10位）':'密码'}<input name="password" type="password" autocomplete="${register?'new-password':'current-password'}" ${register?'minlength="10"':''} required></label>${register?'<label>再次输入密码<input name="password_confirm" type="password" autocomplete="new-password" minlength="10" required></label>':''}<p class="platform-error" data-platform-error role="alert" ${message?'':'hidden'}>${escapeHtml(message)}</p><button type="submit" class="platform-button is-primary">${register?'注册并登录':'登录'}</button></form><div class="platform-auth-help">${button('重新连接服务','retry-auth')}</div></div>`;
 }
 
 export function accountNavigation(){
  const user=platform.user;if(!user||platform.preview)return '';
- return `<div class="platform-nav-account"><button type="button" class="nav-item platform-nav-user" data-platform-action="account-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="platform-account-menu" aria-label="打开${escapeHtml(user.username)}的账号菜单" title="账号菜单"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(user.username||'用户').slice(0,1).toUpperCase())}</i><span class="platform-nav-copy"><strong>${escapeHtml(user.username)}</strong><small>${platform.localMode?'本地用户':`<span data-platform-balance="available">${credits(available(user))}</span> 积分`}</small></span><svg class="platform-nav-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 10 4-4 4 4"/></svg></button></div>`;
+ const name=platform.localMode?'本地工作区':user.username,menuLabel=platform.localMode?'工作区菜单':'账号菜单';
+ return `<div class="platform-nav-account"><button type="button" class="nav-item platform-nav-user" data-platform-action="account-menu" aria-haspopup="menu" aria-expanded="false" aria-controls="platform-account-menu" aria-label="${platform.localMode?'打开工作区菜单':`打开${escapeHtml(name)}的账号菜单`}" title="${menuLabel}"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(name||'用户').slice(0,1).toUpperCase())}</i><span class="platform-nav-copy"><strong>${escapeHtml(name)}</strong><small>${platform.localMode?'本机创作':`<span data-platform-balance="available">${credits(available(user))}</span> 积分`}</small></span><svg class="platform-nav-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 10 4-4 4 4"/></svg></button></div>`;
 }
 function accountMenuContents(){
  const user=platform.user;
- if(platform.localMode)return `<div class="platform-menu-identity"><strong>${escapeHtml(user.username)}</strong><small>本地用户</small></div><a role="menuitem" href="#account">${icon('user')}<span>用户信息</span></a><a role="menuitem" href="#settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg><span>偏好设置</span></a>`;
+ if(platform.localMode)return `<div class="platform-menu-identity"><strong>本地工作区</strong><small>本机创作</small></div><a role="menuitem" href="#account">${icon('user')}<span>工作区信息</span></a><a role="menuitem" href="#settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg><span>偏好设置</span></a>`;
  return `<div class="platform-menu-identity"><strong>${escapeHtml(user.username)}</strong><small>${user.role==='admin'?'管理员':'普通账号'} · <span data-platform-balance="available">${credits(available(user))}</span> 积分</small></div><a role="menuitem" href="#account">${icon('user')}<span>我的账号</span></a><a role="menuitem" href="#recharge">${icon('credit')}<span>积分充值</span></a><a role="menuitem" href="#settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16M4 17h16M8 4v6M16 14v6"/></svg><span>偏好设置</span></a>${user.role==='admin'?`<a role="menuitem" href="/admin.html">${icon('admin')}<span>管理员后台</span><small>↗</small></a>`:''}<div class="platform-menu-divider"></div><button type="button" role="menuitem" data-platform-action="logout"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 4H5v16h4M9 12h12m-5-5 5 5-5 5"/></svg><span>退出登录</span></button>${errorRegion()}`;
 }
 function positionAccountMenu(){
@@ -303,7 +328,7 @@ function openAccountMenu(anchor,focusIndex=null){
  const existing=document.getElementById('platform-account-menu');
  if(existing&&platform.menuAnchor===anchor){if(focusIndex!==null){const items=existing.querySelectorAll('[role="menuitem"]');items[focusIndex<0?items.length-1:Math.min(focusIndex,items.length-1)]?.focus({preventScroll:true});}positionAccountMenu();return;}
  closeAccountMenu();platform.menuAnchor=anchor;
- const menu=document.createElement('div');menu.id='platform-account-menu';menu.className='platform-account-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label','账号菜单');menu.innerHTML=accountMenuContents();document.body.append(menu);anchor.setAttribute('aria-expanded','true');document.body.classList.add('platform-account-menu-open');
+ const menu=document.createElement('div');menu.id='platform-account-menu';menu.className='platform-account-menu';menu.setAttribute('role','menu');menu.setAttribute('aria-label',platform.localMode?'工作区菜单':'账号菜单');menu.innerHTML=accountMenuContents();document.body.append(menu);anchor.setAttribute('aria-expanded','true');document.body.classList.add('platform-account-menu-open');
  document.dispatchEvent(new CustomEvent('platform-account-menu-change',{detail:{open:true}}));positionAccountMenu();
  if(focusIndex!==null){const items=menu.querySelectorAll('[role="menuitem"]');items[focusIndex<0?items.length-1:Math.min(focusIndex,items.length-1)]?.focus({preventScroll:true});}
 }
@@ -314,7 +339,7 @@ function closeAccountMenu(restoreFocus=false){
  if(menu)document.dispatchEvent(new CustomEvent('platform-account-menu-change',{detail:{open:false}}));
 }
 export function accountPage(kind='account'){
- if(platform.localMode)return `<section class="platform-page platform-local-account" data-platform-page="account"><header class="platform-page-header"><h1>用户信息</h1>${button('刷新','refresh-page')}</header><div data-platform-content>${localAccountContents(platform.user)}</div></section>`;
+ if(platform.localMode)return `<section class="platform-page platform-local-account" data-platform-page="account"><header class="platform-page-header"><h1>工作区信息</h1>${button('刷新','refresh-page')}</header><div data-platform-content>${localAccountContents()}</div></section>`;
  const title=kind==='recharge'?'积分充值':'我的账号';
  if(kind==='admin')return '<section class="platform-page"><a class="platform-button" href="/admin.html">打开管理员后台 ↗</a></section>';
  if(platform.preview)return `<section class="platform-page"><h1>${title}</h1>${empty('账户操作请使用正式入口。')}</section>`;
@@ -329,12 +354,11 @@ export async function loadAccountPage(kind='account'){
   if(!host.isConnected||host.platformLoad!==run)return;
   if(data.user)updateUser(data.user);
   if(platform.localMode&&data.csrf_token)platform.identity.csrfToken=data.csrf_token;
-  content.innerHTML=platform.localMode?localAccountContents(data.user||platform.user):accountContents(data,selected);
+  content.innerHTML=platform.localMode?localAccountContents():accountContents(data,selected);
  }catch(error){if(host.isConnected&&host.platformLoad===run)content.innerHTML=`<p class="platform-error" role="alert">${escapeHtml(error.message)}</p>${button('重新读取','refresh-page')}`;}
 }
-function localAccountContents(user){
- const name=user?.username||'本地用户';
- return `<div class="platform-local-profile"><div class="platform-profile"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(name).slice(0,1).toUpperCase())}</i><div><strong title="${escapeHtml(name)}">${escapeHtml(name)}</strong><small>本地用户</small></div></div><dl class="platform-local-details"><div><dt>用户名</dt><dd>${escapeHtml(name)}</dd></div><div><dt>用户标识</dt><dd>${escapeHtml(user?.id||'—')}</dd></div></dl></div>`;
+function localAccountContents(){
+ return '<div class="platform-local-profile"><div class="platform-profile"><i class="platform-avatar" aria-hidden="true">本</i><div><strong>本地工作区</strong><small>已连接</small></div></div><dl class="platform-local-details"><div><dt>访问方式</dt><dd>本机直连</dd></div><div><dt>作品与素材</dt><dd>沿用当前工作区</dd></div></dl></div>';
 }
 
 function paymentMethods(data){
@@ -351,7 +375,7 @@ function paymentNote(method,contact){
  return `<p>创建订单后前往已开通的支付平台，返回页面刷新订单状态。</p>${message?`<p>${escapeHtml(message)}</p>`:''}`;
 }
 function accountContents(data,kind){
- if(platform.localMode)return localAccountContents(data.user||platform.user);
+ if(platform.localMode)return localAccountContents();
  const user=data.user||platform.user;
  const recordTab=platform.recordTabs[kind]||'ledger';
  return `<div class="platform-summary"><div class="platform-profile"><i class="platform-avatar" aria-hidden="true">${escapeHtml(String(user?.username||'用户').slice(0,1).toUpperCase())}</i><div><strong title="${escapeHtml(user?.username)}">${escapeHtml(user?.username)}</strong><small>${user?.role==='admin'?'管理员':'普通账号'}</small></div></div><div class="platform-summary-credit"><span>可用积分</span><strong data-platform-balance="available">${credits(available(user))}</strong></div><div class="platform-summary-credit is-held" title="正在处理的创作会暂时冻结积分"><span>冻结积分</span><strong data-platform-balance="held">${credits(user?.held)}</strong></div>${kind==='account'?'<a class="platform-button is-primary" href="#recharge">充值积分</a>':''}</div>${kind==='recharge'?rechargeForm(data):''}<section class="platform-section platform-records"><div class="platform-record-tabs" role="group" aria-label="积分与充值记录">${button('积分记录','records-tab',`data-records="ledger" aria-pressed="${recordTab==='ledger'}"`)}${button('充值订单','records-tab',`data-records="orders" aria-pressed="${recordTab==='orders'}"`)}</div><div data-platform-record-panel="ledger" ${recordTab==='ledger'?'':'hidden'}>${ledgerTable(rows(data.ledger))}</div><div data-platform-record-panel="orders" ${recordTab==='orders'?'':'hidden'}>${ordersTable(rows(data.orders))}</div></section>${kind==='account'?`<details class="platform-security"><summary><span>${icon('admin')}<strong>账号安全</strong></span><span class="platform-security-label">修改密码 <i aria-hidden="true">⌄</i></span></summary><form class="platform-password-form" data-platform-form="password"><label>当前密码<input name="current_password" type="password" autocomplete="current-password" required></label><label>新密码<input name="new_password" type="password" autocomplete="new-password" minlength="10" required placeholder="至少10位"></label><label>确认新密码<input name="new_password_confirm" type="password" autocomplete="new-password" minlength="10" required></label>${errorRegion()}<p class="platform-success" data-platform-success role="status" hidden></p><button type="submit" class="platform-button">保存新密码</button></form></details>`:''}`;

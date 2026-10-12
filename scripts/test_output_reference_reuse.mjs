@@ -2,13 +2,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import {declaration,installCreationSelectors} from './test_app_source.mjs';
 import {defaultModel,getModel} from '../public/models.js';
 import {referenceResult} from '../public/catalog-submission.js';
 import {boundReferences,sameMedia} from '../public/workspace-media.js';
 import {nextReferenceId,renumberDraftReferences} from '../public/reference-numbering.js';
 
 const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
-const lineFor=prefix=>{const line=source.split(/\r?\n/).find(line=>line.startsWith(prefix));assert.ok(line,prefix);return line;};
+const lineFor=prefix=>declaration(source,prefix);
 const reuse=source.slice(source.indexOf('function attachGeneratedOutput('),source.indexOf('\nlet draggingOutputId=',source.indexOf('function attachGeneratedOutput(')));
 const image={id:'result-image',type:'image',src:'/api/media/job/result.png'};
 const tool={id:'image-tool',catalogOnly:true,interface:{media:[{id:'original',kind:'image'},{id:'style',kind:'image'}],controls:[]}};
@@ -36,6 +37,7 @@ function fixture({page='library',tool:currentTool=tool,draft={},output=image,mod
   setTimeout:callback=>{const id=++sequence;timers.set(id,callback);return id;},clearTimeout:id=>timers.delete(id),
   fetch(){assert.fail('reference reuse must never submit or generate');}
  });
+ installCreationSelectors(context,source);
  vm.runInContext([lineFor('function newDraft('),lineFor('function makeSession('),lineFor('function visibleRefs('),lineFor('const videoEditWorkflows='),lineFor('const videoSourceOnlyWorkflows='),lineFor('function liveWorkflow('),lineFor('function liveProblem('),lineFor('function referenceProblem('),reuse].join('\n'),context);
  return {context,state,current,location,dialog,messages,notices,media,timers,clearedSlots,stats:()=>({renders,saves,focuses,refreshes}),expire(){for(const callback of [...timers.values()])callback();}};
 }

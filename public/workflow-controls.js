@@ -1,10 +1,10 @@
-import {isTimecode,timecodeControl,syncTimecodeControls} from './timecode-control.js?v=88.0';
-import {rangeHint,taskMeaning,syncTaskMeaning,syncExpectedDurations} from './control-guidance.js?v=88.0';
-import {isProcessingDuration,processingDuration,syncProcessingDurations} from './processing-duration.js?v=88.0';
+import {isTimecode,timecodeControl,syncTimecodeControls} from './timecode-control.js?v=89.1';
+import {rangeHint,taskLabel,taskMeaning,syncTaskMeaning,syncExpectedDurations} from './control-guidance.js?v=91.1';
+import {isProcessingDuration,processingDuration,syncProcessingDurations} from './processing-duration.js?v=91.1';
 import {esc} from './data.js';
-import {selectControl} from './workflow-select.js?v=88.0';
+import {selectControl} from './workflow-select.js?v=91.1';
 import {megapixelControl} from './parameter-controls.js?v=75.1';
-import {pointPickerControl,syncPointPickers} from './point-picker.js?v=88.0';
+import {pointPickerControl,syncPointPickers} from './point-picker.js?v=91.1';
 import {indicesControl} from './object-indices.js?v=88.0';
 import {browserNumericControl} from './numeric-contract.js?v=81.0';
 import {speakerRegionsControl,syncSpeakerRegionPickers} from './speaker-regions.js?v=88.0';
@@ -29,7 +29,9 @@ export function controlField(d,f){
  const markup=controlMarkup(d,f),rule=f.visibleWhen;
  if(!rule)return markup;
  const current=d.catalogValues?.[rule.controlId]??rule.defaultValue,visible=String(current)===String(rule.equals);
- return `<div class="catalog-conditional-field" data-catalog-visible-control="${esc(rule.controlId)}" data-catalog-visible-value="${esc(rule.equals)}" ${visible?'':'hidden'}>${markup}</div>`;
+ // Hidden controls retain their values, but must not participate in native validation.
+ const content=visible?markup:markup.replace(/<(input|select|textarea|button)\b([^>]*)>/g,(tag,name,attrs)=>/\sdisabled(?:\s|=|$)/.test(attrs)?tag:`<${name}${attrs} disabled data-catalog-condition-disabled="true">`);
+ return `<div class="catalog-conditional-field" data-catalog-visible-control="${esc(rule.controlId)}" data-catalog-visible-value="${esc(rule.equals)}" ${visible?'':'hidden'}>${content}</div>`;
 }
 function controlMarkup(d,f){f=browserNumericControl(f);f={...f,label:String(f.label||'').replace('画面尺寸','分辨率')};const v=value(d,f),id='catalog-field-'+f.id.replace(/[^a-zA-Z0-9]/g,'-');
  if(f.kind==='mode'&&f.type==='checkbox'){
@@ -42,7 +44,11 @@ function controlMarkup(d,f){f=browserNumericControl(f);f={...f,label:String(f.la
  if(f.kind==='indices')return indicesControl(f,v,id);
  if(isTimecode(f))return timecodeControl(f,v,id);
  if(isProcessingDuration(f))return processingDuration(f,v,id);
- if(f.kind==='task')return `<div class="catalog-field catalog-task-field" data-task-mode><label for="${id}">任务模式（代码）</label><input id="${id}" data-catalog-field="${esc(f.id)}" type="text" value="${esc(v)}"><small class="catalog-field-help" data-task-meaning>${esc(taskMeaning(String(v)))}</small></div>`;
+ if(f.kind==='task'){
+  const options=f.options?.map(option=>typeof option==='object'?option:{value:option,label:taskLabel(String(option))});
+  const input=options?.length?selectControl({id,label:f.label||'任务模式',value:v,options,attrs:`data-catalog-field="${esc(f.id)}"`}):`<input id="${id}" data-catalog-field="${esc(f.id)}" type="text" value="${esc(v)}">`;
+  return `<div class="catalog-field catalog-task-field" data-task-mode><label for="${id}${options?.length?'-trigger':''}">${options?.length?esc(f.label||'任务模式'):'任务模式（代码）'}</label>${input}<small class="catalog-field-help" data-task-meaning>${esc(taskMeaning(String(v)))}</small></div>`;
+ }
  if(f.kind==='filesystem'&&f.type==='text'&&f.key!=='pattern'&&!f.options)return `<div class="catalog-field catalog-directory-field"><label for="${id}">${esc(f.label)}</label><div class="catalog-directory-input"><input id="${id}" data-catalog-field="${esc(f.id)}" type="text" value="${esc(v)}"><button type="button" data-local-directory="${esc(f.id)}" aria-label="选择${esc(f.label)}">选择文件夹</button></div><small class="catalog-field-help" data-directory-status>选择本机文件夹，或填写运行端可访问的目录。</small></div>`;
  if((f.key==='megapixels'||f.unit==='MP')&&f.type==='number')return `<div class="catalog-field catalog-megapixels">${megapixelControl({id,label:f.label,value:v,min:f.customRange?.min??f.min,max:f.customRange?.max??f.max,step:f.customRange?.step??f.step,help:f.help,options:f.options,inputAttrs:`data-catalog-field="${esc(f.id)}"`,presetAttrs:n=>`data-catalog-preset="${esc(f.id)}" data-value="${esc(n)}"`})}</div>`;
  if(f.kind==='ratio'&&f.options){const options=dimensionOptions(f.options,v,raw=>`data-catalog-choice="${esc(f.id)}" data-value="${esc(raw)}"`);const custom=f.customRange?`<label class="catalog-custom-size">自定义分辨率 <input type="text" inputmode="numeric" data-catalog-custom-size="${esc(f.id)}" value="${f.options.some(x=>String(x?.value??x)===String(v))?'':esc(String(v).replace('x','×'))}" placeholder="宽 × 高" aria-label="自定义分辨率"></label>`:'';return `<div class="catalog-field catalog-ratio-field"><label for="${id}">${esc(f.label)}</label><input type="hidden" id="${id}" data-catalog-field="${esc(f.id)}" value="${esc(v)}"><div class="catalog-ratio-options" role="group" aria-label="${esc(f.label)}">${options}${custom}</div>${rangeHint(f)}</div>`;}
@@ -67,10 +73,6 @@ export function seedControls(fields,d,{compact=false,showTitle=true}={}){
 export function syncControlChoices(root,w,d){
  syncTimecodeControls(root);syncProcessingDurations(root);syncTaskMeaning(root);syncPointPickers(root);syncSpeakerRegionPickers(root);
  const fields=w.interface?.controls||[];
- for(const item of root.querySelectorAll('[data-catalog-visible-control]')){
-  const field=fields.find(f=>f.id===item.dataset.catalogVisibleControl);
-  if(field)item.hidden=String(value(d,field))!==item.dataset.catalogVisibleValue;
- }
  syncExpectedDurations(root,fields,f=>value(d,f));
  for(const button of root.querySelectorAll('[data-catalog-preset],[data-catalog-choice],[data-catalog-mode]')){
   const id=button.dataset.catalogPreset||button.dataset.catalogChoice||button.dataset.catalogMode,f=fields.find(f=>f.id===id);if(!f)continue;
@@ -85,5 +87,13 @@ export function syncControlChoices(root,w,d){
   const id=item.dataset.seedSetting,mode=d.catalogSeedModes?.[id]||'random',f=fields.find(f=>f.id===id);
   for(const button of item.querySelectorAll('[data-catalog-seed-mode]'))button.setAttribute('aria-pressed',String(button.dataset.value===mode));
   const input=item.querySelector('[data-catalog-field]');if(input){input.disabled=mode==='random';if(mode==='fixed')input.value=value(d,f);}
+ }
+ for(const item of root.querySelectorAll('[data-catalog-visible-control]')){
+  const field=fields.find(f=>f.id===item.dataset.catalogVisibleControl);
+  if(field)item.hidden=String(value(d,field))!==item.dataset.catalogVisibleValue;
+  for(const input of item.querySelectorAll('input,select,textarea,button')){
+   if(item.hidden){if(!input.disabled){input.setAttribute('data-catalog-condition-disabled','true');input.disabled=true;}}
+   else if(input.getAttribute('data-catalog-condition-disabled')==='true'){input.disabled=false;input.removeAttribute('data-catalog-condition-disabled');}
+  }
  }
 }

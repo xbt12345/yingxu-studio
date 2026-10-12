@@ -4,7 +4,7 @@ import {esc,I} from './data.js';
 export function selectControl({id,label,value,options,attrs=''}){
  const items=options.map(x=>({value:String(x?.value??x),label:String(x?.label??String(x).match(/\d+:\d+/)?.[0]??x)+(x?.disabled?' · 暂不可用':''),disabled:x?.disabled===true,reason:x?.reason||''}));
  const selected=items.find(x=>x.value===String(value))||items[0];
- return `<div class="wf-select" data-control-component="select"><select id="${esc(id)}" class="wf-select-value" tabindex="-1" aria-hidden="true" ${attrs}>${items.map(x=>`<option value="${esc(x.value)}" ${x===selected?'selected':''} ${x.disabled?`disabled data-disabled-reason="${esc(x.reason)}"`:''}>${esc(x.label)}</option>`).join('')}</select><button type="button" id="${esc(id)}-trigger" class="wf-select-trigger" role="combobox" aria-label="${esc(label)}" aria-haspopup="listbox" aria-expanded="false"><span>${esc(selected?.label||'选择')}</span>${I('down')}</button></div>`;
+ return `<div class="wf-select" data-control-component="select"><select id="${esc(id)}" class="wf-select-value" tabindex="-1" aria-hidden="true" aria-label="${esc(label)}" ${attrs}>${items.map(x=>`<option value="${esc(x.value)}" ${x===selected?'selected':''} ${x.disabled?`disabled data-disabled-reason="${esc(x.reason)}"`:''}>${esc(x.label)}</option>`).join('')}</select><button type="button" id="${esc(id)}-trigger" class="wf-select-trigger" role="combobox" aria-label="${esc(label)}" aria-haspopup="listbox" aria-expanded="false"><span>${esc(selected?.label||'选择')}</span>${I('down')}</button></div>`;
 }
 
 let installed=false,opened=null,sequence=0;

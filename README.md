@@ -1,6 +1,6 @@
 # 映序 YINGXU Studio
 
-当前界面版本：**0.88.0（2026-10-08）**，包含 C 方案封面、三轮工作流参数优化、尺寸校验和实际结果识别。部署版本以服务的 `/version.json` 为准；本次范围与验收边界见 [发布摘要](docs/workflow-release-review-2026-10-09.md)，部署方式见 [Railway 部署](docs/railway-deployment.md)。
+当前版本：**0.91.1（2026-10-12）**，包含本地免登录工作区、首尾帧素材入口、工作流参数与任务恢复修复，以及百度 SD2 / SD2.5 的完整服务端接入代码。部署版本以服务的 `/version.json` 为准；从零复现与配置见 [本地部署指南](docs/local-deployment.md)，本次范围见 [发布摘要](docs/release-0.91.1.md)。
 
 将复杂工作流转换为素材、描述和参数组成的创作界面。包含前端、Python 后端、交互组件库和 **151 个目录工作流的界面配置**；界面数量不等于逐图真实生成通过。当前指定算力卡有 **127 个 ready 工作流、6 个 blocked**，另有 1 个空文件和 3 个同图别名。2 个外部命名模板另计，当前 manifest 注册 **129 份 API 模板**（34 份既有适配器、95 份通用执行合同）。ready 表示可构造任务，模型加载与真实输出仍需验收。逐图输入与阻碍见 [参数审查](docs/card-workflow-parameter-audit.md)。
 
@@ -8,7 +8,7 @@
 
 ## Python 搭建
 
-安装 **Python 3.12** 和 Git。运行网站不需要 Node.js，也不需要前端构建。
+安装 **Python 3.12** 和 Git。运行网站不需要 Node.js，也不需要前端构建。音画循环工作流还需要系统 `ffmpeg` 可执行文件；Docker 镜像已包含它。
 
 ```bash
 git clone https://github.com/xbt12345/yingxu-studio.git
@@ -34,9 +34,9 @@ cp .env.example .env
 
 打开 **http://127.0.0.1:8770/studio.html**；组件库位于 **http://127.0.0.1:8770/workflow-control-library.html**。`Ctrl+C` 停止服务。Windows 也可在安装后运行 `启动映序.ps1`，它优先使用项目的 `.venv`。
 
-本地运行 `启动映序.ps1` 使用用户模式：保留用户信息，直接进入创作，不启用登录、积分与充值。本地模式由私有 `.env` 中的 `YINGXU_LOCAL_MODE=1` 开启，仅对本机回环请求生效；已部署版本保持原登录计费流程。正式部署创作台需要登录。首次启动会在数据目录生成 `admin-bootstrap.json`，管理员用户名和随机初始密码只保存在该私有文件中。旧作品和素材归初始管理员，新注册用户使用独立账户。登录后可在“我的账号”修改密码；文件不可上传到公开仓库。具体操作见 [账户、权限与积分](docs/platform-accounts-and-credits.md)。
+本地直接运行 `server.py` 或 `启动映序.ps1` 默认进入本地工作区，无需登录，界面不显示账号、密码与充值入口，沿用原有作品和素材。本地模式仅对连接来源和访问地址都为本机回环的请求生效；直接运行 `server.py` 时，在 `.env` 中设置 `YINGXU_LOCAL_MODE=0` 可测试本机账户登录（快捷启动脚本固定使用本地模式）。Railway 和非回环访问仍需登录。首次启动会在数据目录生成 `admin-bootstrap.json`，管理员用户名和随机初始密码只保存在该私有文件中。旧作品和素材归初始管理员，新注册用户使用独立账户；启用账户模式后可在“我的账号”修改密码。文件不可上传到公开仓库。具体操作见 [账户、权限与积分](docs/platform-accounts-and-credits.md)。
 
-`.env` 保持默认即可演示，不需要密钥。启用真实生成，在 `.env` 中填写自己的 `CHENYU_CARD_URL`，按 [接入说明](workflows/README.md) 安装模型和节点，再重启服务。
+`.env` 保持默认即可检查界面，不需要密钥。工作流真实生成需填写自己的 `CHENYU_CARD_URL` 并配齐模型和节点；两个百度视频 API 需填写自己的 `BAIDU_VOD_API_KEY`。它们是两条独立接入路径，填写后重启服务。仓库包含接入代码和公开模板，不包含作者的服务账号、模型权重或付费额度。
 
 ## Docker 搭建
 
@@ -46,15 +46,15 @@ cp .env.example .env
 docker compose up --build --wait
 ```
 
-访问同一个本地地址。停止用 `docker compose down`；数据保存在 `yingxu-data` 数据卷。加 `-v` 会删除数据卷。
+访问同一个本地地址。容器请求经过网桥，Compose 明确使用账户模式；初次凭据保存在容器 `/app/private/admin-bootstrap.json`。需要与当前本地免登录界面一致时，使用上面的原生 Python 方式。停止用 `docker compose down`；数据保存在 `yingxu-data` 数据卷。加 `-v` 会删除数据卷。
 
-需要真实生成时先复制 `.env.example` 为 `.env` 并填写算力地址。本机 ComfyUI 在容器中填写 `http://host.docker.internal:8188`，远程 ComfyUI 填其实际地址。容器不弹出电脑的原生文件夹窗口，可直接填写运行端路径。
+需要真实生成时先复制 `.env.example` 为 `.env` 并填写算力地址、百度 API key；Compose 会将这两项传给后端。本机 ComfyUI 在容器中填写 `http://host.docker.internal:8188`，远程 ComfyUI 填其实际地址。容器不弹出电脑的原生文件夹窗口，可直接填写运行端路径。
 
 ## 功能与真实接入范围
 
 | 功能 | 当前能力 | 条件 / 边界 |
 | --- | --- | --- |
-| 自由创作 | 图像/视频创作输入、费用预估、参考图编辑与结果操作 | 内置模型列表尚未接入真实 API，正常环境暂不可生成 |
+| 自由创作 | 图像/视频创作输入、费用按钮、参考图编辑与结果操作 | 百度 SD2 / SD2.5 提供 API 提交、查询和作品保存，需自己的凭据与额度；其它内置模型暂不可生成，首尾帧界面不代表对应服务已接入 |
 | 创作工具目录 | 151 个工作流的素材、参数、种子、草稿与演示 | 未接入条目仍明确显示演示 |
 | 已接入工具 | 127 个 ready 卡工作流 + 2 个外部命名模板；可选素材、独立描述分支和主体点选 | 自己的 ComfyUI、模型和自定义节点；6 个卡工作流 blocked；95 份通用合同完成结构检查，尚未逐图生成 |
 | 参考图编辑 | 框选、圈选、画笔、擦除、本地自动抠图、撤销、保存 | 自动抠图需要 Python 后端；参考强度目前只保存偏好，尚未影响生成 |
@@ -68,6 +68,8 @@ docker compose up --build --wait
 
 演示结果使用内置素材，不消费算力，也不代表模型实时生成。**GitHub Pages 只有静态前端**，不能运行本地自动抠图、文件夹选择或真实生成；体验这些功能请本地搭建。
 
+百度 SD2 / SD2.5 通过后端的 `BAIDU_VOD_API_KEY` 或私有数据目录 `baidu-video.json` 的 `api_key` 读取凭据，使用用户提供的百度 VOD 路由与模型版本。请求格式按对应 Seedance 官方任务契约实现，百度转发兼容性待实际测试。入口提供文字、单张首帧和单张参考图；SD2.5 首帧画幅跟随图片。生成按钮按所选清晰度的销售秒价乘时长、合计向上取整至分，提交时锁定同一报价。本地模式显示费用并调用供应商，保持原有账户积分不扣除的行为。
+
 真实生成采用“上传 → 提交 → 查询 → 保存”，支持重新编辑、更新种子再次生成、按任务取消及连接恢复后的查询。远端不支持按 ID 取消时会提示，不使用全局中断；取消不保证退回外部费用。不同电脑上的模型、节点版本与 API 额度须各自核对，模板齐全不等于所有模型已经在新环境验收。
 
 2026-10-08 已通过本地网站完成 13 类代表工作流的 15 个实际任务，能取回和保存结果。完整记录与画质限制见本地工作流审查；这不代表 151 个工作流全部经过 GPU 验收，也不代表部署后再次运行了全部代表。
@@ -77,7 +79,9 @@ docker compose up --build --wait
 | 配置 | 默认值 / 用途 |
 | --- | --- |
 | `CHENYU_CARD_URL` | 空为演示；填写自己的 ComfyUI HTTP(S) 地址 |
+| `BAIDU_VOD_API_KEY` | 自己的百度 VOD v3 Bearer API key，后端用于 SD2 / SD2.5；不放到前端 |
 | `HOST` / `PORT` | `127.0.0.1` / `8770` |
+| `YINGXU_LOCAL_MODE` | 默认 `1`，本机回环访问免登录；设为 `0` 可测试账户模式；Railway 强制关闭 |
 | `YINGXU_DATA_DIR` | 项目 `private/`；SQLite、上传、作品和回执 |
 | `YINGXU_WORKFLOW_DIR` | 项目 `workflows/api/`；可使用自己的模板目录 |
 | `YINGXU_ALLOWED_ORIGINS` | 可选反向代理的完整 Origin，多个以逗号分隔 |
@@ -100,6 +104,7 @@ Railway 的费用、变量、持久卷、预算与逐步操作见 [Railway 部�
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m unittest discover -v
+python -m pytest -q tests
 python scripts/check_setup.py
 npm test
 ```

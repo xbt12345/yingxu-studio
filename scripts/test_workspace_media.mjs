@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {declaration,installCreationSelectors} from './test_app_source.mjs';
 import {boundReferences,sameMedia,missingMentions,clearSubmittedContent,assetReferences} from '../public/workspace-media.js';
 import {nextReferenceId,renumberDraftReferences} from '../public/reference-numbering.js';
 
@@ -54,6 +55,7 @@ const source=readFileSync(new URL('../public/app.js',import.meta.url),'utf8');
 const attachment=source.slice(source.indexOf('function attachGeneratedOutput('),source.indexOf('function bindOutputToCatalogDraft('));
 const apiSession={scope:'model',draft:{type:'image',mode:'全能参考',prompt:'',refs:[]}};
 const context=vm.createContext({active:()=>apiSession,workflow:()=>null,sameMedia,nextReferenceId,renumberDraftReferences,workspace:{},referenceProblem:()=>null,refreshComposer(){},scheduleSave(){},toast(){},kindLabel:k=>k});
+installCreationSelectors(context,source);
 vm.runInContext(attachment,context);
 const result={id:'generated-a',type:'image',src:'/generated.png'};
 assert.equal(context.attachGeneratedOutput(result),true);

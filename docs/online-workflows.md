@@ -1,6 +1,6 @@
 # 在线体验真实工作流
 
-用户要完成的是“添加素材 → 调整参数 → 生成 → 取回作品”。节点图由服务器保管，浏览器只提交这几个输入。当前项目已经有上传、参数绑定、任务提交、进度查询和结果保存的实现；当前完整平台已部署至 Railway： https://yingxu-studio-production.up.railway.app/studio.html ，已核对 0.88.0、账户权限和持久数据。模型与节点仍需在独立算力环境中配齐。
+用户要完成的是“添加素材 → 调整参数 → 生成 → 取回作品”。节点图由服务器保管，浏览器只提交这几个输入。项目已有上传、参数绑定、任务提交、进度查询和结果保存的实现；现有完整平台地址为 https://yingxu-studio-production.up.railway.app/studio.html ，实际线上版本以 `/version.json` 为准。本次仓库版本 0.91.1 的本地复现方式见 [本地部署指南](local-deployment.md)。模型与节点仍需在独立算力环境中配齐。
 
 ## 推荐路线：同域名部署完整项目
 
@@ -32,6 +32,6 @@ Pages 托管静态 HTML、CSS、JavaScript，无法运行本项目 Python 后端
 
 2026-10-07 已接入账户、资源归属、管理员权限、积分账本和订单。初始管理员保留旧数据，普通账户仅访问自己的任务和素材；本机草稿也按账户分开。公开商业运行仍需真实 HTTPS 部署、多账户实测、上传与存储容量管理、模型运行以及支付对账验收。详细设置见 [账户、权限与积分](platform-accounts-and-credits.md) 与 [充值渠道配置](payment-configuration.md)。
 
-当前指定卡有 127 个 ready 工作流与 6 个 blocked；2 个外部命名模板另计，manifest 共注册 129 份 API 模板（34 份既有适配器、95 份通用执行合同）。阻塞项包括 3 个缺节点、1 个源图断链与 2 个控件版本不兼容，空文件需卡端补回。151 个目录界面不等于逐图实测，ready 也不证明模型加载与输出质量通过。本地已完成 13 类代表的 15 个真实任务，能取回和保存作品；详见 0.88.0 发布摘要。这不等于全目录 GPU 或画质验收。自由创作内置模型尚未接入，正常环境已停止模拟生成；参考强度尚未参与真实生成，任意工作流导入尚未实现；自由创作须补模型 API，不能只把演示开关改成“真实”。
+当前指定卡有 127 个 ready 工作流与 6 个 blocked；2 个外部命名模板另计，manifest 共注册 129 份 API 模板（34 份既有适配器、95 份通用执行合同）。阻塞项包括 3 个缺节点、1 个源图断链与 2 个控件版本不兼容，空文件需卡端补回。151 个目录界面不等于逐图实测，ready 也不证明模型加载与输出质量通过。此前 13 类代表的 15 个真实任务记录见 0.88.0 发布摘要，不等于部署后的全目录 GPU 或画质验收。自由创作的百度 SD2 / SD2.5 已有独立 API 接入代码，需配置自己的 `BAIDU_VOD_API_KEY`；其它内置模型尚未接入。参考强度尚未参与真实生成，任意工作流导入尚未实现。
 
 依据：[GitHub Pages 官方说明](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)、[ComfyUI HTTP / WebSocket 接口](https://docs.comfy.org/development/comfyui-server/comms_routes)、本项目 `server.py`、`configuration.py`、`compose.yaml` 与 `public/app.js`。

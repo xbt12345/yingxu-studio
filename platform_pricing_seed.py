@@ -21,7 +21,7 @@ MARKER = 'review79_pricing_seed'
 PRICE_COUNT = 93
 PACKAGE_COUNT = 6
 # Canonical JSON binds the approved prices/packages without retaining receipts.
-APPROVED_PLAN_SHA256 = 'b2e0cb4e32b7546d6a1e4b61ed9f0891b59cd78d1f7732b849afa7f2f6696f92'
+APPROVED_PLAN_SHA256 = '37e4abad6d682db153aa92c0bdbc1129fdd00f910527093c939e1cda53ca264d'
 ALLOWED_TABLES = frozenset(('platform_prices', 'platform_packages', 'platform_metadata', 'platform_admin_audit'))
 
 

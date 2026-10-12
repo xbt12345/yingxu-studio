@@ -1,7 +1,10 @@
 """Password gate for an invited, shared studio; this is not per-user isolation."""
 import base64
 import binascii
+import ipaddress
+import json
 import os
+from pathlib import Path
 import secrets
 from urllib.parse import urlsplit
 
@@ -50,3 +53,53 @@ def railway_origin():
             and not parsed.path and not parsed.query and not parsed.fragment and not parsed.username):
         return 'https://' + domain.lower()
     return None
+
+
+def _origin(value):
+    """Normalize a complete origin, never a URL with credentials or a path."""
+    if not isinstance(value, str) or any(char.isspace() for char in value):
+        return None
+    try:
+        parsed = urlsplit(value)
+        if (parsed.scheme not in ('http', 'https') or not parsed.hostname
+                or parsed.username is not None or parsed.password is not None
+                or parsed.path not in ('', '/') or parsed.query or parsed.fragment):
+            return None
+        host = parsed.hostname.lower()
+        if ':' in host:
+            host = '[' + host + ']'
+        port = parsed.port
+        if port is not None and port != {'http':80, 'https':443}[parsed.scheme]:
+            host += ':' + str(port)
+        return parsed.scheme + '://' + host
+    except ValueError:
+        return None
+
+
+def trusted_origins(request, private_dir):
+    """Share one configured browser-origin policy across both HTTP guards.
+
+    A caller-controlled Host or proxy header never adds an external origin.
+    Loopback origins use the request's actual scheme/port, including IPv6.
+    """
+    allowed = {origin for item in os.environ.get('YINGXU_ALLOWED_ORIGINS', '').split(',')
+               if (origin := _origin(item.strip()))}
+    canonical = railway_origin()
+    if canonical:
+        allowed.add(canonical)
+    else:
+        host = request.url.hostname or ''
+        try:
+            loopback = host == 'localhost' or ipaddress.ip_address(host).is_loopback
+        except ValueError:
+            loopback = host == 'localhost'
+        if loopback and (origin := _origin(str(request.base_url))):
+            allowed.add(origin)
+    try:
+        configured = json.loads((Path(private_dir) / 'access.json').read_text('utf-8-sig'))
+        origin = _origin(configured.get('origin', ''))
+        if origin and origin.startswith('https://') and urlsplit(origin).hostname.endswith('.ts.net'):
+            allowed.add(origin)
+    except (OSError, ValueError, AttributeError):
+        pass
+    return allowed

@@ -50,6 +50,11 @@ def main():
     parser.add_argument('--probe', action='store_true', help='Check node types on your configured ComfyUI; does not generate or charge.')
     args = parser.parse_args()
     manifest = check_files()
+    from baidu_video import model_availability
+    configured = {model: model_availability(model)['available']
+                  for model in ('baidu-sd2', 'baidu-sd2.5')}
+    print('Baidu credential configuration (offline): ' + json.dumps(configured))
+    print('Credential presence does not verify provider permission, quota or generation.')
     if args.probe:
         import os
         import requests

@@ -90,7 +90,7 @@ class LocalPlatformHTTP(TestCase):
         before = {table:self.count(table) for table in (
             'platform_accounts','platform_orders','platform_ledger','platform_admin_audit')}
         for path in ('/api/account/login','/api/account/register','/api/account/logout',
-                     '/api/account/password','/api/account/creation-quote','/api/account/orders',
+                     '/api/account/password','/api/account/orders',
                      '/api/admin/users','/api/admin/users/'+self.alice['id'],
                      '/api/admin/users/'+self.alice['id']+'/credits',
                      '/api/admin/pricing','/api/admin/packages',

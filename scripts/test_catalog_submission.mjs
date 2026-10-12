@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {declaration,installCreationSelectors} from './test_app_source.mjs';
 import {effectiveCatalogInterface,catalogConnectionState,catalogSubmission,catalogPromptProblem,catalogHistorySnapshot,catalogReferenceSnapshots,comparableResult,referenceResult,resultTypeLabel,validateCatalogConstraints} from '../public/catalog-submission.js';
 import {catalogEditor,prepareCatalogSnapshot,apiPanel} from '../public/catalog-ui.js';
 import {cloneDraft} from '../public/advanced.js';
@@ -133,6 +134,7 @@ const app=readFileSync(new URL('../public/app.js',import.meta.url),'utf8'),start
  let current=w,captured,submitted=0;const messages=[];
 const session={draft:cloneDraft(draft),jobs:[],id:'session'};
 const context=vm.createContext({
+ showCatalogIssue(message){messages.push(message);},clearCatalogIssue(){},
  referenceProvenance,mergeReferenceSnapshots,
   workflow:()=>current,effectiveCatalogInterface,catalogConnectionState,catalogPromptProblem,cloneDraft,visibleRefs:(d,workflow)=>boundReferences(d,workflow),missingMentions,renumberDraftReferences,hasRemovedReference,prepareCatalogSnapshot,catalogSubmission,canReuseReferenceUpload,referenceUploadParts,referenceUploadForm,
  toast(message){messages.push(message);},$:()=>null,getCatalogApiKey:()=>'mock-key-in-memory',crypto:globalThis.crypto,Date,state:{},refreshFeed(){},sidebar(){},scheduleSave(){},refreshComposer(){},workspace:{assets:[]},resultExtension,
@@ -214,6 +216,7 @@ dispatchContext.handleAction('retry',{dataset:{job:'old-job'}});dispatchContext.
 const rerunStart=app.indexOf('async function rerunLive('),rerunEnd=app.indexOf('\nasync function submitLive(',rerunStart),mergeStart=app.indexOf('function mergeCatalogJob('),mergeEnd=app.indexOf('\nfunction mergeLiveJob(',mergeStart),rerunMessages=[],requests=[];let respond;
 const rerunTool={id:'retry-tool',output:'image',catalogConnection:{adapter:'generic'},interface:{controls:[{id:'1:seed',kind:'seed',value:711051}],texts:[{id:'4:text',role:'prompt'}],media:[]}};
 const retryContext=vm.createContext({workflows:[rerunTool],referenceProvenance,mergeReferenceSnapshots,effectiveCatalogInterface,catalogHistorySnapshot,catalogReferenceSnapshots,crypto:globalThis.crypto,cloneDraft,Date,refreshFeed(){},scheduleSave(){},sidebar(){},liveJson:body=>body,toast:message=>rerunMessages.push(message),liveApi:(path,body)=>{requests.push({path,body});return new Promise(resolve=>{respond=resolve;});}});
+installCreationSelectors(retryContext,app);
 vm.runInContext(app.slice(mergeStart,mergeEnd)+'\n'+app.slice(rerunStart,rerunEnd),retryContext);retryContext.mergeLiveJob=retryContext.mergeCatalogJob;
 for(const randomize of [false,true]){const source={...retrySourceJob,snapshot:cloneDraft(retrySourceJob.snapshot)},session={jobs:[]},button={disabled:false},priorSnapshot=cloneDraft(source.snapshot),running=retryContext.rerunLive(source,session,button,randomize),job=session.jobs[0];assert.equal(requests.at(-1).body.randomize_seed,randomize);assert.equal(job.stage,'正在提交到算力卡');assert.equal(job.snapshot.catalogValues['1:seed'],711051,'the pending row must not invent a new seed');assert.equal(button.disabled,true);
  const recordedSeed=randomize?424242:711051;respond({id:'server-new-'+randomize,workflow_id:'retry-tool',status:'running',stage:'正在生成',prompt:'复验描述',started:job.started,catalog_values:{'1:seed':recordedSeed},catalog_texts:{'4:text':'复验描述'},outputs:[]});await running;assert.equal(job.snapshot.catalogValues['1:seed'],recordedSeed,'the server response is the seed authority');assert.deepEqual(source.snapshot,priorSnapshot);assert.equal(button.disabled,false);assert.match(rerunMessages.at(-1),randomize?/更换随机种子/:/原随机种子重试/);

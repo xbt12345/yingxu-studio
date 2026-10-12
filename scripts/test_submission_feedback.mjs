@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
+import {declaration,installCreationSelectors} from './test_app_source.mjs';
 import {effectiveCatalogInterface,catalogHistorySnapshot,catalogReferenceSnapshots} from '../public/catalog-submission.js';
 import {esc} from '../public/data.js';
 
@@ -17,7 +18,8 @@ assert(keyboardSource,'use the production Ctrl / Cmd + Enter listener');
 function form({invalid=null,custom=[],floating=[],hiddenFloating=[]}={}){
  const session={id:'active',draft:{catalogValues:{},refs:[]},jobs:[]},w={id:'local-card-19',catalogConnected:true,interface:schemas['local-card-19']},calls=[],listeners={},hidden={dataset:{catalogField:'site:size'},value:'1024x1024'},unrelated={dataset:{catalogField:'unrelated'},value:'keep this number'},panelHidden={dataset:{catalogField:'site:size'},value:'1024x1024'};
  const root=(fields,inputs)=>({querySelectorAll:selector=>selector==='[data-catalog-field]'?fields:selector==='[data-catalog-custom-size]'?inputs:[]}),inlineRoot=root([unrelated,hidden],custom),panelRoot=root([{dataset:{catalogField:'different'},value:'keep panel value'},panelHidden],floating);
- const context=vm.createContext({active:()=>session,workflow:()=>w,document:{querySelectorAll:selector=>[...(selector.includes('#composer-slot')?custom:[]),...(selector.includes('#floating-panel')?floating:[]),...(selector.includes('#floating-panel')&&!selector.includes('#floating-panel:not([hidden])')?hiddenFloating:[])],querySelector:selector=>{assert.match(selector,/\.wf-editor input:invalid/);return invalid;},addEventListener:(name,listener)=>{listeners[name]=listener;}},submitCatalogLive:(snapshot,s)=>{calls.push({snapshot:structuredClone(snapshot||s.draft),session:s});return true;},syncControlChoices(){},scheduleSave(){},refreshComposer(){assert.fail('submission validation must not redraw the editor');},$(selector){return selector==='#composer-slot'?inlineRoot:{};},dialog:{open:false},workspace:{assets:[]},handleWorkspaceAction:()=>false});
+ const context=vm.createContext({showCatalogIssue(){},clearCatalogIssue(){},active:()=>session,workflow:()=>w,document:{querySelectorAll:selector=>[...(selector.includes('#composer-slot')?custom:[]),...(selector.includes('#floating-panel')?floating:[]),...(selector.includes('#floating-panel')&&!selector.includes('#floating-panel:not([hidden])')?hiddenFloating:[])],querySelector:selector=>{assert.match(selector,/\.wf-editor input:invalid/);return invalid;},addEventListener:(name,listener)=>{listeners[name]=listener;}},submitCatalogLive:(snapshot,s)=>{calls.push({snapshot:structuredClone(snapshot||s.draft),session:s});return true;},syncControlChoices(){},scheduleSave(){},refreshComposer(){assert.fail('submission validation must not redraw the editor');},$(selector){return selector==='#composer-slot'?inlineRoot:{};},dialog:{open:false},workspace:{assets:[]},handleWorkspaceAction:()=>false});
+ installCreationSelectors(context,app);
  vm.runInContext(submissionSource+'\n'+actionSource+'\n'+keyboardSource,context);
  for(const [inputs,container,location] of [[custom,inlineRoot,'.workflow-inline-controls'],[floating,panelRoot,'#floating-panel'],[hiddenFloating,panelRoot,'#floating-panel']])for(const input of inputs){input.closest=selector=>selector===location?container:null;input.dataset={catalogCustomSize:'site:size'};input.setCustomValidity=message=>{input.validationMessage=message;};input.reportValidity=()=>{input.reported=(input.reported||0)+1;};}
  return {context,session,w,calls,listeners,hidden,unrelated,panelHidden};
@@ -62,6 +64,7 @@ test('visible floating dimensions flush before keyboard submission, preserve com
 function storage({ready=true,readonly=false,write=async()=>{},snapshotError=false}={}){
  const session={id:'active',draft:{prompt:'current input',refs:[]},jobs:[]},messages=[],writes=[],timers=[],box={hidden:true,innerHTML:''};
  const context=vm.createContext({state:{sessions:[session],active:session.id},workspace:{collections:[],reviewSeeded:false},nextSession:1,nextJob:1,storageReady:ready,saveTimer:null,structuredClone:snapshotError?()=>{throw new Error('cannot clone');}:structuredClone,Promise,location:{search:readonly?'?review-readonly=1':''},URLSearchParams,writeState:async(...args)=>{writes.push(args);await write(...args);},toast:message=>messages.push(message),active:()=>session,workflow:()=>({catalogOnly:true}),$:()=>box,catalogOverview:()=>'<p>saved overview</p>',setTimeout:fn=>{timers.push(fn);return timers.length;},clearTimeout(){}});
+ installCreationSelectors(context,app);
  vm.runInContext(saveSource,context);return {context,session,messages,writes,timers,box};
 }
 
@@ -91,6 +94,7 @@ const buttonSource=app.split('\n').find(line=>line.startsWith('const B='));asser
 function recovery({response,requestError,localMode=false}={}){
  const w={id:'catalog',catalogConnected:true,output:'image',catalogConnection:{adapter:'generic'},interface:{controls:[],texts:[],media:[]}},requests=[],messages=[];
  const context=vm.createContext({isLocalPlatform:()=>localMode,workflows:[w],workspace:{assets:[]},effectiveCatalogInterface,catalogHistorySnapshot,catalogReferenceSnapshots,catalogValuesFromSettings:(tool,settings)=>catalogHistorySnapshot(tool,{settings}).catalogValues,mergeReferenceSnapshots:()=>[],cloneDraft:structuredClone,crypto:globalThis.crypto,refreshFeed(){},sidebar(){},scheduleSave(){},toast:message=>messages.push(message),liveJson:value=>value,liveApi:async(path,options)=>{requests.push({path,options});if(requestError)throw requestError;return typeof response==='function'?response():response;},esc,I:()=>'',formatTime:()=>'',Promise,Date});
+ installCreationSelectors(context,app);
  vm.runInContext(buttonSource+'\n'+mergeSource+'\n'+recoverySource+'\n'+statusSource,context);return {context,requests,messages,w};
 }
 const receipt=(status='done',extra={})=>({id:'remote-job',workflow_id:'catalog',status,stage:'作品已保存',prompt:'original input',prompt_id:'original-prompt',settings:{},catalog_values:{},catalog_texts:{},catalog_assets:{},outputs:[],...extra});
@@ -134,8 +138,9 @@ test('even a stale ordinary Retry action routes an output failure to retrieval',
 
 function submitting(kind,error){
  const w={id:'catalog',name:'测试工具',output:'image',catalogConnected:true,catalogConnection:{adapter:'generic'},interface:{sourceHash:'source',controls:[],texts:[],media:[]}},session={id:'session',draft:{prompt:'existing input',refs:[],catalogValues:{},liveSettings:{}},jobs:[]},requests=[];
- const context=vm.createContext({active:()=>session,workflow:()=>w,liveWorkflow:()=>w,state:{active:session.id},workspace:{assets:[]},effectiveCatalogInterface,catalogConnectionState:()=>({blocked:false}),catalogPromptProblem:()=>null,catalogSubmission:()=>({}),cloneDraft:structuredClone,visibleRefs:d=>d.refs,missingMentions:()=>[],hasRemovedReference:()=>false,renumberDraftReferences:d=>d,prepareCatalogSnapshot(){},liveSettings:d=>d.liveSettings,liveProblem:()=>null,crypto:globalThis.crypto,Date,refreshFeed(){},refreshComposer(){},sidebar(){},scheduleSave(){},closePanel(){},render(){},toast(){},liveJson:value=>value,liveApi:async(path,options)=>{requests.push({path,options});throw error;}});
+ const context=vm.createContext({active:()=>session,workflow:()=>w,liveWorkflow:()=>w,state:{active:session.id},workspace:{assets:[]},effectiveCatalogInterface,catalogConnectionState:()=>({blocked:false}),catalogPromptProblem:()=>null,showCatalogIssue(){},clearCatalogIssue(){},catalogSubmission:()=>({}),cloneDraft:structuredClone,visibleRefs:d=>d.refs,missingMentions:()=>[],hasRemovedReference:()=>false,renumberDraftReferences:d=>d,prepareCatalogSnapshot(){},liveSettings:d=>d.liveSettings,liveProblem:()=>null,crypto:globalThis.crypto,Date,refreshFeed(){},refreshComposer(){},sidebar(){},scheduleSave(){},closePanel(){},render(){},toast(){},liveJson:value=>value,liveApi:async(path,options)=>{requests.push({path,options});throw error;}});
  const chunk=kind==='catalog'?source('async function submitCatalogLive(','\nfunction flushCatalogCustomSize('):source('async function submitLive(','\nlet livePollBusy=');
+ installCreationSelectors(context,app);
  vm.runInContext(chunk,context);return {context,session,requests};
 }
 
@@ -160,6 +165,7 @@ test('an actual lost connection still preserves uncertain submission recovery',a
 
 test('old demo job values never reappear as payable retry fees',()=>{
  const context=vm.createContext({Date,DEMO_DURATION:12000,I:()=>'',formatTime:()=>'',esc});
+ installCreationSelectors(context,app);
  vm.runInContext(buttonSource+'\n'+source('function statusInfo(','\nfunction promptMarkup('),context);
  for(const status of ['failed','cancelled']){
   const html=context.progressHTML({id:'old-demo',status,cost:999,started:Date.now()-1000,snapshot:{type:'image'}});
@@ -169,7 +175,8 @@ test('old demo job values never reappear as payable retry fees',()=>{
 
 function freeSubmission(){
  const session={id:'free-session',scope:'model',draft:{prompt:'保留我的描述',refs:[{id:'图片1',src:'private-input',kind:'image'}],model:'seedream-4.5',type:'image'},jobs:[]},listeners={},messages=[],batchError={textContent:''};
- const context=vm.createContext({production:true,active:()=>session,workflow:()=>null,liveWorkflow:()=>null,document:{querySelectorAll:()=>[],querySelector:()=>null,addEventListener:(name,listener)=>{listeners[name]=listener;}},inlineError:(text,fix)=>{messages.push({text,fix});session.draft.error={text,fix};},handleWorkspaceAction:()=>false,$:selector=>selector==='#batch-error'?batchError:selector==='#prompt'?{}:null,dialog:{open:false,close(){assert.fail('unavailable creation cannot close the batch dialog');}},workspace:{prompts:['第一条保留','第二条保留']},state:{active:session.id},scheduleSave(){assert.fail('unavailable creation must not save a fake job');},findJob:()=>null});
+ const context=vm.createContext({showCatalogIssue(){},clearCatalogIssue(){},production:true,active:()=>session,workflow:()=>null,liveWorkflow:()=>null,document:{querySelectorAll:()=>[],querySelector:()=>null,addEventListener:(name,listener)=>{listeners[name]=listener;}},inlineError:(text,fix)=>{messages.push({text,fix});session.draft.error={text,fix};},handleWorkspaceAction:()=>false,$:selector=>selector==='#batch-error'?batchError:selector==='#prompt'?{}:null,dialog:{open:false,close(){assert.fail('unavailable creation cannot close the batch dialog');}},workspace:{prompts:['第一条保留','第二条保留']},state:{active:session.id},scheduleSave(){assert.fail('unavailable creation must not save a fake job');},findJob:()=>null});
+ installCreationSelectors(context,app);
  vm.runInContext(submissionSource+'\n'+actionSource+'\n'+keyboardSource+'\n'+source('async function runPrompts(','\nfunction handleWorkspaceAction('),context);
  return {context,session,listeners,messages,batchError};
 }
@@ -194,7 +201,7 @@ test('unconnected free batch creation preserves every prompt and the open dialog
 });
 
 test('a cancelled real task describes platform credit handling without asserting an unverified refund',()=>{
- const context=vm.createContext({isLocalPlatform:()=>false,esc,B:()=>'',Date,formatTime:()=>''});vm.runInContext(statusSource,context);
+ const context=vm.createContext({isLocalPlatform:()=>false,esc,B:()=>'',Date,formatTime:()=>''});installCreationSelectors(context,app);vm.runInContext(statusSource,context);
  const html=context.liveJobStatus({status:'cancelled'});assert.match(html,/平台冻结积分按取消结果处理/);assert.doesNotMatch(html,/已用费用不退|已退|已退款/);
 });
 
@@ -215,7 +222,8 @@ test('local cancellation and generator footer omit pricing while cloud keeps its
   const r=recovery({localMode}),cancelled=r.context.liveJobStatus({status:'cancelled'});
   if(localMode){assert.match(cancelled,/任务已取消/);assert.doesNotMatch(cancelled,/积分|费用|计费/);}else assert.match(cancelled,/平台冻结积分按取消结果处理/);
   const context=vm.createContext({isLocalPlatform:()=>localMode,liveSettings:()=>({long_side:768,duration:5}),refsMarkup:()=>'',issueHTML:()=>'',uploadControl:()=>'',esc,I:()=>''});
-  vm.runInContext(buttonSource+'\n'+source('function liveComposer(','\nfunction liveField('),context);
+  installCreationSelectors(context,app);
+ vm.runInContext(buttonSource+'\n'+source('function liveComposer(','\nfunction liveField('),context);
   const markup=context.liveComposer({draft:{prompt:'原描述',refs:[]},jobs:[]},{id:'bernini-edit',name:'视频编辑',placeholder:'描述修改'});
   if(localMode){assert.match(markup,/data-action="generate"\s*>生成 /);assert.doesNotMatch(markup,/费用|计费|积分|报价/);}else{assert.match(markup,/生成 · 算力卡计费/);assert.match(markup,/费用以提交前报价为准/);}
  }
@@ -225,7 +233,8 @@ test('local real-task cancellation confirmation preserves material and removes c
  for(const localMode of [true,false]){
   const job={id:'job-one',real:true,status:'running',snapshot:{refs:[{id:'reference'}]}},before=structuredClone(job),confirmations=[];
   const context=vm.createContext({isLocalPlatform:()=>localMode,handleWorkspaceAction:()=>false,findJob:()=>({j:job}),confirmAction:options=>{confirmations.push(options);return Promise.resolve(false);},cancelLive(){assert.fail('declined cancellation must not reach the API');}});
-  vm.runInContext(actionSource,context);context.handleAction('cancel',{dataset:{job:job.id}});await Promise.resolve();
+  installCreationSelectors(context,app);
+ vm.runInContext(actionSource,context);context.handleAction('cancel',{dataset:{job:job.id}});await Promise.resolve();
   assert.equal(confirmations.length,1);assert.match(confirmations[0].message,/提示词和素材保留/);assert.deepEqual(job,before);
   if(localMode)assert.doesNotMatch(confirmations[0].message,/费用|计费|积分|收费/);else assert.match(confirmations[0].message,/冻结积分/);
  }
@@ -234,7 +243,8 @@ test('local real-task cancellation confirmation preserves material and removes c
 test('all demo review routes seed free jobs without a removed cost calculator',()=>{
  for(const mode of ['results','progress','error']){
   const session={draft:{refs:[]},jobs:[]},context=vm.createContext({location:{search:'?demo='+mode},production:true,URLSearchParams,Date,crypto:globalThis.crypto,DEMO_DURATION:12000,resolveSession(){},active:()=>session,complete:j=>{j.status='done';}});
-  vm.runInContext(source('function seedReview(','\nfunction viewportHeight('),context);context.seedReview();
+  installCreationSelectors(context,app);
+ vm.runInContext(source('function seedReview(','\nfunction viewportHeight('),context);context.seedReview();
   assert.equal(session.jobs.length,mode==='results'?2:1);assert(session.jobs.every(j=>j.cost===0));assert.equal(session.draft.prompt,'');
  }
 });

@@ -32,7 +32,7 @@
   },
   "47": {
     "inputs": {
-      "value": ""
+      "value": "masterpiece, best quality, score_7, highres, safe, "
     },
     "class_type": "PrimitiveStringMultiline",
     "_meta": {
@@ -320,7 +320,7 @@
   },
   "66": {
     "inputs": {
-      "text": "",
+      "text": "worst quality, low quality, score_1, score_2, score_3, artist name, blurry, extra fingers, bad hands, bad anatomy, malformed limbs, duplicate, cropped, deformed face, poorly drawn eyes, text, watermark",
       "clip": [
         "45",
         0
