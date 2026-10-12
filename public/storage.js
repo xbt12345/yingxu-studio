@@ -1,4 +1,4 @@
-import {mergeWorkspaceSnapshots} from './workspace-merge.js?v=91.1';
+import {mergeWorkspaceSnapshots} from './workspace-merge.js?v=91.2';
 let db;
 function openDatabase(name){return new Promise((resolve,reject)=>{const request=indexedDB.open(name,1);request.onupgradeneeded=()=>{request.result.createObjectStore('assets',{keyPath:'id'});request.result.createObjectStore('state');};request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(request.error);});}
 export async function openStorage({accountId,legacyOwner=false}={}){

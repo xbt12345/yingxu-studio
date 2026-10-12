@@ -1,10 +1,12 @@
 # 映序 YINGXU Studio
 
-当前版本：**0.91.1（2026-10-12）**，包含本地免登录工作区、首尾帧素材入口、工作流参数与任务恢复修复，以及百度 SD2 / SD2.5 的完整服务端接入代码。部署版本以服务的 `/version.json` 为准；从零复现与配置见 [本地部署指南](docs/local-deployment.md)，本次范围见 [发布摘要](docs/release-0.91.1.md)。
+当前版本：**0.91.2（2026-10-12）**，包含本地免登录工作区、首尾帧素材入口、工作流参数与任务恢复修复，以及百度 SD2 / SD2.5 的完整服务端接入代码。部署版本以服务的 `/version.json` 为准；从零复现与配置见 [本地部署指南](docs/local-deployment.md)，本次范围见 [发布摘要](docs/release-0.91.2.md)。
 
 将复杂工作流转换为素材、描述和参数组成的创作界面。包含前端、Python 后端、交互组件库和 **151 个目录工作流的界面配置**；界面数量不等于逐图真实生成通过。当前指定算力卡有 **127 个 ready 工作流、6 个 blocked**，另有 1 个空文件和 3 个同图别名。2 个外部命名模板另计，当前 manifest 注册 **129 份 API 模板**（34 份既有适配器、95 份通用执行合同）。ready 表示可构造任务，模型加载与真实输出仍需验收。逐图输入与阻碍见 [参数审查](docs/card-workflow-parameter-audit.md)。
 
 [在线平台](https://yingxu-studio-production.up.railway.app/studio.html) · [静态预览](https://xbt12345.github.io/yingxu-studio/) · [组件库](https://xbt12345.github.io/yingxu-studio/workflow-control-library.html) · [真实生成接入说明](workflows/README.md)
+
+本版还包含 14 个工作流的本地封面示例和 4 个类别封面映射，共 20 个静态图片文件，约 1.48 MB。新部署无需作者的历史记录即可显示这些封面；自己的真实创作仍优先显示。图片已清除提示词、工作流和位置等附加元数据。
 
 ## Python 搭建
 

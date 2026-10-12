@@ -1,25 +1,25 @@
-import {installPointPickers} from './point-picker.js?v=91.1';
+import {installPointPickers} from './point-picker.js?v=91.2';
 import {resultMediaMarkup} from './result-media.js?v=88.0';
-import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=91.1';
+import {referenceShelfMarkup,editReference,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=91.2';
 import {outputActionMarkup,installOutputActionPlacement} from './output-actions.js?v=70.0';
 import {installTimecodeControls} from './timecode-control.js?v=89.1';
 import {installMultiCamera} from './multi-camera.js?v=75.1';
-import {installProcessingDurations} from './processing-duration.js?v=91.1';
-import {liveDurationControl,liveWorkflowEditor,installTrimPlayback} from './workflow-page.js?v=91.1';
+import {installProcessingDurations} from './processing-duration.js?v=91.2';
+import {liveDurationControl,liveWorkflowEditor,installTrimPlayback} from './workflow-page.js?v=91.2';
 import {installDirectoryPicker} from './directory-picker.js?v=60.1';
-import {installWorkflowSelects} from './workflow-select.js?v=91.1';
+import {installWorkflowSelects} from './workflow-select.js?v=91.2';
 import {annotateImage} from './region-annotation.js?v=54.0';
 import {esc} from './data.js';
 import {openCatalogReferenceSlot,closeCatalogReferenceSlot} from './catalog-reference-slots.js?v=88.0';
 import {advancedFields} from './advanced.js?v=60.1';
-import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=91.1';
-import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=91.1';
+import {controlField,controlSection,seedControls,syncControlChoices} from './workflow-controls.js?v=91.2';
+import {catalogEditor,catalogCommonPanel,apiPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue} from './catalog-ui.js?v=91.2';
 
 // The library renders production components with harmless sample values; no saving or generation.
 const refinement=new URLSearchParams(location.search).get('refine')==='1';
 if(refinement)document.body.classList.add('component-refinement');
 const [catalog,schemas,live]=await Promise.all([
- fetch('local-catalog.json').then(r=>r.json()),fetch('workflow-interfaces.json?v=91.1').then(r=>r.json()),fetch('/api/workflows').then(r=>r.ok?r.json():[]).catch(()=>[])
+ fetch('local-catalog.json').then(r=>r.json()),fetch('workflow-interfaces.json?v=91.2').then(r=>r.json()),fetch('/api/workflows').then(r=>r.ok?r.json():[]).catch(()=>[])
 ]);
 const records=catalog.workflows.map(w=>({...w,interface:schemas.workflows[w.id]}));
 const blank=()=>({prompt:'保留原图主体，调整背景与光线。',refs:[],catalogValues:{},catalogTexts:{},catalogSeedModes:{}});

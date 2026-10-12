@@ -1,4 +1,4 @@
-import {initializePlatform,isLocalPlatform} from './platform-account.js?v=91.1';
+import {initializePlatform,isLocalPlatform} from './platform-account.js?v=91.2';
 
 const state={user:null,data:null,audit:[],tab:'users',load:0,search:'',role:'all',status:'all',orderStatus:'pending',pricingSearch:'',pricingStatus:'all',pricingOffset:0,pricingLimit:20,users:[],userTotal:0,userOffset:0,userLimit:50,userLoading:true,userError:'',userLoad:0,creationFocus:null};
 const tabs={users:{title:'用户管理',description:'管理账号权限、使用状态和积分'},orders:{title:'充值订单',description:'核对真实收款，再确认积分到账'},pricing:{title:'套餐与计价',description:'配置积分套餐和每次创作的费用'},reviews:{title:'账务核对',description:'处理需要人工核实的支付与创作记录'},audit:{title:'操作记录',description:'查看管理员变更，保留每一次操作依据'}};

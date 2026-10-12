@@ -1,6 +1,6 @@
 // Catalog IDs are the binding identity. Display keys may repeat across branches.
 import {normalizeObjectIndices} from './object-indices.js?v=88.0';
-import {referenceProvenance} from './live-history.js?v=91.1';
+import {referenceProvenance} from './live-history.js?v=91.2';
 import {browserNumericControl,validateBrowserNumbers} from './numeric-contract.js?v=81.0';
 import {normalizeSpeakerRegions,serializeSpeakerRegions} from './speaker-regions.js?v=88.0';
 const browserInterface=cfg=>({...cfg,controls:(cfg.controls||[]).map(browserNumericControl)});

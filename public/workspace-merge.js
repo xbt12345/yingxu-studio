@@ -1,4 +1,4 @@
-import {sameLiveJob,mergeReferenceSnapshots,reconcileLiveJobs} from './live-history.js?v=91.1';
+import {sameLiveJob,mergeReferenceSnapshots,reconcileLiveJobs} from './live-history.js?v=91.2';
 
 const copy=value=>structuredClone(value);
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);

@@ -1,30 +1,30 @@
-import {showCatalogIssue,clearCatalogIssue} from './catalog-feedback.js?v=91.1';
-import {initializePlatform,isLocalPlatform,accountNavigation,accountPage,loadAccountPage,refreshGenerationQuote,refreshCreationQuote} from './platform-account.js?v=91.1';
-import {effectiveCatalogInterface,catalogConnectionState,catalogSubmission,catalogPromptProblem,catalogHistorySnapshot,catalogReferenceSnapshots,resultTypeLabel,comparableResult,referenceResult} from './catalog-submission.js?v=91.1';
+import {showCatalogIssue,clearCatalogIssue} from './catalog-feedback.js?v=91.2';
+import {initializePlatform,isLocalPlatform,accountNavigation,accountPage,loadAccountPage,refreshGenerationQuote,refreshCreationQuote} from './platform-account.js?v=91.2';
+import {effectiveCatalogInterface,catalogConnectionState,catalogSubmission,catalogPromptProblem,catalogHistorySnapshot,catalogReferenceSnapshots,resultTypeLabel,comparableResult,referenceResult} from './catalog-submission.js?v=91.2';
 import {resultMediaMarkup,resultExtension,resultOutputParametersMarkup} from './result-media.js?v=88.0';
 import {outputActionMarkup,removeOutputs,restoreOutputs,installOutputActionPlacement} from './output-actions.js?v=70.0';
-import {editReference,regionEditorOptions,referenceShelfMarkup,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=91.1';
-import {canReuseReferenceUpload,referenceUploadParts,referenceUploadForm} from './reference-upload.js?v=91.1';
-import {referenceProvenance,mergeReferenceSnapshots,matchesLiveRecord,reconcileLiveJobs} from './live-history.js?v=91.1';
-import {boundReferences,sameMedia,missingMentions,captureSubmittedContent,clearSubmittedContent,assetReferences} from './workspace-media.js?v=91.1';
-import {taskOperation,similarWorkflows,modelLabel,categoryDescription,taskCover,originalReference,originalReferences,restoredInputs,matchesWork} from './workflow-experience.js?v=91.1';
+import {editReference,regionEditorOptions,referenceShelfMarkup,installReferenceShelf,toggleReferenceShelf} from './reference-editor.js?v=91.2';
+import {canReuseReferenceUpload,referenceUploadParts,referenceUploadForm} from './reference-upload.js?v=91.2';
+import {referenceProvenance,mergeReferenceSnapshots,matchesLiveRecord,reconcileLiveJobs} from './live-history.js?v=91.2';
+import {boundReferences,sameMedia,missingMentions,captureSubmittedContent,clearSubmittedContent,assetReferences} from './workspace-media.js?v=91.2';
+import {taskOperation,similarWorkflows,modelLabel,categoryDescription,taskCover,originalReference,originalReferences,restoredInputs,matchesWork} from './workflow-experience.js?v=91.2';
 import {installTimecodeControls} from './timecode-control.js?v=89.1';
 import {installMultiCamera} from './multi-camera.js?v=75.1';
-import {installProcessingDurations} from './processing-duration.js?v=91.1';
-import {controlSection,syncControlChoices} from './workflow-controls.js?v=91.1';
+import {installProcessingDurations} from './processing-duration.js?v=91.2';
+import {controlSection,syncControlChoices} from './workflow-controls.js?v=91.2';
 import {openCatalogReferenceSlot,closeCatalogReferenceSlot,compactCatalogReferenceSlots} from './catalog-reference-slots.js?v=88.0';
-import {selectControl,installWorkflowSelects} from './workflow-select.js?v=91.1';
+import {selectControl,installWorkflowSelects} from './workflow-select.js?v=91.2';
 installWorkflowSelects();
 installProcessingDurations();
 installMultiCamera();
 installTimecodeControls();
-import {installPointPickers,clearPointsForMedia} from './point-picker.js?v=91.1';
+import {installPointPickers,clearPointsForMedia} from './point-picker.js?v=91.2';
 installPointPickers();
 import {installDirectoryPicker} from './directory-picker.js?v=60.1';
-import {workflowOutputLabel,workflowHelp,workflowTitle} from './workflow-presentation.js?v=91.1';
+import {workflowOutputLabel,workflowHelp,workflowTitle} from './workflow-presentation.js?v=91.2';
 import {annotateImage} from './region-annotation.js?v=54.0';
 import {nextReferenceId,renumberDraftReferences,hasRemovedReference} from './reference-numbering.js?v=26.0';
-import {catalogEditor,catalogSummary,catalogSelector,catalogOverview,catalogCommonPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue,seedPanel,prepareCatalogSnapshot,setCatalogApiKey,getCatalogApiKey} from './catalog-ui.js?v=91.1';
+import {catalogEditor,catalogSummary,catalogSelector,catalogOverview,catalogCommonPanel,syncCameraGuide,syncOutpaintGuide,installCatalogVisualGuides,applyOutpaintValue,seedPanel,prepareCatalogSnapshot,setCatalogApiKey,getCatalogApiKey} from './catalog-ui.js?v=91.2';
 import {confirmAction,mountMentions,textareaCaretRect} from './interactions.js?v=54.0';
 const publicPreview=location.hostname.endsWith('.github.io');
 const platformUser=await initializePlatform({publicPreview:publicPreview||!location.pathname.endsWith('studio.html')});
@@ -37,17 +37,17 @@ import {logo,replaceLogo} from './brand.js';
 import {magneticCTA} from './pointer.js';
 import {heroPlayback} from './motion.js';
 import {models,defaultModel,getModel,durationOptions,normalizeDraft} from './models.js?v=89.0';
-import {openStorage,readAssets,putAsset,deleteAsset,readState,writeState} from './storage.js?v=91.1';
+import {openStorage,readAssets,putAsset,deleteAsset,readState,writeState} from './storage.js?v=91.2';
 import {createZip,downloadBlob} from './archive.js';
 import {advancedValues,advancedCount,advancedFields,cloneDraft,parameterRows} from './advanced.js?v=64.0';
-import {liveWorkflowEditor,demoWorkflowMedia,installTrimPlayback,parameterPreview,workflowPicturePanel,referenceSizePanel} from './workflow-page.js?v=91.1';
+import {liveWorkflowEditor,demoWorkflowMedia,installTrimPlayback,parameterPreview,workflowPicturePanel,referenceSizePanel} from './workflow-page.js?v=91.2';
 
 let liveCatalog=[];
 try{const response=publicPreview?null:await fetch('/api/workflows');if(response?.ok)liveCatalog=await response.json();}catch{}
 if(liveCatalog.length){workflows.unshift(...liveCatalog.map(w=>({...w,live:true,category:w.category==='video-gen'?'视频生成':'视频编辑',cover:w.cover.replace('assets/',''),tag:'已接入',input:w.id==='h3-reference'?'文字 · 参考图片':'原视频 · 可选参考图片'})));if(!categories.includes('视频编辑'))categories.push('视频编辑');}
 let localCatalog={workflows:[],categories:[],missing:[]};
 try{const response=await fetch('local-catalog.json?v=21.2');if(response.ok){localCatalog=await response.json();workflows.push(...localCatalog.workflows);categories.splice(0,categories.length,'全部','已接入',...localCatalog.categories);}}catch{}
-try{const response=await fetch('workflow-interfaces.json?v=91.1');if(!response.ok)throw new Error('interface config');const config=await response.json();for(const w of localCatalog.workflows)w.interface=config.workflows[w.id];}catch(e){console.error('工作流控件配置加载失败',e);}
+try{const response=await fetch('workflow-interfaces.json?v=91.2');if(!response.ok)throw new Error('interface config');const config=await response.json();for(const w of localCatalog.workflows)w.interface=config.workflows[w.id];}catch(e){console.error('工作流控件配置加载失败',e);}
 try{if(!publicPreview){const response=await fetch('/api/catalog-connections');if(response.ok){const connected=await response.json();for(const entry of connected){const w=localCatalog.workflows.find(w=>w.id===entry.id);if(w&&w.interface?.sourceHash===entry.source_hash&&w.name===entry.name){w.catalogConnection=entry;w.catalogConnected=true;w.catalogPendingApi=entry.validation==='api-pending';w.catalogBlocked=entry.validation==='blocked';}}}}}catch{}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const main=$('#main'),shell=$('#shell'),dialog=$('#dialog');
@@ -57,9 +57,11 @@ main.addEventListener('error',e=>{
  if(e.target.tagName!=='IMG')return;
  const cover=e.target.closest('.task-cover[data-cover-workflow]'),w=cover&&workflows.find(w=>w.id===cover.dataset.coverWorkflow);
  if(!w||cover.dataset.coverFallback==='diagram')return;
- const omitImages=cover.dataset.coverFallback==='sample';
- cover.dataset.coverFallback=omitImages?'diagram':'sample';
- cover.innerHTML=taskCover(w,[],cover.dataset.coverCategory==='true',workspace.assets,{omitImages});
+ const source=cover.querySelector('.cover-art')?.dataset.coverSource||cover.dataset.coverFallback||'history';
+ if(source==='diagram')return;
+ const omitImages=source==='sample',skipPublished=source!=='history';
+ cover.innerHTML=taskCover(w,[],cover.dataset.coverCategory==='true',workspace.assets,{omitImages,skipPublished});
+ cover.dataset.coverFallback=cover.querySelector('.cover-art')?.dataset.coverSource||(omitImages?'diagram':'sample');
 },true);
 let sidebarMarkup='',sidebarPending=false,librarySignature='';
 let sidebarPointerInside=false,sidebarPeekDismissed=false;

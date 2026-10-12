@@ -87,14 +87,16 @@ export function renderWorkflowCover(w,media={},category=false){
  default:art=big()+textLines(27,53,70)+arrow(113,88,21,0);break;
  }
  const history=!!actual&&!omit&&['comparison','history'].includes(media.evidence);
- const requestedPair=history&&!!original&&media.evidence==='comparison';
+ const published=!!actual&&!omit&&['published-comparison','published'].includes(media.evidence);
+ const requestedPair=!!original&&(history&&media.evidence==='comparison'||published&&media.evidence==='published-comparison');
  // A layout that foregrounds only one side still keeps a real companion image;
  // the pair label is never inferred from metadata without showing both sources.
  if(requestedPair&&!photos.some(box=>box.src===actual))art+=photo(actual,248,29,70,50);
  if(requestedPair&&!photos.some(box=>box.src===original))art+=photo(original,28,85,76,49);
  const paired=requestedPair&&photos.some(box=>box.src===actual)&&photos.some(box=>box.src===original);
- const evidence=paired?'原图 → 历史结果':history?'历史素材 · 用途示意':'用途示意';
+ const evidence=paired?(published?'示例原图 → 示例结果':'原图 → 历史结果'):history?'历史素材 · 用途示意':published?'示例素材 · 用途示意':'用途示意';
+ const source=omit?'diagram':history?'history':published?'published':'sample';
  const emptyPicture='<svg viewBox="0 0 80 60" aria-hidden="true"><circle cx="59" cy="17" r="6" fill="#b79dc8"/><path d="m5 53 21-27 17 16 16-20 16 31Z" fill="#6e557f"/></svg>';
  const photoHTML=photos.map(box=>`<span class="cover-photo" style="left:${box.x/3.4}%;top:${box.y/1.91}%;width:${box.width/3.4}%;height:${box.height/1.91}%;border-radius:${box.round===50?'50%':box.round+'px'}">${emptyPicture}${omit?'':`<img src="${esc(box.src)}" alt="" loading="lazy" decoding="async">`}</span>`).join('');
- return `<span class="cover-art" data-cover-kind="${esc(p.kind)}" data-cover-variant="${esc(p.variant||'')}" role="img" title="${esc(p.feature||'')}" aria-label="${esc(p.label+'，'+(p.feature||'')+'，'+evidence)}">${photoHTML}<svg class="cover-operation" viewBox="0 0 340 191" aria-hidden="true">${art}</svg><span class="cover-evidence">${evidence}</span><span class="cover-feature">${esc(p.feature||'')}</span><span class="cover-operation-label">${esc(p.label)}</span></span>`;
+ return `<span class="cover-art" data-cover-kind="${esc(p.kind)}" data-cover-variant="${esc(p.variant||'')}" data-cover-source="${source}" role="img" title="${esc(p.feature||'')}" aria-label="${esc(p.label+'，'+(p.feature||'')+'，'+evidence)}">${photoHTML}<svg class="cover-operation" viewBox="0 0 340 191" aria-hidden="true">${art}</svg><span class="cover-evidence">${evidence}</span><span class="cover-feature">${esc(p.feature||'')}</span><span class="cover-operation-label">${esc(p.label)}</span></span>`;
 }

@@ -1,4 +1,5 @@
-import {renderWorkflowCover} from './workflow-cover-art.js?v=88.0';
+import {renderWorkflowCover} from './workflow-cover-art.js?v=91.2';
+import {publishedWorkflowCovers,publishedCategoryCovers} from './workflow-cover-media.js?v=91.2';
 
 // Group by the operation a user wants, while preserving each workflow's schema.
 // These source names contain shared pipeline prefixes such as “人物替换姿势控制”.
@@ -87,12 +88,17 @@ const categoryDescriptions={
 export const categoryDescription=cat=>categoryDescriptions[cat]||cat;
 
 export function taskCover(w,rows=[],category=false,assets=[],options={}){
- const candidates=rows.filter(({j,o})=>j.real&&j.status==='done'&&j.snapshot.workflowId===w.id);
+ const candidates=rows.filter(({j,o})=>j.real&&j.status==='done'&&j.snapshot?.workflowId===w.id
+  &&!o.removedAt&&o.available!==false&&(o.type==='image'&&o.src||o.type==='video'&&o.poster));
  const last=candidates.at(-1);
- if(last&&(last.o.type!=='video'||last.o.poster)&&!options.omitImages){
+ if(last&&!options.omitImages){
   const {o,j}=last,refs=originalReferences(j,{type:'image'},assets),ref=o.type==='image'?originalReference(j,o,assets):refs[0];
   return renderWorkflowCover(w,{primary:o.type==='video'?o.poster:o.src,input:ref?.src,
    inputs:refs.map(r=>r.src),evidence:o.type==='image'&&ref?.src?'comparison':'history'},category);
+ }
+ const published=category?publishedCategoryCovers[w.category]:publishedWorkflowCovers[w.id];
+ if(published&&!options.skipPublished&&!options.omitImages){
+  return renderWorkflowCover(w,{...published,evidence:published.input?'published-comparison':'published'},category);
  }
  return renderWorkflowCover(w,{omitImages:!!options.omitImages,evidence:'sample'},category);
 }

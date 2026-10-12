@@ -1,8 +1,11 @@
 {
-  "version": "0.91.1",
+  "version": "0.91.2",
   "release": 91,
   "released_on": "2026-10-12",
   "connected_workflows": 129,
   "blocked_workflows": 6,
-  "video_api_models": ["baidu-sd2", "baidu-sd2.5"]
+  "video_api_models": [
+    "baidu-sd2",
+    "baidu-sd2.5"
+  ]
 }

@@ -1,4 +1,4 @@
-import {rangeHint} from './control-guidance.js?v=91.1';
+import {rangeHint} from './control-guidance.js?v=91.2';
 import {esc} from './data.js';
 
 // One geometry for pixel totals; callers retain their existing limits and bindings.
